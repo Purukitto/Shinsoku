@@ -1,0 +1,42 @@
+name: shinsoku
+description: "Shinsoku — cross-platform download manager"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  flutter_rust_bridge: 2.9.0
+  path_provider: ^2.1.5
+  riverpod_annotation: ^2.6.1
+  tray_manager: ^0.5.3
+  window_manager: ^0.4.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.14
+  riverpod_generator: ^2.6.5
+  custom_lint: ^0.7.5
+  riverpod_lint: ^2.6.5
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icon/
+    - assets/logo/
+
+  fonts:
+    - family: SpaceGrotesk
+      fonts:
+        - asset: fonts/SpaceGrotesk-Variable.ttf
+    - family: JetBrainsMono
+      fonts:
+        - asset: fonts/JetBrainsMono-Variable.ttf

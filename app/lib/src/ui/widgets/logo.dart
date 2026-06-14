@@ -1,0 +1,64 @@
+import 'package:flutter/material.dart';
+import '../../theme/colors.dart';
+import '../../theme/text_styles.dart';
+
+class ShinsokuLogo extends StatelessWidget {
+  const ShinsokuLogo({super.key, this.size = 34, this.showWordmark = true, this.color});
+
+  final double size;
+  final bool showWordmark;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final wordColor = color ?? SColors.hi;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // kanji tile
+        Container(
+          width: size, height: size,
+          decoration: BoxDecoration(
+            gradient: SColors.voltGradient,
+            borderRadius: BorderRadius.circular(size * 0.28),
+            boxShadow: [BoxShadow(color: const Color(0x59A25CFF), blurRadius: 16, offset: const Offset(0, 4))],
+          ),
+          alignment: Alignment.center,
+          child: Text('速',
+            style: TextStyle(
+              fontFamily: kFontUi,
+              fontSize: size * 0.52,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1B1020),
+              height: 1,
+            ),
+          ),
+        ),
+        if (showWordmark) ...[
+          SizedBox(width: 11),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Shinsoku',
+                style: TextStyle(
+                  fontFamily: kFontUi,
+                  fontSize: size * 0.5,
+                  fontWeight: FontWeight.w600,
+                  color: wordColor,
+                  letterSpacing: -0.01 * size * 0.5,
+                  height: 1,
+                ),
+              ),
+              SizedBox(height: 3),
+              Text('神速 · GODSPEED',
+                style: SText.monoXs(color: SColors.low).copyWith(
+                  fontSize: size * 0.235, letterSpacing: 0.18 * size * 0.235),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}

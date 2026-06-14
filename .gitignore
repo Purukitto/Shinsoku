@@ -1,0 +1,28 @@
+# Rust
+**/target/
+
+# Python tooling (tool/)
+__pycache__/
+*.pyc
+
+# Flutter / Dart (app/ also has its own .gitignore)
+**/.dart_tool/
+**/build/
+**/.flutter-plugins-dependencies
+.fvm/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.swp
+
+# Logs
+*.log
