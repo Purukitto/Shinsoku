@@ -1,0 +1,55 @@
+name: Release
+
+# Push a SemVer tag to build the Windows app + extension and publish a GitHub
+# Release. The in-app update checker reads this release feed.
+#   git tag -a v0.2.0 -m v0.2.0 && git push origin v0.2.0
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows build & release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build (Flutter Windows + Rust core)
+        working-directory: app
+        run: |
+          flutter config --enable-windows-desktop
+          flutter pub get
+          flutter build windows --release
+
+      - name: Package app
+        shell: pwsh
+        run: |
+          $rel = "app/build/windows/x64/runner/Release"
+          $zip = "$env:GITHUB_WORKSPACE/Shinsoku-${{ github.ref_name }}-windows-x64.zip"
+          Compress-Archive -Path "$rel/*" -DestinationPath $zip
+
+      - name: Package browser extension
+        shell: pwsh
+        working-directory: extension
+        run: ./build.ps1 -Zip
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Shinsoku ${{ github.ref_name }}
+          files: |
+            Shinsoku-${{ github.ref_name }}-windows-x64.zip
+            extension/dist/chromium.zip
+            extension/dist/firefox.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: false

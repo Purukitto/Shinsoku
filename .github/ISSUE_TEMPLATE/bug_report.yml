@@ -1,0 +1,64 @@
+name: 🐛 Bug report
+description: Something isn't working as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please search existing issues first to avoid duplicates.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including what you expected to happen.
+      placeholder: When I pause a multi-segment download and resume, ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce it?
+      placeholder: |
+        1. Add a download from '...'
+        2. Set connections to '...'
+        3. Click '...'
+        4. See error
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS and version
+      placeholder: Windows 11 26200
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Shinsoku version / commit
+      placeholder: v1.0.0 or commit b4e48de
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Download engine (core / Rust)
+        - UI (app / Flutter)
+        - Browser extension
+        - HLS / video capture
+        - Not sure
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Paste any relevant logs or attach screenshots. This will be rendered as code, so no need for backticks.
+      render: shell
+    validations:
+      required: false

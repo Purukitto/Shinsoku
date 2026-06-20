@@ -26,6 +26,39 @@ class DownloadItem {
   final String fileType;
   final String? error;
 
+  /// Epoch ms when the download finished; `None` until completed. Persisted so
+  /// the history shows the real completion time after a restart.
+  final PlatformInt64? completedAtMs;
+
+  /// Per-download request headers (Cookie/Referer/User-Agent from browser
+  /// capture). Applied to every probe/segment request; UA overrides the client default.
+  final List<(String, String)> headers;
+
+  /// Digest to verify the finished file against, if the user/extension gave one.
+  /// Algorithm is inferred from its length (32 hex = MD5, else SHA-256).
+  final String? expectedChecksum;
+
+  /// Computed digest of the finished file (lowercase hex); `None` until completed.
+  final String? checksum;
+
+  /// Algorithm used for `checksum` ("sha256"/"md5").
+  final String? checksumAlgo;
+
+  /// Result of checking `checksum` against `expected_checksum`; `None` when no
+  /// expected digest was supplied (so nothing to verify).
+  final bool? checksumVerified;
+
+  /// Download source. Defaulted for items persisted before this field existed.
+  final DownloadKind kind;
+
+  /// HLS only: total media segments in the playlist (0 for HTTP).
+  final int segmentTotal;
+
+  /// HLS only: media segments already concatenated into the file. With HLS,
+  /// `downloaded_bytes` is the committed byte length (resume anchor) and
+  /// `total_bytes` is a running size estimate.
+  final int segmentDone;
+
   const DownloadItem({
     required this.id,
     required this.url,
@@ -45,6 +78,15 @@ class DownloadItem {
     required this.host,
     required this.fileType,
     this.error,
+    this.completedAtMs,
+    required this.headers,
+    this.expectedChecksum,
+    this.checksum,
+    this.checksumAlgo,
+    this.checksumVerified,
+    required this.kind,
+    required this.segmentTotal,
+    required this.segmentDone,
   });
 
   @override
@@ -66,7 +108,16 @@ class DownloadItem {
       resumable.hashCode ^
       host.hashCode ^
       fileType.hashCode ^
-      error.hashCode;
+      error.hashCode ^
+      completedAtMs.hashCode ^
+      headers.hashCode ^
+      expectedChecksum.hashCode ^
+      checksum.hashCode ^
+      checksumAlgo.hashCode ^
+      checksumVerified.hashCode ^
+      kind.hashCode ^
+      segmentTotal.hashCode ^
+      segmentDone.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -90,8 +141,22 @@ class DownloadItem {
           resumable == other.resumable &&
           host == other.host &&
           fileType == other.fileType &&
-          error == other.error;
+          error == other.error &&
+          completedAtMs == other.completedAtMs &&
+          headers == other.headers &&
+          expectedChecksum == other.expectedChecksum &&
+          checksum == other.checksum &&
+          checksumAlgo == other.checksumAlgo &&
+          checksumVerified == other.checksumVerified &&
+          kind == other.kind &&
+          segmentTotal == other.segmentTotal &&
+          segmentDone == other.segmentDone;
 }
+
+/// Download source. `Http` is the byte-range multi-segment path; `Hls` fetches an
+/// M3U8 playlist and concatenates its media segments. Defaulted so items persisted
+/// before this field load as `Http`.
+enum DownloadKind { http, hls }
 
 /// Compact per-tick delta; avoids cloning segments/history. Full items fetched
 /// for detail.

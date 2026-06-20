@@ -3,6 +3,11 @@ name = "shinsoku_core"
 version = "0.1.0"
 edition = "2021"
 
+[lints.rust]
+# `frb_expand` is referenced by the flutter_rust_bridge macros; declare it so
+# rustc stops warning about an unknown cfg.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
+
 [lib]
 name = "shinsoku_core"
 # rlib so Rust integration tests (and the codegen) can link the library, in
@@ -24,6 +29,12 @@ futures = "0.3"
 bytes = "1"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
+axum = { version = "0.7", default-features = false, features = ["http1", "json", "tokio"] }
+url = "2"
+aes = "0.8"
+cbc = { version = "0.1", features = ["std"] }
 
 [dev-dependencies]
 tokio-test = "0.4"
+aes = "0.8"
+cbc = { version = "0.1", features = ["std"] }

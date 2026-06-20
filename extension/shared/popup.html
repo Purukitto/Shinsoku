@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Shinsoku — Streams</title>
+  <style>
+    :root {
+      --bg0: #141317; --bg1: #1a191e; --bg2: #201e25;
+      --line: #2c2a32; --hi: #f3f1f7; --mid: #9d99a6; --low: #6a6672;
+      --pink: #ff77c0; --mint: #7fe0b0; --danger: #ff7a6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 14px; width: 340px; background: var(--bg0); color: var(--hi);
+      font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px;
+    }
+    h1 { font-size: 14px; margin: 0 0 8px; }
+    .hint { color: var(--low); font-size: 12px; margin: 0 0 12px; }
+    .row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 8px;
+      background: var(--bg2); border: 1px solid var(--line); border-radius: 8px;
+    }
+    .row .info { flex: 1; min-width: 0; }
+    .row .name {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-size: 13px; font-weight: 600; color: var(--hi);
+    }
+    .row .sub {
+      margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: var(--low);
+    }
+    button {
+      background: var(--bg2); border: 1px solid var(--line); color: var(--hi);
+      border-radius: 7px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+    }
+    button.primary { background: var(--pink); border-color: var(--pink); color: #1b1020; font-weight: 600; }
+    button:hover:not(:disabled) { border-color: var(--low); }
+    button:disabled { opacity: 0.7; cursor: default; }
+    .footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+    #status { flex: 1; font-size: 11.5px; }
+    #status.ok { color: var(--mint); }
+    #status.err { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <h1>Detected streams</h1>
+  <p id="hint" class="hint">Scanning…</p>
+  <div id="list"></div>
+  <div class="footer">
+    <span id="status"></span>
+    <button id="options">Options</button>
+  </div>
+  <script src="common.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

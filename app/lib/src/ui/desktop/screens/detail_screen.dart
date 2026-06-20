@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/download_item.dart';
 import '../../../models/format.dart';
@@ -106,22 +107,42 @@ class DetailScreen extends ConsumerWidget {
           Expanded(flex: 13, child: _card(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Parallel acceleration', style: SText.uiBase().copyWith(fontWeight: FontWeight.w500)),
+              Text(it.isHls ? 'Stream segments' : 'Parallel acceleration',
+                style: SText.uiBase().copyWith(fontWeight: FontWeight.w500)),
               _pill(child: Row(mainAxisSize: MainAxisSize.min, children: [
                 BoltIcon(size: 10), const SizedBox(width: 5),
-                Text('${it.connections}× SEGMENTS'),
+                Text(it.isHls ? '${it.segmentTotal} SEGMENTS' : '${it.connections}× SEGMENTS'),
               ])),
             ]),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 84,
-              child: SegmentBars(segments: it.segments, height: 84, paused: !active),
-            ),
-            const SizedBox(height: 10),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('connection 1', style: SText.monoXs()),
-              Text('connection ${it.connections}', style: SText.monoXs()),
-            ]),
+            if (it.isHls) ...[
+              SizedBox(height: 84, child: Center(child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${it.segmentDone} / ${it.segmentTotal} segments',
+                  style: SText.monoLg(color: active ? SColors.voltPink : SColors.mid).copyWith(fontSize: 20)),
+                const SizedBox(height: 12),
+                VoltBar(
+                  value: it.segmentTotal > 0 ? it.segmentDone / it.segmentTotal : 0.0,
+                  dim: !active, height: 10),
+              ]))),
+              const SizedBox(height: 10),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('HLS · ${it.connections} parallel', style: SText.monoXs()),
+                Text(fmtPct(it.segmentTotal > 0 ? it.segmentDone / it.segmentTotal : 0.0),
+                  style: SText.monoXs()),
+              ]),
+            ] else ...[
+              SizedBox(
+                height: 84,
+                child: SegmentBars(segments: it.segments, height: 84, paused: !active),
+              ),
+              const SizedBox(height: 10),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('connection 1', style: SText.monoXs()),
+                Text('connection ${it.connections}', style: SText.monoXs()),
+              ]),
+            ],
           ]))),
           const SizedBox(width: 16),
           Expanded(flex: 10, child: _card(child: Column(
@@ -164,16 +185,72 @@ class DetailScreen extends ConsumerWidget {
         child: Column(children: [
           for (final row in [
             ['Source', it.host],
-            ['File type', _kindOf(it.fileType)],
+            ['File type', it.isHls ? 'HLS stream' : _kindOf(it.fileType)],
             ['Destination', '~/Downloads/Shinsoku'],
-            ['Connections', '${it.connections} simultaneous'],
+            if (it.isHls)
+              ['Segments', '${it.segmentDone} / ${it.segmentTotal}']
+            else
+              ['Connections', '${it.connections} simultaneous'],
           ]) ...[
-            _metaRow(row[0], row[1], last: row[0] == 'Connections'),
+            _metaRow(row[0], row[1], last: row[0] == 'Connections' || row[0] == 'Segments'),
           ],
         ]),
       ),
+      if (it.checksum != null) ...[
+        const SizedBox(height: 16),
+        _checksumCard(it),
+      ],
     ]);
   }
+
+  static Widget _checksumCard(DownloadItem it) {
+    final algo = (it.checksumAlgo == 'md5' ? 'MD5' : 'SHA-256');
+    final verified = it.checksumVerified;
+    return Container(
+      decoration: BoxDecoration(
+        color: SColors.bg1,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: SColors.line),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Text('CHECKSUM · $algo',
+              style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5)),
+            if (verified != null) ...[
+              const SizedBox(width: 10),
+              _verifyBadge(verified),
+            ],
+          ]),
+          const SizedBox(height: 6),
+          Text(it.checksum!,
+            style: SText.monoSm(color: SColors.mid).copyWith(fontSize: 11.5),
+            maxLines: 1, overflow: TextOverflow.ellipsis),
+        ])),
+        const SizedBox(width: 8),
+        SIconBtn(
+          icon: Icons.copy_rounded, size: 34, tooltip: 'Copy checksum',
+          onPressed: () => Clipboard.setData(ClipboardData(text: it.checksum!))),
+      ]),
+    );
+  }
+
+  static Widget _verifyBadge(bool ok) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(
+      color: ok ? const Color(0x1F7FE0B0) : const Color(0x1FFF7A6B),
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(color: ok ? const Color(0x407FE0B0) : const Color(0x40FF7A6B)),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(ok ? Icons.verified_rounded : Icons.error_outline_rounded,
+        size: 11, color: ok ? SColors.mint : SColors.danger),
+      const SizedBox(width: 4),
+      Text(ok ? 'VERIFIED' : 'MISMATCH',
+        style: SText.monoXs(color: ok ? SColors.mint : SColors.danger).copyWith(fontSize: 10)),
+    ]),
+  );
 
   static Widget _card({required Widget child}) => Container(
     padding: const EdgeInsets.all(20),

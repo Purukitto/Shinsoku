@@ -26,6 +26,17 @@ class DownloadItem {
   final List<SegmentInfo> segments;
   final List<int> speedHistory;
   final DateTime addedAt;
+  final DateTime? completedAt;
+  final String? checksum;
+  final String? checksumAlgo;
+  final bool? checksumVerified;
+
+  /// HLS stream download (concatenated M3U8 segments) vs a plain byte-range file.
+  final bool isHls;
+
+  /// HLS only: total media segments / segments completed (0 for plain downloads).
+  final int segmentTotal;
+  final int segmentDone;
 
   const DownloadItem({
     required this.id,
@@ -41,6 +52,13 @@ class DownloadItem {
     required this.segments,
     required this.speedHistory,
     required this.addedAt,
+    this.completedAt,
+    this.checksum,
+    this.checksumAlgo,
+    this.checksumVerified,
+    this.isHls = false,
+    this.segmentTotal = 0,
+    this.segmentDone = 0,
   });
 
   double get progress => totalBytes > 0 ? downloadedBytes / totalBytes : 0.0;
@@ -64,6 +82,13 @@ class DownloadItem {
     List<SegmentInfo>? segments,
     List<int>? speedHistory,
     DateTime? addedAt,
+    DateTime? completedAt,
+    String? checksum,
+    String? checksumAlgo,
+    bool? checksumVerified,
+    bool? isHls,
+    int? segmentTotal,
+    int? segmentDone,
   }) => DownloadItem(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -78,6 +103,13 @@ class DownloadItem {
     segments: segments ?? this.segments,
     speedHistory: speedHistory ?? this.speedHistory,
     addedAt: addedAt ?? this.addedAt,
+    completedAt: completedAt ?? this.completedAt,
+    checksum: checksum ?? this.checksum,
+    checksumAlgo: checksumAlgo ?? this.checksumAlgo,
+    checksumVerified: checksumVerified ?? this.checksumVerified,
+    isHls: isHls ?? this.isHls,
+    segmentTotal: segmentTotal ?? this.segmentTotal,
+    segmentDone: segmentDone ?? this.segmentDone,
   );
 }
 

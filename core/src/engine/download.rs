@@ -1,5 +1,15 @@
 use serde::{Deserialize, Serialize};
 
+/// Download source. `Http` is the byte-range multi-segment path; `Hls` fetches an
+/// M3U8 playlist and concatenates its media segments. Defaulted so items persisted
+/// before this field load as `Http`.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+pub enum DownloadKind {
+    #[default]
+    Http,
+    Hls,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadItem {
     pub id: String,
@@ -20,6 +30,33 @@ pub struct DownloadItem {
     pub host: String,
     pub file_type: String,
     pub error: Option<String>,
+    /// Epoch ms when the download finished; `None` until completed. Persisted so
+    /// the history shows the real completion time after a restart.
+    pub completed_at_ms: Option<i64>,
+    /// Per-download request headers (Cookie/Referer/User-Agent from browser
+    /// capture). Applied to every probe/segment request; UA overrides the client default.
+    pub headers: Vec<(String, String)>,
+    /// Digest to verify the finished file against, if the user/extension gave one.
+    /// Algorithm is inferred from its length (32 hex = MD5, else SHA-256).
+    pub expected_checksum: Option<String>,
+    /// Computed digest of the finished file (lowercase hex); `None` until completed.
+    pub checksum: Option<String>,
+    /// Algorithm used for `checksum` ("sha256"/"md5").
+    pub checksum_algo: Option<String>,
+    /// Result of checking `checksum` against `expected_checksum`; `None` when no
+    /// expected digest was supplied (so nothing to verify).
+    pub checksum_verified: Option<bool>,
+    /// Download source. Defaulted for items persisted before this field existed.
+    #[serde(default)]
+    pub kind: DownloadKind,
+    /// HLS only: total media segments in the playlist (0 for HTTP).
+    #[serde(default)]
+    pub segment_total: u32,
+    /// HLS only: media segments already concatenated into the file. With HLS,
+    /// `downloaded_bytes` is the committed byte length (resume anchor) and
+    /// `total_bytes` is a running size estimate.
+    #[serde(default)]
+    pub segment_done: u32,
 }
 
 impl DownloadItem {

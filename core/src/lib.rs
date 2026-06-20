@@ -7,6 +7,7 @@
 mod frb_generated;
 
 pub mod api;
+pub mod capture;
 pub mod engine;
 pub mod protocols;
 pub mod queue;

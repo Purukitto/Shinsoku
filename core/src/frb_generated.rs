@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1902591142;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1607628354;
 
 // Section: executor
 
@@ -73,6 +73,8 @@ fn wire__crate__api__add_download_impl(
             let api_url = <String>::sse_decode(&mut deserializer);
             let api_dest_dir = <String>::sse_decode(&mut deserializer);
             let api_connections = <u8>::sse_decode(&mut deserializer);
+            let api_headers = <Vec<(String, String)>>::sse_decode(&mut deserializer);
+            let api_expected_checksum = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, ()>((move || {
                 let mut api_engine_guard = None;
@@ -96,7 +98,116 @@ fn wire__crate__api__add_download_impl(
                     api_url,
                     api_dest_dir,
                     api_connections,
+                    api_headers,
+                    api_expected_checksum,
                 ))?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__add_stream_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "add_stream",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_engine = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ShinsokuEngine>,
+            >>::sse_decode(&mut deserializer);
+            let api_url = <String>::sse_decode(&mut deserializer);
+            let api_dest_dir = <String>::sse_decode(&mut deserializer);
+            let api_headers = <Vec<(String, String)>>::sse_decode(&mut deserializer);
+            let api_title = <Option<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_engine_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_engine,
+                            0,
+                            false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_engine_guard = Some(api_engine.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_engine_guard = api_engine_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok(crate::api::add_stream(
+                    &*api_engine_guard,
+                    api_url,
+                    api_dest_dir,
+                    api_headers,
+                    api_title,
+                ))?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__capture_status_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "capture_status",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_engine = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ShinsokuEngine>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_engine_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_engine,
+                            0,
+                            false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_engine_guard = Some(api_engine.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_engine_guard = api_engine_guard.unwrap();
+                let output_ok =
+                    Result::<_, ()>::Ok(crate::api::capture_status(&*api_engine_guard))?;
                 Ok(output_ok)
             })())
         },
@@ -123,9 +234,10 @@ fn wire__crate__api__create_engine_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_db_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, ()>((move || {
-                let output_ok = Result::<_, ()>::Ok(crate::api::create_engine())?;
+                let output_ok = Result::<_, ()>::Ok(crate::api::create_engine(api_db_path))?;
                 Ok(output_ok)
             })())
         },
@@ -630,6 +742,64 @@ fn wire__crate__api__set_max_simultaneous_impl(
         },
     )
 }
+fn wire__crate__api__set_off_peak_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_off_peak",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_engine = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ShinsokuEngine>,
+            >>::sse_decode(&mut deserializer);
+            let api_enabled = <bool>::sse_decode(&mut deserializer);
+            let api_start_min = <u16>::sse_decode(&mut deserializer);
+            let api_end_min = <u16>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_engine_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_engine,
+                            0,
+                            false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_engine_guard = Some(api_engine.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_engine_guard = api_engine_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok({
+                    crate::api::set_off_peak(
+                        &*api_engine_guard,
+                        api_enabled,
+                        api_start_min,
+                        api_end_min,
+                    );
+                })?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__set_speed_limit_bps_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -675,6 +845,112 @@ fn wire__crate__api__set_speed_limit_bps_impl(
                 let api_engine_guard = api_engine_guard.unwrap();
                 let output_ok = Result::<_, ()>::Ok({
                     crate::api::set_speed_limit_bps(&*api_engine_guard, api_bps);
+                })?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__start_capture_server_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "start_capture_server",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_engine = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ShinsokuEngine>,
+            >>::sse_decode(&mut deserializer);
+            let api_port = <u16>::sse_decode(&mut deserializer);
+            let api_token = <String>::sse_decode(&mut deserializer);
+            let api_dest_dir = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_engine_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_engine,
+                            0,
+                            false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_engine_guard = Some(api_engine.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_engine_guard = api_engine_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok(crate::api::start_capture_server(
+                    &*api_engine_guard,
+                    api_port,
+                    api_token,
+                    api_dest_dir,
+                ))?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__stop_capture_server_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "stop_capture_server",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_engine = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ShinsokuEngine>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_engine_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_engine,
+                            0,
+                            false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_engine_guard = Some(api_engine.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_engine_guard = api_engine_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok({
+                    crate::api::stop_capture_server(&*api_engine_guard);
                 })?;
                 Ok(output_ok)
             })())
@@ -803,6 +1079,22 @@ impl SseDecode for bool {
     }
 }
 
+impl SseDecode for crate::api::CaptureStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_running = <bool>::sse_decode(deserializer);
+        let mut var_port = <u16>::sse_decode(deserializer);
+        let mut var_lastSeenMs = <i64>::sse_decode(deserializer);
+        let mut var_captures = <u32>::sse_decode(deserializer);
+        return crate::api::CaptureStatus {
+            running: var_running,
+            port: var_port,
+            last_seen_ms: var_lastSeenMs,
+            captures: var_captures,
+        };
+    }
+}
+
 impl SseDecode for crate::engine::download::DownloadItem {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -825,6 +1117,15 @@ impl SseDecode for crate::engine::download::DownloadItem {
         let mut var_host = <String>::sse_decode(deserializer);
         let mut var_fileType = <String>::sse_decode(deserializer);
         let mut var_error = <Option<String>>::sse_decode(deserializer);
+        let mut var_completedAtMs = <Option<i64>>::sse_decode(deserializer);
+        let mut var_headers = <Vec<(String, String)>>::sse_decode(deserializer);
+        let mut var_expectedChecksum = <Option<String>>::sse_decode(deserializer);
+        let mut var_checksum = <Option<String>>::sse_decode(deserializer);
+        let mut var_checksumAlgo = <Option<String>>::sse_decode(deserializer);
+        let mut var_checksumVerified = <Option<bool>>::sse_decode(deserializer);
+        let mut var_kind = <crate::engine::download::DownloadKind>::sse_decode(deserializer);
+        let mut var_segmentTotal = <u32>::sse_decode(deserializer);
+        let mut var_segmentDone = <u32>::sse_decode(deserializer);
         return crate::engine::download::DownloadItem {
             id: var_id,
             url: var_url,
@@ -844,6 +1145,27 @@ impl SseDecode for crate::engine::download::DownloadItem {
             host: var_host,
             file_type: var_fileType,
             error: var_error,
+            completed_at_ms: var_completedAtMs,
+            headers: var_headers,
+            expected_checksum: var_expectedChecksum,
+            checksum: var_checksum,
+            checksum_algo: var_checksumAlgo,
+            checksum_verified: var_checksumVerified,
+            kind: var_kind,
+            segment_total: var_segmentTotal,
+            segment_done: var_segmentDone,
+        };
+    }
+}
+
+impl SseDecode for crate::engine::download::DownloadKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::engine::download::DownloadKind::Http,
+            1 => crate::engine::download::DownloadKind::Hls,
+            _ => unreachable!("Invalid variant for DownloadKind: {}", inner),
         };
     }
 }
@@ -947,6 +1269,18 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for Vec<(String, String)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<(String, String)>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::engine::download::SegmentInfo> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -972,6 +1306,17 @@ impl SseDecode for Option<String> {
     }
 }
 
+impl SseDecode for Option<bool> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<bool>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<crate::engine::download::DownloadItem> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -979,6 +1324,17 @@ impl SseDecode for Option<crate::engine::download::DownloadItem> {
             return Some(<crate::engine::download::DownloadItem>::sse_decode(
                 deserializer,
             ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<i64>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -1005,6 +1361,15 @@ impl SseDecode for crate::engine::download::ProbeResult {
     }
 }
 
+impl SseDecode for (String, String) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <String>::sse_decode(deserializer);
+        return (var_field0, var_field1);
+    }
+}
+
 impl SseDecode for crate::engine::download::SegmentInfo {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1020,6 +1385,20 @@ impl SseDecode for crate::engine::download::SegmentInfo {
             downloaded_bytes: var_downloadedBytes,
             active: var_active,
         };
+    }
+}
+
+impl SseDecode for u16 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u16::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for u32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u32::<NativeEndian>().unwrap()
     }
 }
 
@@ -1058,11 +1437,11 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        3 => wire__crate__api__get_download_impl(port, ptr, rust_vec_len, data_len),
-        4 => wire__crate__api__get_downloads_impl(port, ptr, rust_vec_len, data_len),
-        5 => wire__crate__api__get_progress_impl(port, ptr, rust_vec_len, data_len),
-        7 => wire__crate__api__probe_url_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__subscribe_progress_impl(port, ptr, rust_vec_len, data_len),
+        5 => wire__crate__api__get_download_impl(port, ptr, rust_vec_len, data_len),
+        6 => wire__crate__api__get_downloads_impl(port, ptr, rust_vec_len, data_len),
+        7 => wire__crate__api__get_progress_impl(port, ptr, rust_vec_len, data_len),
+        9 => wire__crate__api__probe_url_impl(port, ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__subscribe_progress_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1076,14 +1455,19 @@ fn pde_ffi_dispatcher_sync_impl(
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
         1 => wire__crate__api__add_download_impl(ptr, rust_vec_len, data_len),
-        2 => wire__crate__api__create_engine_impl(ptr, rust_vec_len, data_len),
-        6 => wire__crate__api__pause_download_impl(ptr, rust_vec_len, data_len),
-        8 => wire__crate__api__remove_download_impl(ptr, rust_vec_len, data_len),
-        9 => wire__crate__api__resume_download_impl(ptr, rust_vec_len, data_len),
-        10 => wire__crate__api__set_categorize_impl(ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__set_max_connections_impl(ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__set_max_simultaneous_impl(ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__set_speed_limit_bps_impl(ptr, rust_vec_len, data_len),
+        2 => wire__crate__api__add_stream_impl(ptr, rust_vec_len, data_len),
+        3 => wire__crate__api__capture_status_impl(ptr, rust_vec_len, data_len),
+        4 => wire__crate__api__create_engine_impl(ptr, rust_vec_len, data_len),
+        8 => wire__crate__api__pause_download_impl(ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__remove_download_impl(ptr, rust_vec_len, data_len),
+        11 => wire__crate__api__resume_download_impl(ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__set_categorize_impl(ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__set_max_connections_impl(ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__set_max_simultaneous_impl(ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__set_off_peak_impl(ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__set_speed_limit_bps_impl(ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__start_capture_server_impl(ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__stop_capture_server_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1106,6 +1490,24 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ShinsokuEngine>> for ShinsokuE
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::CaptureStatus {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.running.into_into_dart().into_dart(),
+            self.port.into_into_dart().into_dart(),
+            self.last_seen_ms.into_into_dart().into_dart(),
+            self.captures.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::CaptureStatus {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::CaptureStatus> for crate::api::CaptureStatus {
+    fn into_into_dart(self) -> crate::api::CaptureStatus {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::engine::download::DownloadItem {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -1127,6 +1529,15 @@ impl flutter_rust_bridge::IntoDart for crate::engine::download::DownloadItem {
             self.host.into_into_dart().into_dart(),
             self.file_type.into_into_dart().into_dart(),
             self.error.into_into_dart().into_dart(),
+            self.completed_at_ms.into_into_dart().into_dart(),
+            self.headers.into_into_dart().into_dart(),
+            self.expected_checksum.into_into_dart().into_dart(),
+            self.checksum.into_into_dart().into_dart(),
+            self.checksum_algo.into_into_dart().into_dart(),
+            self.checksum_verified.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+            self.segment_total.into_into_dart().into_dart(),
+            self.segment_done.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1139,6 +1550,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::engine::download::DownloadItem>
     for crate::engine::download::DownloadItem
 {
     fn into_into_dart(self) -> crate::engine::download::DownloadItem {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::engine::download::DownloadKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Http => 0.into_dart(),
+            Self::Hls => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::engine::download::DownloadKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::engine::download::DownloadKind>
+    for crate::engine::download::DownloadKind
+{
+    fn into_into_dart(self) -> crate::engine::download::DownloadKind {
         self
     }
 }
@@ -1291,6 +1723,16 @@ impl SseEncode for bool {
     }
 }
 
+impl SseEncode for crate::api::CaptureStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.running, serializer);
+        <u16>::sse_encode(self.port, serializer);
+        <i64>::sse_encode(self.last_seen_ms, serializer);
+        <u32>::sse_encode(self.captures, serializer);
+    }
+}
+
 impl SseEncode for crate::engine::download::DownloadItem {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1312,6 +1754,31 @@ impl SseEncode for crate::engine::download::DownloadItem {
         <String>::sse_encode(self.host, serializer);
         <String>::sse_encode(self.file_type, serializer);
         <Option<String>>::sse_encode(self.error, serializer);
+        <Option<i64>>::sse_encode(self.completed_at_ms, serializer);
+        <Vec<(String, String)>>::sse_encode(self.headers, serializer);
+        <Option<String>>::sse_encode(self.expected_checksum, serializer);
+        <Option<String>>::sse_encode(self.checksum, serializer);
+        <Option<String>>::sse_encode(self.checksum_algo, serializer);
+        <Option<bool>>::sse_encode(self.checksum_verified, serializer);
+        <crate::engine::download::DownloadKind>::sse_encode(self.kind, serializer);
+        <u32>::sse_encode(self.segment_total, serializer);
+        <u32>::sse_encode(self.segment_done, serializer);
+    }
+}
+
+impl SseEncode for crate::engine::download::DownloadKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::engine::download::DownloadKind::Http => 0,
+                crate::engine::download::DownloadKind::Hls => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -1399,6 +1866,16 @@ impl SseEncode for Vec<u8> {
     }
 }
 
+impl SseEncode for Vec<(String, String)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <(String, String)>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::engine::download::SegmentInfo> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1419,12 +1896,32 @@ impl SseEncode for Option<String> {
     }
 }
 
+impl SseEncode for Option<bool> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <bool>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<crate::engine::download::DownloadItem> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::engine::download::DownloadItem>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <i64>::sse_encode(value, serializer);
         }
     }
 }
@@ -1441,6 +1938,14 @@ impl SseEncode for crate::engine::download::ProbeResult {
     }
 }
 
+impl SseEncode for (String, String) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <String>::sse_encode(self.1, serializer);
+    }
+}
+
 impl SseEncode for crate::engine::download::SegmentInfo {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1449,6 +1954,20 @@ impl SseEncode for crate::engine::download::SegmentInfo {
         <u64>::sse_encode(self.end_byte, serializer);
         <u64>::sse_encode(self.downloaded_bytes, serializer);
         <bool>::sse_encode(self.active, serializer);
+    }
+}
+
+impl SseEncode for u16 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u16::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for u32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
     }
 }
 

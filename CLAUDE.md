@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Shinsoku — Download Manager
 
 Cross-platform download manager targeting Windows (primary), Android, then Linux. Priority is speed and functionality.
@@ -41,12 +45,44 @@ Shinsoku/
 │   └── Cargo.toml
 ├── packages/               # Shared Dart/Flutter packages (UI kit, etc.)
 ├── docs/
-│   └── decisions/          # Architecture decision records (ADRs)
+│   ├── screenshots/        # README gallery (from the mock-data harness)
+│   └── assets/             # logo / icon
 ├── .github/
 │   └── workflows/
 ├── CLAUDE.md               # This file
 └── README.md
 ```
+
+## Architecture — state flow across the bridge
+
+The engine runs entirely in Rust and **owns all download state**; Flutter is a thin reactive
+view. One progress round-trip explains most of the codebase:
+
+1. **API surface** (`core/src/api.rs`) is the *only* module flutter_rust_bridge scans
+   (`rust_input: crate::api`; see `app/flutter_rust_bridge.yaml`). Keep it thin: an opaque
+   `ShinsokuEngine` wrapping a `QueueManager`, `#[frb(sync)]` control fns (add/pause/resume/
+   remove, settings setters, capture server) and one `subscribe_progress` stream sink.
+   Everything under `engine/`/`queue/`/`protocols/`/`storage/` is bridge-independent.
+2. **Engine core** is `QueueManager` + `Shared` state behind `Arc` (`core/src/queue/manager.rs`):
+   an items map under `RwLock`, a shared `reqwest::Client`, a `RateLimiter`, per-download
+   cancel tokens, and a single Tokio `Runtime`. A ~250 ms aggregator tick reads per-segment
+   atomics, derives speed (60-sample history), re-evaluates the off-peak window, checkpoints
+   to disk, and pushes a `DownloadProgress` to the sink. `fetch_plan` (`engine/orchestrator.rs`)
+   probes + splits into byte-range segments; `download_segment` (`engine/worker.rs`) streams
+   each range into its slot of a preallocated file (rate-limited, resumable); `storage/`
+   assembles + hashes. HLS uses a separate `run_hls` path in the manager.
+3. **Dart mapping layer** (`app/lib/src/providers/downloads_provider.dart`) is where Rust → UI
+   happens. `subscribeProgress` feeds `DownloadsNotifier`; light ticks patch the existing list
+   item in place, and only *structural* changes (status flip, size first known) trigger a full
+   `getDownloads` refetch. Rust types map to Dart view models in `models/`.
+4. **Narrow watching is the performance contract.** The list watches only an ordered *id list*
+   (`visibleDownloadIdsProvider`), so it rebuilds on structural change — not every tick; each
+   row watches its own item via `downloadItemProvider(id).select`; the detail screen polls a
+   per-id `liveDownloadProvider`; the throughput sparkline owns its timer. Preserve this shape —
+   a broad `watch` on the whole list reintroduces per-tick whole-screen rebuilds.
+
+Persistence, the capture server, integrity, off-peak and HLS specifics live in **Resolved
+Decisions** below.
 
 ## Platform Priority
 
@@ -69,7 +105,7 @@ macOS and iOS are out of scope unless explicitly added later.
 
 ## State Management
 
-To be decided once Flutter app scaffold is created. Leading candidates: **Riverpod** (preferred given existing Flutter experience) or Bloc.
+**Riverpod** (`flutter_riverpod`). Engine/download state lives in Rust and is surfaced through providers; the UI watches narrow slices (per-row, id-list, derived counts) so rebuilds stay tight per the performance rules.
 
 ## UI
 
@@ -86,12 +122,38 @@ Designer assets will be provided. Build from provided designs — do not invent 
 
 Rust side: `reqwest` (async HTTP), `tokio` (async runtime), `sha2`/`md-5` (integrity).
 
-## Development Workflow
+## Commands
 
-- Edit Rust in `core/`, run `flutter_rust_bridge_codegen generate` to regenerate Dart bindings
-- Run app: `flutter run -d windows` (or `-d android`, `-d linux`)
-- Rust tests: `cargo test` inside `core/`
-- Flutter tests: `flutter test` inside `app/`
+Flutter commands run in `app/`; Rust commands in `core/`.
+
+**Run**
+- `flutter run -d windows --release` — primary target. Use `--release`/`--profile` to judge
+  performance; debug rendering and throughput are not representative.
+- `flutter run -d windows -t lib/main_screenshots.dart` — screenshot harness: the real app with
+  deterministic mock data and one-key PNG capture (F1–F6). Wrapped by `tool/screenshots.ps1`.
+
+**Regenerate the bridge** — required after any change to `core/src/api.rs`:
+- `flutter_rust_bridge_codegen generate` (run in `app/`). Rewrites `app/lib/src/rust/` and
+  `core/src/frb_generated.rs` — never hand-edit those.
+
+**Lint / format** (CI gates on these — `.github/workflows/ci.yml`):
+- Rust: `cargo fmt --all -- --check` and `cargo clippy --all-targets -- -D warnings`
+- Dart: `dart format .` and `flutter analyze`
+
+**Test**
+- Rust: `cargo test` · single: `cargo test --test download <name>` (integration tests in
+  `core/tests/`) or `cargo test <name>` for unit tests.
+- Flutter: `flutter test` · single file: `flutter test test/foo_test.dart` · single case:
+  `flutter test --plain-name "description"`.
+
+**Browser extension** (`extension/`): edit `shared/`, then `./build.ps1` assembles
+`dist/chromium` + `dist/firefox`. Never edit `dist/` directly. Load unpacked from `dist/<browser>`.
+
+**Release / versioning**: SemVer + Keep a Changelog. `tool/bump-version.ps1 X.Y.Z` bumps
+`app/pubspec.yaml`, `core/Cargo.toml` and both extension manifests in lockstep and rolls
+`CHANGELOG.md`; the Windows `.exe` version flows from pubspec via CMake. Pushing a `vX.Y.Z` tag
+triggers the Windows build + GitHub Release (`.github/workflows/release.yml`); the app checks
+that release feed for updates. Add an `[Unreleased]` changelog entry for user-facing changes.
 
 ## Performance
 
@@ -116,10 +178,18 @@ Apply this everywhere:
 - Do not commit generated bridge files to main if they can be regenerated (TBD)
 - Do not include any references to Claude, Anthropic, or AI tools in commit messages, code comments, or any committed files
 
+## Resolved Decisions
+
+- [x] **State management** — Riverpod (`flutter_riverpod`).
+- [x] **Persistence layer** — engine-side, *not* Hive/Drift. The download list + completed history serialise to a single atomic JSON file written by `core/src/storage/store.rs` (sibling temp + rename). Keeps download state in Rust per the engine boundary.
+- [x] **Browser extension approach** — token-protected loopback HTTP server hosted in the Rust core (`core/src/capture/`), *not* native messaging (fewer IPC hops, no per-browser registry/manifest install). Extensions live in `extension/` (Chromium + Firefox MV3); single pairing-code handshake.
+- [x] **File integrity (MD5/SHA256)** — streaming hash computed after completion in `core/src/storage/integrity.rs`; an optional expected digest (manual Add dialog or capture payload) is verified, with algorithm inferred from the digest length.
+- [x] **App settings persistence** — app-side JSON (`app/lib/src/services/settings_service.dart`, `settings.json` beside the download store), surfaced via `settingsProvider`. Engine-applied values (connections, simultaneous, download limit, categorize, off-peak) are pushed into the core on load and on change; disk writes are debounced so slider drags don't thrash.
+- [x] **Off-peak acceleration** — engine feature, not UI-only: the limiter's effective rate is `0` (unthrottled) inside the configured window and the user's download limit outside it. The window is re-evaluated ~1×/s in the aggregator so crossing its boundary flips the rate automatically (`core/src/queue/manager.rs`). Window wraps past midnight; `start == end` is inert. Note: "Cap upload / seeding" has no engine counterpart yet (no upload/seeding path) — the toggle persists but is inert until torrent support lands.
+- [x] **HLS stream capture (M3U8)** — engine path, not a separate manager: `DownloadItem.kind` discriminates `Http`/`Hls`; `run_hls` (`core/src/queue/manager.rs`) parses the playlist (`core/src/protocols/hls.rs`), picks the highest-bitrate variant, downloads segments with `buffered(N)` (bounded concurrency, ordered append), AES-128-decrypts (`aes`/`cbc`), and concatenates to one file (`.ts`, or `.mp4` with an fMP4 init map). VOD only (no `#EXT-X-ENDLIST` ⇒ rejected); `SAMPLE-AES`/DASH/ffmpeg-remux out of scope. Progress is segment-count based, surfaced through reused byte fields: `downloaded_bytes` = committed bytes (exact resume anchor; resume truncates the temp to it), `total_bytes` = self-refining size estimate. Detection is a `webRequest` sniffer in the extension (`extension/shared/background.js`) feeding a toolbar popup that POSTs `/api/add-stream`; pasting an `.m3u8` URL into Add works too (`probe_url` flags it → `add_stream`).
+
 ## Open Decisions
 
-- [ ] State management library (Riverpod vs Bloc)
-- [ ] Persistence layer (Hive vs Drift)
-- [ ] Browser extension approach (native messaging vs separate tool)
 - [ ] CI/CD setup (GitHub Actions target platforms)
 - [ ] Theming system once UI assets are provided
+- [ ] Whether to commit generated bridge files to main (currently regenerated, not committed)

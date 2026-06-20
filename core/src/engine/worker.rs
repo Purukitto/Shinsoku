@@ -1,5 +1,6 @@
 use anyhow::Result;
 use futures::StreamExt;
+use reqwest::header::HeaderMap;
 use reqwest::Client;
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -21,6 +22,7 @@ pub async fn download_segment(
     start: u64,
     end: u64,
     already: u64,
+    headers: &HeaderMap,
     done: Arc<AtomicU64>,
     cancel: CancellationToken,
 ) -> Result<()> {
@@ -31,7 +33,7 @@ pub async fn download_segment(
 
     let mut writer = SegmentWriter::open(dest, from).await?;
 
-    let mut req = client.get(url);
+    let mut req = client.get(url).headers(headers.clone());
     // end == 0: unknown length, fetch open-ended
     if end != 0 {
         req = req.header("Range", format!("bytes={}-{}", from, end - 1));

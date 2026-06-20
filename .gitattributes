@@ -1,0 +1,22 @@
+# Normalize line endings
+* text=auto eol=lf
+
+# Windows-specific scripts keep CRLF
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Generated flutter_rust_bridge code — exclude from language stats & collapse diffs
+app/lib/src/rust/**      linguist-generated=true
+core/src/frb_generated.rs linguist-generated=true
+
+# Vendored / non-source — don't count toward language stats
+extension/dist/**        linguist-vendored=true
+docs/**                  linguist-documentation=true
+
+# Binary assets
+*.png    binary
+*.jpg    binary
+*.ico    binary
+*.ttf    binary
+*.webp   binary

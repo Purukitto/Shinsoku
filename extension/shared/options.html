@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Shinsoku Capture — Options</title>
+  <style>
+    :root {
+      --bg0: #141317; --bg1: #1a191e; --bg2: #201e25;
+      --line: #2c2a32; --hi: #f3f1f7; --mid: #9d99a6; --low: #6a6672;
+      --pink: #ff77c0; --mint: #7fe0b0; --danger: #ff7a6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 28px; background: var(--bg0); color: var(--hi);
+      font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px;
+      max-width: 520px;
+    }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    p.sub { color: var(--low); margin: 0 0 22px; font-size: 12.5px; }
+    .field { margin-bottom: 16px; }
+    label.row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    label .name { color: var(--mid); }
+    input[type="text"], input[type="number"], textarea {
+      background: var(--bg2); border: 1px solid var(--line); color: var(--hi);
+      border-radius: 8px; padding: 8px 10px; font-size: 13px; width: 100%;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    input[type="number"] { width: 110px; }
+    textarea { min-height: 64px; resize: vertical; }
+    .field > .name { display: block; color: var(--mid); margin-bottom: 6px; }
+    .field > .hint { color: var(--low); font-size: 11.5px; margin-top: 5px; }
+    .switch { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+    .actions { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+    button {
+      background: var(--bg2); border: 1px solid var(--line); color: var(--hi);
+      border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer;
+    }
+    button.primary { background: var(--pink); border-color: var(--pink); color: #1b1020; font-weight: 600; }
+    button:hover { border-color: var(--low); }
+    #status { font-size: 12.5px; margin-left: 6px; }
+    #status.ok { color: var(--mint); }
+    #status.err { color: var(--danger); }
+    .pair { display: flex; gap: 8px; }
+    .pair input { flex: 1; }
+    details { margin-bottom: 16px; }
+    summary { color: var(--mid); cursor: pointer; font-size: 12.5px; padding: 4px 0; }
+    details[open] summary { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Shinsoku Capture</h1>
+  <p class="sub">Hand browser downloads to the Shinsoku app. Copy the endpoint and token from Shinsoku → Settings → Capture.</p>
+
+  <div class="switch">
+    <input type="checkbox" id="enabled" />
+    <label class="name" for="enabled">Capture downloads</label>
+  </div>
+
+  <div class="field">
+    <span class="name">Pairing code</span>
+    <div class="pair">
+      <input type="text" id="pairCode" placeholder="paste shnsk_… from Shinsoku → Settings → Capture" />
+      <button id="apply">Apply</button>
+    </div>
+    <div class="hint">Pastes host, port and token in one go, then tests the connection.</div>
+  </div>
+
+  <details>
+    <summary>Manual setup</summary>
+    <div class="field">
+      <span class="name">Host</span>
+      <input type="text" id="host" placeholder="127.0.0.1" />
+    </div>
+    <div class="field">
+      <label class="row"><span class="name">Port</span>
+        <input type="number" id="port" min="1" max="65535" /></label>
+    </div>
+    <div class="field">
+      <span class="name">Token</span>
+      <input type="text" id="token" placeholder="paste from Shinsoku settings" />
+    </div>
+  </details>
+
+  <div class="field">
+    <label class="row"><span class="name">Minimum size (MB)</span>
+      <input type="number" id="minSizeMb" min="0" step="1" /></label>
+    <div class="hint">Ignore downloads smaller than this (0 = capture all).</div>
+  </div>
+
+  <div class="field">
+    <span class="name">Blocklist</span>
+    <textarea id="blocklist" placeholder="domains to ignore, one per line&#10;e.g. mail.google.com"></textarea>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="save">Save</button>
+    <button id="test">Test connection</button>
+    <span id="status"></span>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

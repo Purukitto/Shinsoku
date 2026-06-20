@@ -5,8 +5,10 @@ import '../models/download_item.dart';
 import '../rust/api.dart' as rust;
 import '../rust/engine/download.dart' as rd;
 
-/// Single engine instance. Requires `RustLib.init()` (see main).
-final engineProvider = Provider<rust.ShinsokuEngine>((ref) => rust.createEngine());
+/// Single engine instance. Requires `RustLib.init()` (see main). Overridden in
+/// `main()` with the persistent store path; this fallback runs in-memory.
+final engineProvider =
+    Provider<rust.ShinsokuEngine>((ref) => rust.createEngine(dbPath: ''));
 
 /// Default dest: OS Downloads dir, else app documents.
 final downloadDirProvider = FutureProvider<String>((ref) async {
@@ -17,7 +19,8 @@ final downloadDirProvider = FutureProvider<String>((ref) async {
   return (await getApplicationDocumentsDirectory()).path;
 });
 
-/// Completed this session (no cross-restart persistence yet). Newest first.
+/// Completed downloads, newest first. Repopulated on launch from the engine's
+/// persisted store (see `_refresh`), so history survives restarts.
 final List<CompletedDownload> completedDownloads = [];
 
 // ── mapping: Rust types → Dart view model ─────────────────────────────────────
@@ -63,6 +66,15 @@ DownloadItem _map(rd.DownloadItem r) => DownloadItem(
       .toList(),
   speedHistory: r.speedHistory.map((e) => e.toInt()).toList(),
   addedAt: DateTime.fromMillisecondsSinceEpoch(r.addedAtMs),
+  completedAt: r.completedAtMs == null
+      ? null
+      : DateTime.fromMillisecondsSinceEpoch(r.completedAtMs!),
+  checksum: r.checksum,
+  checksumAlgo: r.checksumAlgo,
+  checksumVerified: r.checksumVerified,
+  isHls: r.kind == rd.DownloadKind.hls,
+  segmentTotal: r.segmentTotal,
+  segmentDone: r.segmentDone,
 );
 
 // ── live download list ────────────────────────────────────────────────────────
@@ -137,16 +149,41 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
           fileType: it.fileType,
           totalBytes: it.totalBytes,
           avgSpeedBps: it.peakBps,
-          completedAt: DateTime.now(),
+          completedAt: it.completedAt ?? DateTime.now(),
         ),
       );
     }
   }
 
-  Future<void> add({required String url, required int connections}) async {
+  Future<void> add({
+    required String url,
+    required int connections,
+    List<(String, String)> headers = const [],
+    String? expectedChecksum,
+  }) async {
     final engine = ref.read(engineProvider);
     final dir = await ref.read(downloadDirProvider.future);
-    rust.addDownload(engine: engine, url: url, destDir: dir, connections: connections);
+    rust.addDownload(
+      engine: engine,
+      url: url,
+      destDir: dir,
+      connections: connections,
+      headers: headers,
+      expectedChecksum: expectedChecksum,
+    );
+    _refresh();
+  }
+
+  /// Queue an HLS (M3U8) stream; the engine resolves the playlist and downloads
+  /// the highest-bitrate variant. Connection count is engine-chosen.
+  Future<void> addStream({
+    required String url,
+    List<(String, String)> headers = const [],
+    String? title,
+  }) async {
+    final engine = ref.read(engineProvider);
+    final dir = await ref.read(downloadDirProvider.future);
+    rust.addStream(engine: engine, url: url, destDir: dir, headers: headers, title: title);
     _refresh();
   }
 

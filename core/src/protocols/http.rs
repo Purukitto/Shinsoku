@@ -1,4 +1,5 @@
 use anyhow::Result;
+use reqwest::header::HeaderMap;
 use reqwest::Client;
 
 /// Shared HTTP client; cloning shares the connection pool (keep-alive reused
@@ -16,6 +17,22 @@ pub fn build_client() -> Client {
         .expect("failed to build HTTP client")
 }
 
+/// Build a `HeaderMap` from stored name/value pairs, skipping any that don't
+/// parse as valid header name/value.
+pub fn build_headers(pairs: &[(String, String)]) -> HeaderMap {
+    use reqwest::header::{HeaderName, HeaderValue};
+    let mut map = HeaderMap::with_capacity(pairs.len());
+    for (k, v) in pairs {
+        if let (Ok(name), Ok(val)) = (
+            HeaderName::from_bytes(k.as_bytes()),
+            HeaderValue::from_str(v),
+        ) {
+            map.insert(name, val);
+        }
+    }
+    map
+}
+
 #[derive(Debug)]
 pub struct FileInfo {
     pub total_bytes: u64,
@@ -24,8 +41,8 @@ pub struct FileInfo {
     pub filename: Option<String>,
 }
 
-pub async fn probe(client: &Client, url: &str) -> Result<FileInfo> {
-    let resp = client.head(url).send().await?;
+pub async fn probe(client: &Client, url: &str, headers: &HeaderMap) -> Result<FileInfo> {
+    let resp = client.head(url).headers(headers.clone()).send().await?;
     let total_bytes = resp
         .headers()
         .get("content-length")

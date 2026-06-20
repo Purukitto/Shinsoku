@@ -26,3 +26,9 @@ Desktop.ini
 
 # Logs
 *.log
+
+# Browser extension build output
+extension/dist/
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json

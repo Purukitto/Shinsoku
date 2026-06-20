@@ -1,4 +1,5 @@
 use anyhow::Result;
+use reqwest::header::HeaderMap;
 use reqwest::Client;
 use std::path::Path;
 use std::sync::atomic::AtomicU64;
@@ -23,8 +24,13 @@ pub struct Plan {
 
 /// Probe and decide segments. Multi-segment only with byte ranges + known
 /// length; otherwise a single open-ended stream (`end_byte == 0` if unknown).
-pub async fn fetch_plan(client: &Client, url: &str, connections: u8) -> Result<Plan> {
-    let info = probe(client, url).await?;
+pub async fn fetch_plan(
+    client: &Client,
+    url: &str,
+    connections: u8,
+    headers: &HeaderMap,
+) -> Result<Plan> {
+    let info = probe(client, url, headers).await?;
     let total = info.total_bytes;
     let multi = info.resumable && total > 0;
     let segments = if multi {
@@ -49,6 +55,7 @@ pub async fn fetch_plan(client: &Client, url: &str, connections: u8) -> Result<P
 
 /// Run all segments in parallel into the preallocated file. First error cancels
 /// the rest and returns Err; `cancel` (pause) stops them cleanly (Ok).
+#[allow(clippy::too_many_arguments)]
 pub async fn run_segments(
     client: &Client,
     limiter: Arc<RateLimiter>,
@@ -56,6 +63,7 @@ pub async fn run_segments(
     dest: &Path,
     segments: &[SegmentInfo],
     counters: &[Arc<AtomicU64>],
+    headers: &HeaderMap,
     cancel: CancellationToken,
 ) -> Result<()> {
     // Child token: an error tears down siblings without flipping the caller's
@@ -71,9 +79,11 @@ pub async fn run_segments(
         let dest = dest.to_path_buf();
         let done = counters[i].clone();
         let token = group.clone();
+        let headers = headers.clone();
         let (start, end, already) = (seg.start_byte, seg.end_byte, seg.downloaded_bytes);
         handles.push(tokio::spawn(async move {
-            download_segment(&client, &limiter, &url, &dest, start, end, already, done, token).await
+            download_segment(&client, &limiter, &url, &dest, start, end, already, &headers, done, token)
+                .await
         }));
     }
 

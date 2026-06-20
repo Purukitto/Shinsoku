@@ -57,6 +57,22 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# Build the Rust engine (shinsoku_core) and bundle the dll next to the exe.
+get_filename_component(SHINSOKU_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../core" ABSOLUTE)
+set(SHINSOKU_RUST_DLL "${SHINSOKU_CORE_DIR}/target/release/shinsoku_core.dll")
+find_program(CARGO_EXECUTABLE cargo
+  HINTS "$ENV{USERPROFILE}/.cargo/bin" "$ENV{HOME}/.cargo/bin"
+  PATHS ENV PATH)
+if(NOT CARGO_EXECUTABLE)
+  message(FATAL_ERROR "cargo not found — install the Rust toolchain to build shinsoku_core")
+endif()
+add_custom_target(shinsoku_core_build ALL
+  COMMAND "${CARGO_EXECUTABLE}" build --release --manifest-path "${SHINSOKU_CORE_DIR}/Cargo.toml"
+  BYPRODUCTS "${SHINSOKU_RUST_DLL}"
+  COMMENT "Building shinsoku_core (Rust, release)"
+  VERBATIM)
+add_dependencies(${BINARY_NAME} shinsoku_core_build)
+
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can
@@ -79,6 +95,10 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
   COMPONENT Runtime)
 
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  COMPONENT Runtime)
+
+# Rust engine dll, loaded at runtime next to the executable.
+install(FILES "${SHINSOKU_RUST_DLL}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
 if(PLUGIN_BUNDLED_LIBRARIES)

@@ -7,7 +7,12 @@ import 'engine/download.dart';
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-ShinsokuEngine createEngine() => RustLib.instance.api.crateApiCreateEngine();
+// These functions are ignored because they are not marked as `pub`: `is_hls_url`
+
+/// Create the engine. `db_path` is the JSON store for the download list/history;
+/// an empty string disables persistence (in-memory only).
+ShinsokuEngine createEngine({required String dbPath}) =>
+    RustLib.instance.api.crateApiCreateEngine(dbPath: dbPath);
 
 /// Queue a download, return its id; probe + start run on a background task.
 String addDownload({
@@ -15,11 +20,31 @@ String addDownload({
   required String url,
   required String destDir,
   required int connections,
+  required List<(String, String)> headers,
+  String? expectedChecksum,
 }) => RustLib.instance.api.crateApiAddDownload(
   engine: engine,
   url: url,
   destDir: destDir,
   connections: connections,
+  headers: headers,
+  expectedChecksum: expectedChecksum,
+);
+
+/// Queue an HLS (M3U8) stream. The engine fetches the playlist, picks the
+/// highest-bitrate variant, and concatenates the media segments into one file.
+String addStream({
+  required ShinsokuEngine engine,
+  required String url,
+  required String destDir,
+  required List<(String, String)> headers,
+  String? title,
+}) => RustLib.instance.api.crateApiAddStream(
+  engine: engine,
+  url: url,
+  destDir: destDir,
+  headers: headers,
+  title: title,
 );
 
 void pauseDownload({required ShinsokuEngine engine, required String id}) =>
@@ -47,7 +72,8 @@ Future<DownloadItem?> getDownload({
 }) => RustLib.instance.api.crateApiGetDownload(engine: engine, id: id);
 
 /// HEAD-probe a URL for the Add dialog. One-shot client (runs on the bridge
-/// runtime, not the engine's pool).
+/// runtime, not the engine's pool). An `.m3u8` URL is reported as an HLS stream
+/// without a HEAD, so the dialog routes Add → [`add_stream`].
 Future<ProbeResult> probeUrl({required String url}) =>
     RustLib.instance.api.crateApiProbeUrl(url: url);
 
@@ -64,5 +90,74 @@ void setMaxSimultaneous({required ShinsokuEngine engine, required int n}) =>
 void setCategorize({required ShinsokuEngine engine, required bool on_}) =>
     RustLib.instance.api.crateApiSetCategorize(engine: engine, on_: on_);
 
+/// Off-peak acceleration window (minutes since local midnight; `start > end`
+/// wraps past midnight). Inside it downloads ignore the speed limit; outside it
+/// the limit set via [`set_speed_limit_bps`] applies.
+void setOffPeak({
+  required ShinsokuEngine engine,
+  required bool enabled,
+  required int startMin,
+  required int endMin,
+}) => RustLib.instance.api.crateApiSetOffPeak(
+  engine: engine,
+  enabled: enabled,
+  startMin: startMin,
+  endMin: endMin,
+);
+
+/// Start the loopback capture server the browser extension posts to. Tries
+/// `port` (then a few above if taken); returns the bound port, or 0 on failure.
+/// Captured downloads land in `dest_dir`. Restarts if already running.
+int startCaptureServer({
+  required ShinsokuEngine engine,
+  required int port,
+  required String token,
+  required String destDir,
+}) => RustLib.instance.api.crateApiStartCaptureServer(
+  engine: engine,
+  port: port,
+  token: token,
+  destDir: destDir,
+);
+
+void stopCaptureServer({required ShinsokuEngine engine}) =>
+    RustLib.instance.api.crateApiStopCaptureServer(engine: engine);
+
+CaptureStatus captureStatus({required ShinsokuEngine engine}) =>
+    RustLib.instance.api.crateApiCaptureStatus(engine: engine);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ShinsokuEngine>>
 abstract class ShinsokuEngine implements RustOpaqueInterface {}
+
+/// Live capture state for the UI. `last_seen_ms` is 0 until a browser first
+/// authenticates this session; once non-zero, an extension is paired.
+class CaptureStatus {
+  final bool running;
+  final int port;
+  final PlatformInt64 lastSeenMs;
+  final int captures;
+
+  const CaptureStatus({
+    required this.running,
+    required this.port,
+    required this.lastSeenMs,
+    required this.captures,
+  });
+
+  @override
+  int get hashCode =>
+      running.hashCode ^
+      port.hashCode ^
+      lastSeenMs.hashCode ^
+      captures.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CaptureStatus &&
+          runtimeType == other.runtimeType &&
+          running == other.running &&
+          port == other.port &&
+          lastSeenMs == other.lastSeenMs &&
+          captures == other.captures;
+}

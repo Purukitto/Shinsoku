@@ -41,10 +41,23 @@ class AddDownloadModal extends ConsumerStatefulWidget {
   const AddDownloadModal({
     super.key,
     required this.onStart,
+    required this.onStartStream,
     this.fromClipboard = false,
   });
 
-  final void Function({required String url, required int connections}) onStart;
+  final void Function({
+    required String url,
+    required int connections,
+    required List<(String, String)> headers,
+    String? expectedChecksum,
+  }) onStart;
+
+  /// Routed instead of [onStart] when the link is an HLS (M3U8) stream.
+  final void Function({
+    required String url,
+    required List<(String, String)> headers,
+    String? title,
+  }) onStartStream;
   final bool fromClipboard;
 
   @override
@@ -55,6 +68,11 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
   final _ctrl = TextEditingController();
   double _conns = 8;
   bool _scheduled = false;
+
+  // advanced: custom request headers + expected checksum
+  bool _advanced = false;
+  final List<(TextEditingController, TextEditingController)> _headers = [];
+  final _checksumCtrl = TextEditingController();
 
   Timer? _debounce;
   rd.ProbeResult? _probe;
@@ -81,13 +99,115 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
   void dispose() {
     _debounce?.cancel();
     _ctrl.dispose();
+    _checksumCtrl.dispose();
+    for (final h in _headers) {
+      h.$1.dispose();
+      h.$2.dispose();
+    }
     super.dispose();
   }
+
+  List<(String, String)> _collectHeaders() {
+    final out = <(String, String)>[];
+    for (final h in _headers) {
+      final name = h.$1.text.trim();
+      if (name.isEmpty) continue;
+      out.add((name, h.$2.text.trim()));
+    }
+    return out;
+  }
+
+  bool get _hasAdvanced =>
+      _collectHeaders().isNotEmpty || _checksumCtrl.text.trim().isNotEmpty;
+
+  Widget _advancedDisclosure() => InkWell(
+    onTap: () => setState(() => _advanced = !_advanced),
+    borderRadius: BorderRadius.circular(8),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        Icon(_advanced ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+          size: 18, color: SColors.mid),
+        const SizedBox(width: 6),
+        Text('Advanced', style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13)),
+        const Spacer(),
+        if (!_advanced && _hasAdvanced)
+          Text('configured', style: SText.monoXs(color: SColors.voltPink).copyWith(fontSize: 10.5)),
+      ]),
+    ),
+  );
+
+  Widget _advancedSection() => Padding(
+    padding: const EdgeInsets.only(top: 12),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('REQUEST HEADERS', style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5)),
+      const SizedBox(height: 4),
+      Text('Sent with every request — e.g. Cookie, Referer, Authorization.',
+        style: SText.monoSm(color: SColors.low).copyWith(fontSize: 11)),
+      const SizedBox(height: 10),
+      for (var i = 0; i < _headers.length; i++) _headerRow(i),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: SBtn(
+          kind: BtnKind.ghost, size: BtnSize.sm, icon: Icons.add_rounded,
+          onPressed: () => setState(() =>
+            _headers.add((TextEditingController(), TextEditingController()))),
+          child: const Text('Add header')),
+      ),
+      const SizedBox(height: 18),
+      Text('EXPECTED CHECKSUM', style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5)),
+      const SizedBox(height: 8),
+      _miniField(_checksumCtrl, 'SHA-256 or MD5 hex — verified after download'),
+    ]),
+  );
+
+  Widget _headerRow(int i) {
+    final h = _headers[i];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(children: [
+        Expanded(flex: 4, child: _miniField(h.$1, 'Header')),
+        const SizedBox(width: 8),
+        Expanded(flex: 6, child: _miniField(h.$2, 'Value')),
+        const SizedBox(width: 2),
+        SIconBtn(icon: Icons.close_rounded, size: 34, tooltip: 'Remove',
+          onPressed: () => setState(() {
+            h.$1.dispose();
+            h.$2.dispose();
+            _headers.removeAt(i);
+          })),
+      ]),
+    );
+  }
+
+  Widget _miniField(TextEditingController c, String hint) => Container(
+    height: 40,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: SColors.bg0,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: SColors.line),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    child: TextField(
+      controller: c,
+      style: SText.monoBase().copyWith(fontSize: 12),
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: SText.monoBase(color: const Color(0xFF6A6672)).copyWith(fontSize: 12),
+        border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero,
+      ),
+    ),
+  );
 
   bool get _isUrl {
     final t = _ctrl.text.trim();
     return t.startsWith('http://') || t.startsWith('https://');
   }
+
+  /// The probe flags an `.m3u8` link with this MIME (see `probe_url` in the core).
+  bool get _isHls => _probe?.mimeType == 'application/vnd.apple.mpegurl';
 
   void _onChanged() {
     setState(() {}); // refresh button/placeholder state
@@ -224,11 +344,17 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                         overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 3),
                       Text(
-                        '${_kindLabel(_ftype(probe.fileType))} · '
-                        '${probe.totalBytes > BigInt.zero ? fmtBytes(probe.totalBytes.toInt()) : "unknown size"}',
+                        _isHls
+                            ? '${_kindLabel(_ftype(probe.fileType))} · HLS stream · highest quality'
+                            : '${_kindLabel(_ftype(probe.fileType))} · '
+                                '${probe.totalBytes > BigInt.zero ? fmtBytes(probe.totalBytes.toInt()) : "unknown size"}',
                         style: SText.monoSm()),
                     ])),
-                    if (probe.resumable)
+                    if (_isHls)
+                      Pill(tone: PillTone.volt, child: Row(mainAxisSize: MainAxisSize.min, children: const [
+                        Icon(Icons.playlist_play_rounded, size: 12), SizedBox(width: 5), Text('STREAM'),
+                      ]))
+                    else if (probe.resumable)
                       Pill(tone: PillTone.mint, child: Row(mainAxisSize: MainAxisSize.min, children: const [
                         Icon(Icons.check_rounded, size: 11), SizedBox(width: 5), Text('RESUMABLE'),
                       ])),
@@ -249,17 +375,22 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                 ),
               ],
               const SizedBox(height: 16),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Parallel connections', style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13)),
-                SizedBox(width: 230, child: VoltSlider(
-                  value: _conns, min: 1, max: 16,
-                  onChanged: (v) => setState(() => _conns = v), suffix: '×')),
-              ]),
-              const SizedBox(height: 10),
+              if (!_isHls) ...[
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('Parallel connections', style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13)),
+                  SizedBox(width: 230, child: VoltSlider(
+                    value: _conns, min: 1, max: 16,
+                    onChanged: (v) => setState(() => _conns = v), suffix: '×')),
+                ]),
+                const SizedBox(height: 10),
+              ],
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text('Schedule for off-peak', style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13)),
                 SToggle(value: _scheduled, onChanged: (v) => setState(() => _scheduled = v)),
               ]),
+              const SizedBox(height: 10),
+              _advancedDisclosure(),
+              if (_advanced) _advancedSection(),
               const SizedBox(height: 22),
               Row(children: [
                 Expanded(child: SBtn(kind: BtnKind.ghost, onPressed: () => Navigator.pop(context),
@@ -270,7 +401,18 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                   icon: Icons.bolt_rounded,
                   disabled: !ready,
                   onPressed: !ready ? null : () {
-                    widget.onStart(url: _ctrl.text.trim(), connections: _conns.round());
+                    final url = _ctrl.text.trim();
+                    if (_isHls) {
+                      widget.onStartStream(url: url, headers: _collectHeaders(), title: null);
+                    } else {
+                      final cs = _checksumCtrl.text.trim();
+                      widget.onStart(
+                        url: url,
+                        connections: _conns.round(),
+                        headers: _collectHeaders(),
+                        expectedChecksum: cs.isEmpty ? null : cs,
+                      );
+                    }
                     Navigator.pop(context);
                   },
                   child: Text(_scheduled ? 'Schedule download' : 'Download now'),

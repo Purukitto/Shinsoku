@@ -2,9 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../models/download_item.dart';
 import '../../providers/downloads_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../providers/version_provider.dart';
 import '../../services/tray_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
@@ -31,18 +34,36 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   _DesktopView _view = _DesktopView.active;
   String? _selectedId;
   bool _showClipBanner = false;
+  Timer? _clipTimer;
+  String? _lastClip;
 
   @override
   void initState() {
     super.initState();
-    _checkClipboard();
+    // Poll the clipboard while monitoring is on, surfacing the capture banner
+    // for each fresh link. Polling is the only option — desktop has no
+    // clipboard-change event — and the platform read runs only while enabled.
+    _clipTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) => _pollClipboard());
+    _pollClipboard();
   }
 
-  /// Show the capture banner only when the clipboard actually holds a link.
-  Future<void> _checkClipboard() async {
+  @override
+  void dispose() {
+    _clipTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _pollClipboard() async {
+    if (!ref.read(settingsProvider).clipboardMonitor) {
+      if (_showClipBanner) setState(() => _showClipBanner = false);
+      return;
+    }
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final t = data?.text?.trim() ?? '';
-    final isUrl = t.startsWith('http://') || t.startsWith('https://');
+    if (t == _lastClip) return; // value unchanged since last seen / dismissal
+    _lastClip = t;
+    final isUrl = (t.startsWith('http://') || t.startsWith('https://')) &&
+        !t.contains(RegExp(r'\s'));
     if (mounted) setState(() => _showClipBanner = isUrl);
   }
 
@@ -67,8 +88,17 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
       barrierColor: Colors.black.withValues(alpha: 0.66),
       builder: (_) => AddDownloadModal(
         fromClipboard: fromClipboard,
-        onStart: ({required url, required connections}) {
-          ref.read(downloadsProvider.notifier).add(url: url, connections: connections);
+        onStart: ({required url, required connections, required headers, expectedChecksum}) {
+          ref.read(downloadsProvider.notifier).add(
+                url: url,
+                connections: connections,
+                headers: headers,
+                expectedChecksum: expectedChecksum,
+              );
+          _navigate(_DesktopView.active);
+        },
+        onStartStream: ({required url, required headers, title}) {
+          ref.read(downloadsProvider.notifier).addStream(url: url, headers: headers, title: title);
           _navigate(_DesktopView.active);
         },
       ),
@@ -353,7 +383,49 @@ class _Sidebar extends StatelessWidget {
         ),
         _NavItem(icon: Icons.settings_outlined, label: 'Settings', active: view == _DesktopView.settings,
           onTap: () => onNavigate(_DesktopView.settings)),
+        const _VersionFooter(),
       ]),
+    );
+  }
+}
+
+/// Bottom-of-sidebar version line; turns into an "Update available" prompt when a
+/// newer GitHub release is found. Own ConsumerWidget so the check doesn't rebuild
+/// the sidebar.
+class _VersionFooter extends ConsumerWidget {
+  const _VersionFooter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final update = ref.watch(updateProvider).valueOrNull;
+    if (update != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: GestureDetector(
+          onTap: () => launchUrl(Uri.parse(update.url), mode: LaunchMode.externalApplication),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+            decoration: BoxDecoration(
+              gradient: SColors.voltSoftGradient,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0x47FF63B6)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.arrow_circle_up_rounded, size: 16, color: SColors.voltPink),
+              const SizedBox(width: 9),
+              Expanded(child: Text('Update available',
+                style: SText.uiBase().copyWith(fontSize: 12.5, fontWeight: FontWeight.w500))),
+              Text('v${update.latest}', style: SText.monoXs(color: SColors.voltPink)),
+            ]),
+          ),
+        ),
+      );
+    }
+    final version = ref.watch(appVersionProvider).valueOrNull;
+    if (version == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, left: 9),
+      child: Text('v$version', style: SText.monoXs()),
     );
   }
 }
