@@ -75,7 +75,8 @@ mod tests {
     use std::io::Write;
 
     fn write_tmp(tag: &str, bytes: &[u8]) -> std::path::PathBuf {
-        let p = std::env::temp_dir().join(format!("shinsoku_hash_{tag}_{}.bin", std::process::id()));
+        let p =
+            std::env::temp_dir().join(format!("shinsoku_hash_{tag}_{}.bin", std::process::id()));
         let mut f = File::create(&p).unwrap();
         f.write_all(bytes).unwrap();
         p

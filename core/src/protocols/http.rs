@@ -69,5 +69,10 @@ pub async fn probe(client: &Client, url: &str, headers: &HeaderMap) -> Result<Fi
                 .and_then(|p| p.split('=').nth(1))
                 .map(|s| s.trim_matches('"').to_string())
         });
-    Ok(FileInfo { total_bytes, resumable, mime_type, filename })
+    Ok(FileInfo {
+        total_bytes,
+        resumable,
+        mime_type,
+        filename,
+    })
 }

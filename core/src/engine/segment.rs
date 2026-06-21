@@ -8,7 +8,11 @@ pub fn split_into_segments(total_bytes: u64, count: u8) -> Vec<SegmentInfo> {
     (0..count)
         .map(|i| {
             let start = i as u64 * chunk;
-            let end = if i == count - 1 { total_bytes } else { start + chunk };
+            let end = if i == count - 1 {
+                total_bytes
+            } else {
+                start + chunk
+            };
             SegmentInfo {
                 index: i,
                 start_byte: start,

@@ -84,11 +84,9 @@ pub fn remove_download(engine: &ShinsokuEngine, id: String) {
 
 /// Live progress stream; emits on change plus an initial snapshot. Call once.
 pub fn subscribe_progress(engine: &ShinsokuEngine, sink: StreamSink<DownloadProgress>) {
-    engine
-        .manager
-        .set_emitter(Box::new(move |p| {
-            let _ = sink.add(p);
-        }));
+    engine.manager.set_emitter(Box::new(move |p| {
+        let _ = sink.add(p);
+    }));
 }
 
 // ── State queries ─────────────────────────────────────────────────────────────
@@ -237,8 +235,18 @@ pub fn capture_status(engine: &ShinsokuEngine) -> CaptureStatus {
     match engine.capture.lock().unwrap().as_ref() {
         Some(h) => {
             let (last_seen_ms, captures) = h.stats();
-            CaptureStatus { running: true, port: h.port, last_seen_ms, captures }
+            CaptureStatus {
+                running: true,
+                port: h.port,
+                last_seen_ms,
+                captures,
+            }
         }
-        None => CaptureStatus { running: false, port: 0, last_seen_ms: 0, captures: 0 },
+        None => CaptureStatus {
+            running: false,
+            port: 0,
+            last_seen_ms: 0,
+            captures: 0,
+        },
     }
 }

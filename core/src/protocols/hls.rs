@@ -91,7 +91,11 @@ fn parse_master(text: &str, base: &Url) -> Vec<Variant> {
             continue;
         } else if let Some((bandwidth, resolution)) = pending.take() {
             if let Ok(url) = base.join(line) {
-                variants.push(Variant { url, bandwidth, resolution });
+                variants.push(Variant {
+                    url,
+                    bandwidth,
+                    resolution,
+                });
             }
         }
     }
@@ -137,11 +141,19 @@ fn parse_media(text: &str, base: &Url) -> Result<MediaPlaylist> {
                 Some(k) if k.method == KeyMethod::None => None,
                 other => other.clone(),
             };
-            segments.push(MediaSegment { url, key, seq: media_seq + idx });
+            segments.push(MediaSegment {
+                url,
+                key,
+                seq: media_seq + idx,
+            });
             idx += 1;
         }
     }
-    Ok(MediaPlaylist { segments, init, endlist })
+    Ok(MediaPlaylist {
+        segments,
+        init,
+        endlist,
+    })
 }
 
 fn parse_key(rest: &str, base: &Url) -> KeyInfo {
@@ -238,7 +250,10 @@ fn attr<'a>(attrs: &'a [(String, String)], name: &str) -> Option<&'a str> {
 
 fn parse_hex_iv(s: &str) -> Option<[u8; 16]> {
     let h = s.trim();
-    let h = h.strip_prefix("0x").or_else(|| h.strip_prefix("0X")).unwrap_or(h);
+    let h = h
+        .strip_prefix("0x")
+        .or_else(|| h.strip_prefix("0X"))
+        .unwrap_or(h);
     if h.len() != 32 {
         return None;
     }
@@ -294,8 +309,14 @@ mod tests {
         assert!(m.init.is_none());
         assert_eq!(m.segments.len(), 3);
         // relative resolves against the playlist dir; absolute is kept as-is
-        assert_eq!(m.segments[0].url.as_str(), "https://cdn.example.com/v/seg0.ts");
-        assert_eq!(m.segments[1].url.as_str(), "https://other.example.com/seg1.ts");
+        assert_eq!(
+            m.segments[0].url.as_str(),
+            "https://cdn.example.com/v/seg0.ts"
+        );
+        assert_eq!(
+            m.segments[1].url.as_str(),
+            "https://other.example.com/seg1.ts"
+        );
         assert!(m.segments.iter().all(|s| s.key.is_none()));
         assert_eq!(m.segments[2].seq, 2);
     }
@@ -322,10 +343,16 @@ mod tests {
         let Playlist::Media(m) = parse(text, &base()).unwrap() else {
             panic!("expected media");
         };
-        assert_eq!(m.init.as_ref().unwrap().as_str(), "https://cdn.example.com/v/init.mp4");
+        assert_eq!(
+            m.init.as_ref().unwrap().as_str(),
+            "https://cdn.example.com/v/init.mp4"
+        );
         let k = m.segments[0].key.as_ref().unwrap();
         assert_eq!(k.method, KeyMethod::Aes128);
-        assert_eq!(k.uri.as_ref().unwrap().as_str(), "https://k.example.com/key.bin");
+        assert_eq!(
+            k.uri.as_ref().unwrap().as_str(),
+            "https://k.example.com/key.bin"
+        );
         assert_eq!(k.iv.unwrap()[15], 0x0f);
     }
 

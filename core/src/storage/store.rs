@@ -96,7 +96,10 @@ mod tests {
     #[test]
     fn round_trips() {
         let p = std::env::temp_dir().join(format!("shinsoku_store_{}.json", std::process::id()));
-        let items = vec![item("a", DownloadStatus::Completed), item("b", DownloadStatus::Paused)];
+        let items = vec![
+            item("a", DownloadStatus::Completed),
+            item("b", DownloadStatus::Paused),
+        ];
         save(&p, &items).unwrap();
         let loaded = load(&p);
         let _ = std::fs::remove_file(&p);

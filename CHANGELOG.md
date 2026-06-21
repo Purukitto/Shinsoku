@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Project / repo
 - Open-source repository scaffolding: README, GPL-3.0 license, contributing guide,
-  code of conduct, security policy, issue/PR templates, and CI.
+  security policy, issue/PR templates, and CI.
 - Screenshot harness (`flutter run -t lib/main_screenshots.dart`) with deterministic mock
   data and one-key PNG capture, plus `tool/` capture helpers.
 - `tool/bump-version.ps1` to bump the app, core and extension versions in lockstep and roll

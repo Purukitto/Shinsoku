@@ -112,7 +112,9 @@ async fn multi_segment_download_matches_source() {
     let url = format!("http://{addr}/blob.bin");
 
     let client = build_client();
-    let plan = fetch_plan(&client, &url, 8, &build_headers(&[])).await.unwrap();
+    let plan = fetch_plan(&client, &url, 8, &build_headers(&[]))
+        .await
+        .unwrap();
     assert_eq!(plan.total, data.len() as u64);
     assert!(plan.resumable, "server advertises byte ranges");
     assert_eq!(plan.segments.len(), 8);
@@ -161,7 +163,9 @@ async fn resume_from_partial_completes_correctly() {
     let url = format!("http://{addr}/blob.bin");
 
     let client = build_client();
-    let mut plan = fetch_plan(&client, &url, 4, &build_headers(&[])).await.unwrap();
+    let mut plan = fetch_plan(&client, &url, 4, &build_headers(&[]))
+        .await
+        .unwrap();
 
     let dest = tmp_dest("resume");
     let temp = temp_path(&dest);
@@ -242,7 +246,10 @@ async fn forwards_custom_headers() {
     finalize(&temp, &dest).await.unwrap();
 
     let written = tokio::fs::read(&dest).await.unwrap();
-    assert!(written == *data, "header-gated download differs from source");
+    assert!(
+        written == *data,
+        "header-gated download differs from source"
+    );
 
     let _ = tokio::fs::remove_file(&dest).await;
 }
@@ -361,7 +368,10 @@ async fn hls_plaintext_concatenates_segments() {
     let mut expected = seg0;
     expected.extend_from_slice(&seg1);
     expected.extend_from_slice(&seg2);
-    assert!(written == expected, "concatenated segments differ from source");
+    assert!(
+        written == expected,
+        "concatenated segments differ from source"
+    );
 
     let _ = tokio::fs::remove_dir_all(&dir).await;
 }
@@ -427,8 +437,9 @@ async fn hls_aes128_decrypts_segments() {
 #[tokio::test]
 async fn hls_resumes_after_pause() {
     let segs: Vec<Vec<u8>> = (0..6).map(|i| make_data(10_000 + i * 1_000)).collect();
-    let mut playlist =
-        String::from("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXT-X-MEDIA-SEQUENCE:0\n");
+    let mut playlist = String::from(
+        "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXT-X-MEDIA-SEQUENCE:0\n",
+    );
     let mut routes = HashMap::new();
     for (i, s) in segs.iter().enumerate() {
         playlist.push_str(&format!("#EXTINF:4.0,\nseg{i}.ts\n"));
@@ -453,7 +464,11 @@ async fn hls_resumes_after_pause() {
     let mut paused = false;
     for _ in 0..200 {
         if let Some(it) = manager.get(&id) {
-            assert_ne!(it.status, DownloadStatus::Completed, "finished before pause");
+            assert_ne!(
+                it.status,
+                DownloadStatus::Completed,
+                "finished before pause"
+            );
             if it.segment_done >= 2 {
                 paused = true;
                 break;
@@ -477,10 +492,16 @@ async fn hls_resumes_after_pause() {
 
     // pause is exact: the temp prefix equals the committed byte count, mid-stream
     let it = manager.get(&id).unwrap();
-    assert!(it.segment_done >= 2 && it.segment_done < 6, "paused at a bad point");
+    assert!(
+        it.segment_done >= 2 && it.segment_done < 6,
+        "paused at a bad point"
+    );
     let temp = temp_path(&PathBuf::from(&it.dest_path));
     let temp_len = tokio::fs::metadata(&temp).await.unwrap().len();
-    assert_eq!(temp_len, it.downloaded_bytes, "temp prefix != committed bytes");
+    assert_eq!(
+        temp_len, it.downloaded_bytes,
+        "temp prefix != committed bytes"
+    );
 
     manager.resume(&id);
     assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
@@ -490,7 +511,10 @@ async fn hls_resumes_after_pause() {
     assert_eq!(it.segment_total, 6);
     let written = tokio::fs::read(&it.dest_path).await.unwrap();
     let expected: Vec<u8> = segs.into_iter().flatten().collect();
-    assert!(written == expected, "resumed stream differs from a clean download");
+    assert!(
+        written == expected,
+        "resumed stream differs from a clean download"
+    );
 
     let _ = tokio::fs::remove_dir_all(&dir).await;
 }

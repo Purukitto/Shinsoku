@@ -16,7 +16,9 @@ use tokio_util::sync::CancellationToken;
 use url::Url;
 use uuid::Uuid;
 
-use crate::engine::download::{classify, DownloadItem, DownloadKind, DownloadProgress, DownloadStatus};
+use crate::engine::download::{
+    classify, DownloadItem, DownloadKind, DownloadProgress, DownloadStatus,
+};
 use crate::engine::orchestrator::{fetch_plan, run_segments};
 use crate::engine::throttle::RateLimiter;
 use crate::protocols::hls::{self, KeyMethod};
@@ -86,7 +88,13 @@ pub struct QueueManager {
 impl QueueManager {
     /// In-memory only (no persistence). Used by tests.
     pub fn new() -> Self {
-        Self::build(None, Inner { items: HashMap::new(), order: Vec::new() })
+        Self::build(
+            None,
+            Inner {
+                items: HashMap::new(),
+                order: Vec::new(),
+            },
+        )
     }
 
     /// Load any persisted downloads from `path` and write changes back, so the
@@ -353,9 +361,15 @@ impl QueueManager {
     /// Configure the off-peak window (minutes since local midnight). Inside it
     /// downloads run unthrottled; outside it the configured `speed_limit` applies.
     pub fn set_off_peak(&self, enabled: bool, start_min: u16, end_min: u16) {
-        self.shared.off_peak_enabled.store(enabled, Ordering::Relaxed);
-        self.shared.off_peak_start_min.store(start_min, Ordering::Relaxed);
-        self.shared.off_peak_end_min.store(end_min, Ordering::Relaxed);
+        self.shared
+            .off_peak_enabled
+            .store(enabled, Ordering::Relaxed);
+        self.shared
+            .off_peak_start_min
+            .store(start_min, Ordering::Relaxed);
+        self.shared
+            .off_peak_end_min
+            .store(end_min, Ordering::Relaxed);
         apply_effective_limit(&self.shared);
     }
 
@@ -392,7 +406,10 @@ async fn aggregator(shared: Arc<Shared>) {
                 .map(|(id, a)| {
                     (
                         id.clone(),
-                        a.seg_done.iter().map(|c| c.load(Ordering::Relaxed)).collect(),
+                        a.seg_done
+                            .iter()
+                            .map(|c| c.load(Ordering::Relaxed))
+                            .collect(),
                     )
                 })
                 .collect()
@@ -402,7 +419,9 @@ async fn aggregator(shared: Arc<Shared>) {
         {
             let mut inner = shared.inner.write().unwrap();
             for (id, segs) in &snaps {
-                let Some(item) = inner.items.get_mut(id) else { continue };
+                let Some(item) = inner.items.get_mut(id) else {
+                    continue;
+                };
                 if !matches!(item.status, DownloadStatus::Downloading) {
                     continue;
                 }
@@ -427,7 +446,7 @@ async fn aggregator(shared: Arc<Shared>) {
 
         // re-evaluate the off-peak window (~1×/s) so crossing its boundary flips
         // the effective rate without any user action.
-        if ticks % 4 == 0 {
+        if ticks.is_multiple_of(4) {
             apply_effective_limit(&shared);
         }
 
@@ -436,7 +455,7 @@ async fn aggregator(shared: Arc<Shared>) {
         }
 
         // checkpoint live segment offsets so a crash resumes near where it left off
-        if ticks % CHECKPOINT_TICKS == 0 && !snaps.is_empty() {
+        if ticks.is_multiple_of(CHECKPOINT_TICKS) && !snaps.is_empty() {
             schedule_persist(&shared);
         }
     }
@@ -522,7 +541,14 @@ fn start_download(shared: Arc<Shared>, id: String) {
             },
         );
     }
-    let cancel = shared.active.lock().unwrap().get(&id).unwrap().cancel.clone();
+    let cancel = shared
+        .active
+        .lock()
+        .unwrap()
+        .get(&id)
+        .unwrap()
+        .cancel
+        .clone();
     {
         let mut inner = shared.inner.write().unwrap();
         match inner.items.get_mut(&id) {
@@ -535,7 +561,9 @@ fn start_download(shared: Arc<Shared>, id: String) {
     }
     emit_item(&shared, &id);
     let s = shared.clone();
-    shared.rt.spawn(async move { run_download(s, id, cancel).await });
+    shared
+        .rt
+        .spawn(async move { run_download(s, id, cancel).await });
 }
 
 async fn run_download(shared: Arc<Shared>, id: String, cancel: CancellationToken) {
@@ -602,7 +630,10 @@ async fn run_download(shared: Arc<Shared>, id: String, cancel: CancellationToken
 async fn compute_checksum(shared: &Arc<Shared>, id: &str, dest: &Path) {
     let expected = {
         let inner = shared.inner.read().unwrap();
-        inner.items.get(id).and_then(|it| it.expected_checksum.clone())
+        inner
+            .items
+            .get(id)
+            .and_then(|it| it.expected_checksum.clone())
     };
     let algo = match expected.as_deref() {
         Some(e) => HashAlgo::for_expected(e),
@@ -631,7 +662,11 @@ async fn run_download_inner(
 ) -> Result<()> {
     let kind = {
         let inner = shared.inner.read().unwrap();
-        inner.items.get(id).map(|it| it.kind).unwrap_or(DownloadKind::Http)
+        inner
+            .items
+            .get(id)
+            .map(|it| it.kind)
+            .unwrap_or(DownloadKind::Http)
     };
     if kind == DownloadKind::Hls {
         return run_hls(shared, id, cancel).await;
@@ -658,10 +693,7 @@ async fn run_download_inner(
 
     if !is_resume {
         let plan = fetch_plan(&shared.http, &url, connections, &headers).await?;
-        let filename = plan
-            .filename
-            .clone()
-            .unwrap_or_else(|| filename_of(&dest));
+        let filename = plan.filename.clone().unwrap_or_else(|| filename_of(&dest));
         let ftype = classify(&filename, plan.mime_type.as_deref());
 
         // route into a category subfolder of the base dir when enabled
@@ -785,7 +817,9 @@ async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> 
                 .parent()
                 .map(|p| p.to_path_buf())
                 .unwrap_or_else(|| PathBuf::from("."));
-            d = base_dir.join(category_folder("video")).join(filename_of(&d));
+            d = base_dir
+                .join(category_folder("video"))
+                .join(filename_of(&d));
             if let Some(parent) = d.parent() {
                 let _ = tokio::fs::create_dir_all(parent).await;
             }
@@ -811,14 +845,17 @@ async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> 
 
     // Open temp: resume truncates to the committed prefix; otherwise start fresh,
     // writing the fMP4 init segment first when present.
-    let resume = !is_first
-        && resume_done > 0
-        && tokio::fs::try_exists(&temp).await.unwrap_or(false);
+    let resume =
+        !is_first && resume_done > 0 && tokio::fs::try_exists(&temp).await.unwrap_or(false);
     let (mut writer, mut committed, start_index) = if resume {
         let mut f = OpenOptions::new().write(true).open(&temp).await?;
         f.set_len(resume_committed).await?;
         f.seek(SeekFrom::Start(resume_committed)).await?;
-        (BufWriter::with_capacity(256 * 1024, f), resume_committed, resume_done as usize)
+        (
+            BufWriter::with_capacity(256 * 1024, f),
+            resume_committed,
+            resume_done as usize,
+        )
     } else {
         let mut f = File::create(&temp).await?;
         let mut committed = 0u64;
@@ -855,7 +892,11 @@ async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> 
                 .as_ref()
                 .and_then(|k| k.iv)
                 .unwrap_or_else(|| hls::derive_iv(seg.seq));
-            SegTask { url: seg.url.clone(), key, iv }
+            SegTask {
+                url: seg.url.clone(),
+                key,
+                iv,
+            }
         })
         .collect();
 
@@ -971,14 +1012,20 @@ async fn fetch_keys(
         if k.method != KeyMethod::Aes128 {
             continue;
         }
-        let uri = k.uri.as_ref().ok_or_else(|| anyhow::anyhow!("AES-128 key has no URI"))?;
+        let uri = k
+            .uri
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("AES-128 key has no URI"))?;
         let id = uri.as_str();
         if keys.contains_key(id) {
             continue;
         }
         let bytes = fetch_bytes(client, uri, headers).await?;
         if bytes.len() != 16 {
-            return Err(anyhow::anyhow!("AES-128 key must be 16 bytes, got {}", bytes.len()));
+            return Err(anyhow::anyhow!(
+                "AES-128 key must be 16 bytes, got {}",
+                bytes.len()
+            ));
         }
         let mut arr = [0u8; 16];
         arr.copy_from_slice(&bytes);
@@ -1089,7 +1136,9 @@ fn collect_for_persist(inner: &Inner) -> Vec<DownloadItem> {
     let mut completed = 0usize;
     let mut out = Vec::with_capacity(inner.order.len());
     for id in &inner.order {
-        let Some(it) = inner.items.get(id) else { continue };
+        let Some(it) = inner.items.get(id) else {
+            continue;
+        };
         if matches!(it.status, DownloadStatus::Completed) {
             if completed >= HISTORY_CAP {
                 continue;
@@ -1179,7 +1228,11 @@ fn hls_filename(url: &str, title: Option<&str>) -> String {
             let stem = filename_from_url(url);
             stem.strip_suffix(".m3u8").unwrap_or(&stem).to_string()
         });
-    let base = if base.is_empty() { "stream".to_string() } else { base };
+    let base = if base.is_empty() {
+        "stream".to_string()
+    } else {
+        base
+    };
     format!("{base}.ts")
 }
 
@@ -1205,7 +1258,10 @@ fn unique_path(dest: &Path) -> PathBuf {
         return dest.to_path_buf();
     }
     let parent = dest.parent().unwrap_or_else(|| Path::new("."));
-    let stem = dest.file_stem().and_then(|s| s.to_str()).unwrap_or("download");
+    let stem = dest
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("download");
     let ext = dest.extension().and_then(|e| e.to_str());
     for n in 1..100_000 {
         let name = match ext {

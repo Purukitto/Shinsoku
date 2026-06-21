@@ -158,7 +158,11 @@ pub fn start(
             .await;
     });
 
-    Ok(CaptureHandle { cancel, port: bound, stats })
+    Ok(CaptureHandle {
+        cancel,
+        port: bound,
+        stats,
+    })
 }
 
 fn bind_std(start: u16) -> io::Result<StdListener> {
@@ -189,10 +193,7 @@ fn check_token(state: &AppState, headers: &HeaderMap) -> Result<(), StatusCode> 
     }
 }
 
-async fn ping(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-) -> Result<Json<Ping>, StatusCode> {
+async fn ping(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Ping>, StatusCode> {
     check_token(&state, &headers)?;
     Ok(Json(Ping {
         app: "shinsoku",
@@ -212,9 +213,13 @@ async fn add(
 
     let hdrs = capture_headers(req.cookie, req.referrer, req.user_agent);
     let conns = state.manager.default_connections().min(CAPTURE_CONNECTIONS);
-    let id = state
-        .manager
-        .add(req.url, (*state.dest_dir).clone(), conns, hdrs, req.checksum);
+    let id = state.manager.add(
+        req.url,
+        (*state.dest_dir).clone(),
+        conns,
+        hdrs,
+        req.checksum,
+    );
     state.stats.record_capture();
     Ok(Json(AddResp { id }))
 }

@@ -312,7 +312,6 @@ Legend: ✅ done · 🚧 in progress · 💡 idea / future
 Contributions are very welcome — bug reports, features, docs and tests!
 
 - Read the [Contributing Guide](CONTRIBUTING.md) for setup, workflow and code conventions.
-- Be kind: this project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
 - Found a vulnerability? See the [Security Policy](SECURITY.md).
 
 Good first contributions: Android/Linux build wiring, packaging/installers, and

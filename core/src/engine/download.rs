@@ -135,7 +135,9 @@ pub fn classify(filename: &str, mime: Option<&str>) -> String {
         .unwrap_or("")
         .to_ascii_lowercase();
     let by_ext = match ext.as_str() {
-        "mkv" | "mp4" | "avi" | "mov" | "webm" | "flv" | "m4v" | "wmv" | "mpg" | "mpeg" | "ts" => "video",
+        "mkv" | "mp4" | "avi" | "mov" | "webm" | "flv" | "m4v" | "wmv" | "mpg" | "mpeg" | "ts" => {
+            "video"
+        }
         "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" | "xz" | "zst" | "tgz" => "archive",
         "exe" | "msi" | "dmg" | "pkg" | "apk" | "deb" | "rpm" | "appimage" => "app",
         "mp3" | "flac" | "wav" | "aac" | "ogg" | "m4a" | "opus" | "wma" => "audio",

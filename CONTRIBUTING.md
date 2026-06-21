@@ -3,8 +3,6 @@
 Thanks for your interest in improving Shinsoku! ⚡ This guide covers how to set up the
 project, the conventions we follow, and how to get your change merged.
 
-By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
-
 ## Ways to contribute
 
 - 🐛 **Report bugs** and 💡 **request features** via [Issues](https://github.com/purukitto/Shinsoku/issues).

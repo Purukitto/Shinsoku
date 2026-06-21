@@ -82,8 +82,10 @@ pub async fn run_segments(
         let headers = headers.clone();
         let (start, end, already) = (seg.start_byte, seg.end_byte, seg.downloaded_bytes);
         handles.push(tokio::spawn(async move {
-            download_segment(&client, &limiter, &url, &dest, start, end, already, &headers, done, token)
-                .await
+            download_segment(
+                &client, &limiter, &url, &dest, start, end, already, &headers, done, token,
+            )
+            .await
         }));
     }
 
