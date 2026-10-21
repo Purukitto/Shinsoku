@@ -5,7 +5,7 @@
 // settings/capture JSON files.
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 
 import '../models/download_item.dart';
 import '../providers/capture_provider.dart';
