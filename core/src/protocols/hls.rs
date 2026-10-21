@@ -184,12 +184,12 @@ pub fn derive_iv(seq: u64) -> [u8; 16] {
 /// plaintext. `data` is consumed to avoid a copy.
 pub fn decrypt_segment(mut data: Vec<u8>, key: &[u8; 16], iv: &[u8; 16]) -> Result<Vec<u8>> {
     use aes::Aes128;
-    use cbc::cipher::{block_padding::Pkcs7, BlockDecryptMut, KeyIvInit};
+    use cbc::cipher::{block_padding::Pkcs7, BlockModeDecrypt, KeyIvInit};
     type Dec = cbc::Decryptor<Aes128>;
 
     let len = {
         let pt = Dec::new(key.into(), iv.into())
-            .decrypt_padded_mut::<Pkcs7>(&mut data)
+            .decrypt_padded::<Pkcs7>(&mut data)
             .map_err(|_| anyhow!("AES-128 decrypt failed (bad key or padding)"))?;
         pt.len()
     };
@@ -380,7 +380,7 @@ mod tests {
     #[test]
     fn aes128_round_trip() {
         use aes::Aes128;
-        use cbc::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
+        use cbc::cipher::{block_padding::Pkcs7, BlockModeEncrypt, KeyIvInit};
         type Enc = cbc::Encryptor<Aes128>;
 
         let key = [0x11u8; 16];
@@ -391,7 +391,7 @@ mod tests {
         let pad_len = 16 - (buf.len() % 16);
         buf.resize(buf.len() + pad_len, 0); // room for PKCS7 padding
         let ct_len = Enc::new(&key.into(), &iv.into())
-            .encrypt_padded_mut::<Pkcs7>(&mut buf, plain.len())
+            .encrypt_padded::<Pkcs7>(&mut buf, plain.len())
             .unwrap()
             .len();
         buf.truncate(ct_len);
