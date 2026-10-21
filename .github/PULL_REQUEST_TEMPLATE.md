@@ -1,39 +1,40 @@
-<!-- Thanks for contributing to Shinsoku! Please fill this in. -->
+## What this changes
 
-## Summary
+<!-- One or two sentences. If it closes an issue, say "Closes #123".
+     Title the PR like a commit: `fix(engine): ...`, `feat(ui): ...` — see CONTRIBUTING.md. -->
 
-<!-- What does this PR do, and why? -->
+## Why
 
-## Related issue
+<!-- What was wrong, or what this makes possible. Skip if the what covers it. -->
 
-<!-- e.g. Closes #12 -->
+## Checks
 
-## Type of change
+- [ ] `cargo fmt --all -- --check` (in `core/`)
+- [ ] `cargo clippy --all-targets -- -D warnings` (in `core/`)
+- [ ] `cargo test` (in `core/`)
+- [ ] `dart format --output=none --set-exit-if-changed .` (in `app/`)
+- [ ] `flutter analyze` and `flutter test` (in `app/`)
+- [ ] User-facing? Entry added under `## [Unreleased]` in `CHANGELOG.md`
+- [ ] Versions untouched — only `tool/bump-version.ps1` changes them
 
-- [ ] 🐛 Bug fix
-- [ ] ✨ New feature
-- [ ] ♻️ Refactor / performance
-- [ ] 📖 Documentation
-- [ ] 🧩 Browser extension
-- [ ] 🧪 Tests / tooling
+## If this touches the bridge API
 
-## Area
+- [ ] Logic lives in `engine/`, `queue/`, `protocols/` or `storage/`; `api.rs` only forwards
+- [ ] Regenerated with `flutter_rust_bridge_codegen generate` and committed in the same commit
+- [ ] Nothing under `app/lib/src/rust/` or `core/src/frb_generated.rs` edited by hand
 
-- [ ] Download engine (`core/` — Rust)
-- [ ] UI (`app/` — Flutter)
-- [ ] Browser extension (`extension/`)
-- [ ] Docs / repo
+## If this touches the UI
 
-## Checklist
+- [ ] Checked in a `--release` or `--profile` build, not debug
+- [ ] Widgets watch the narrowest slice they need — no broad `watch` on the download list
+- [ ] Gallery screenshots recaptured with `tool/screenshots.ps1` if what they show changed
 
-- [ ] Rust: `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, and `cargo test` pass
-- [ ] Flutter: `dart format .`, `flutter analyze`, and `flutter test` pass
-- [ ] I did **not** hand-edit generated bridge files (`app/lib/src/rust/`, `core/src/frb_generated.rs`)
-- [ ] Download logic stays in the Rust engine (not re-implemented in Dart)
-- [ ] I considered the performance impact (see perf rules in `CLAUDE.md`)
-- [ ] Updated `CHANGELOG.md` (under `[Unreleased]`) for any user-facing change
-- [ ] No references to AI tools in commits, comments, or committed files
+## If this touches the extension or the capture server
 
-## Screenshots
+- [ ] Edited `extension/shared/` or the manifests, not `dist/`
+- [ ] Tested in both Chromium and Firefox
+- [ ] Still refuses a request without the pairing token
 
-<!-- For UI changes, include before/after screenshots or a short clip. -->
+## Notes for the reviewer
+
+<!-- Anything deliberately left out, or a decision worth a second opinion. -->

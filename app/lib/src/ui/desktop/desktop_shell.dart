@@ -62,8 +62,8 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     final t = data?.text?.trim() ?? '';
     if (t == _lastClip) return; // value unchanged since last seen / dismissal
     _lastClip = t;
-    final isUrl = (t.startsWith('http://') || t.startsWith('https://')) &&
-        !t.contains(RegExp(r'\s'));
+    final isUrl =
+        (t.startsWith('http://') || t.startsWith('https://')) && !t.contains(RegExp(r'\s'));
     if (mounted) setState(() => _showClipBanner = isUrl);
   }
 
@@ -89,7 +89,9 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
       builder: (_) => AddDownloadModal(
         fromClipboard: fromClipboard,
         onStart: ({required url, required connections, required headers, expectedChecksum}) {
-          ref.read(downloadsProvider.notifier).add(
+          ref
+              .read(downloadsProvider.notifier)
+              .add(
                 url: url,
                 connections: connections,
                 headers: headers,
@@ -112,9 +114,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     // effective. The selected item's name is watched only while a detail view is
     // open, and it rarely changes.
     final activeCount = ref.watch(
-      downloadsProvider.select(
-        (l) => l.where((i) => i.status != DownloadStatus.completed).length,
-      ),
+      downloadsProvider.select((l) => l.where((i) => i.status != DownloadStatus.completed).length),
     );
     final isEmpty = activeCount == 0;
     final selectedName = _selectedId == null
@@ -130,40 +130,59 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
 
     return Scaffold(
       backgroundColor: SColors.bg0,
-      body: Column(children: [
-        // custom title bar
-        _TitleBar(),
-        // content area: sidebar + main
-        Expanded(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _Sidebar(
-            view: _view,
-            onNavigate: _navigate,
-            activeCount: activeCount,
-            completedCount: completedDownloads.length,
-          ),
-          Expanded(child: Column(children: [
-            // toolbar
-            _Toolbar(
-              title: title,
-              showClipBanner: _showClipBanner && _view != _DesktopView.settings,
-              onClipBannerTap: () => _showAddModal(fromClipboard: true),
-              onAddUrl: _showAddModal,
+      body: Column(
+        children: [
+          // custom title bar
+          _TitleBar(),
+          // content area: sidebar + main
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Sidebar(
+                  view: _view,
+                  onNavigate: _navigate,
+                  activeCount: activeCount,
+                  completedCount: completedDownloads.length,
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      // toolbar
+                      _Toolbar(
+                        title: title,
+                        showClipBanner: _showClipBanner && _view != _DesktopView.settings,
+                        onClipBannerTap: () => _showAddModal(fromClipboard: true),
+                        onAddUrl: _showAddModal,
+                      ),
+                      // content — list screens scroll themselves (lazy); others use a page scroll
+                      Expanded(
+                        child: switch (_view) {
+                          _DesktopView.active =>
+                            isEmpty
+                                ? _PageScroll(child: EmptyScreen(onAdd: _showAddModal))
+                                : ActiveScreen(onOpenDetail: _openDetail),
+                          _DesktopView.empty => _PageScroll(
+                            child: EmptyScreen(onAdd: _showAddModal),
+                          ),
+                          _DesktopView.detail => _PageScroll(
+                            child: DetailScreen(
+                              itemId: _selectedId ?? '',
+                              onBack: () => _navigate(_DesktopView.active),
+                            ),
+                          ),
+                          _DesktopView.completed => const CompletedScreen(),
+                          _DesktopView.settings => const _PageScroll(child: SettingsScreen()),
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            // content — list screens scroll themselves (lazy); others use a page scroll
-            Expanded(child: switch (_view) {
-              _DesktopView.active => isEmpty
-                  ? _PageScroll(child: EmptyScreen(onAdd: _showAddModal))
-                  : ActiveScreen(onOpenDetail: _openDetail),
-              _DesktopView.empty => _PageScroll(child: EmptyScreen(onAdd: _showAddModal)),
-              _DesktopView.detail => _PageScroll(child: DetailScreen(
-                  itemId: _selectedId ?? '',
-                  onBack: () => _navigate(_DesktopView.active))),
-              _DesktopView.completed => const CompletedScreen(),
-              _DesktopView.settings => const _PageScroll(child: SettingsScreen()),
-            }),
-          ])),
-        ])),
-      ]),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -179,21 +198,25 @@ class _TitleBar extends StatelessWidget {
         color: SColors.bg1,
         border: Border(bottom: BorderSide(color: SColors.line)),
       ),
-      child: Row(children: [
-        // draggable title region
-        Expanded(
-          child: DragToMoveArea(
-            child: Container(
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 18),
-              child: Text('Shinsoku — Download Manager',
-                style: SText.uiBase(color: SColors.low).copyWith(fontSize: 12.5)),
+      child: Row(
+        children: [
+          // draggable title region
+          Expanded(
+            child: DragToMoveArea(
+              child: Container(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 18),
+                child: Text(
+                  'Shinsoku — Download Manager',
+                  style: SText.uiBase(color: SColors.low).copyWith(fontSize: 12.5),
+                ),
+              ),
             ),
           ),
-        ),
-        // window controls (Windows convention: right-aligned)
-        const _WindowButtons(),
-      ]),
+          // window controls (Windows convention: right-aligned)
+          const _WindowButtons(),
+        ],
+      ),
     );
   }
 }
@@ -239,25 +262,22 @@ class _WindowButtonsState extends State<_WindowButtons> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
-      _WinBtn(icon: Icons.remove_rounded, onTap: () => TrayService.instance.hideToTray()),
-      _WinBtn(
-        icon: _maximized ? Icons.filter_none_rounded : Icons.crop_square_rounded,
-        iconSize: _maximized ? 12.5 : 14,
-        onTap: _toggleMaximize,
-      ),
-      _WinBtn(icon: Icons.close_rounded, danger: true, onTap: () => windowManager.close()),
-    ]);
+    return Row(
+      children: [
+        _WinBtn(icon: Icons.remove_rounded, onTap: () => TrayService.instance.hideToTray()),
+        _WinBtn(
+          icon: _maximized ? Icons.filter_none_rounded : Icons.crop_square_rounded,
+          iconSize: _maximized ? 12.5 : 14,
+          onTap: _toggleMaximize,
+        ),
+        _WinBtn(icon: Icons.close_rounded, danger: true, onTap: () => windowManager.close()),
+      ],
+    );
   }
 }
 
 class _WinBtn extends StatefulWidget {
-  const _WinBtn({
-    required this.icon,
-    required this.onTap,
-    this.danger = false,
-    this.iconSize = 15,
-  });
+  const _WinBtn({required this.icon, required this.onTap, this.danger = false, this.iconSize = 15});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -301,10 +321,8 @@ class _PageScroll extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-        child: child,
-      );
+  Widget build(BuildContext context) =>
+      SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 24, 24, 40), child: child);
 }
 
 class _Sidebar extends StatelessWidget {
@@ -322,7 +340,8 @@ class _Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = view == _DesktopView.active || view == _DesktopView.detail || view == _DesktopView.empty;
+    final isActive =
+        view == _DesktopView.active || view == _DesktopView.detail || view == _DesktopView.empty;
 
     return Container(
       width: 232,
@@ -331,60 +350,102 @@ class _Sidebar extends StatelessWidget {
         border: Border(right: BorderSide(color: SColors.line)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(6, 4, 6, 18),
-          child: ShinsokuLogo(size: 30),
-        ),
-        _NavItem(icon: Icons.bolt_rounded, label: 'Downloading', count: activeCount,
-          active: isActive, accent: SColors.voltPink,
-          onTap: () => onNavigate(_DesktopView.active)),
-        _NavItem(icon: Icons.check_circle_outline_rounded, label: 'Completed', count: completedCount,
-          active: view == _DesktopView.completed,
-          onTap: () => onNavigate(_DesktopView.completed)),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 20, 8, 8),
-          child: Text('LIBRARY', style: SText.monoXs().copyWith(fontSize: 10, letterSpacing: 0.14 * 10)),
-        ),
-        _NavItem(icon: Icons.videocam_outlined, label: 'Video', count: 5, active: false,
-          onTap: () => onNavigate(_DesktopView.completed)),
-        _NavItem(icon: Icons.download_outlined, label: 'Applications', count: 3, active: false,
-          onTap: () => onNavigate(_DesktopView.completed)),
-        _NavItem(icon: Icons.folder_zip_outlined, label: 'Archives', count: 4, active: false,
-          onTap: () => onNavigate(_DesktopView.completed)),
-        _NavItem(icon: Icons.music_note_outlined, label: 'Music & Audio', count: 2, active: false,
-          onTap: () => onNavigate(_DesktopView.completed)),
-        const Spacer(),
-        // storage widget
-        Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: SColors.bg0,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: SColors.line),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(padding: const EdgeInsets.fromLTRB(6, 4, 6, 18), child: ShinsokuLogo(size: 30)),
+          _NavItem(
+            icon: Icons.bolt_rounded,
+            label: 'Downloading',
+            count: activeCount,
+            active: isActive,
+            accent: SColors.voltPink,
+            onTap: () => onNavigate(_DesktopView.active),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('STORAGE', style: SText.monoXs().copyWith(fontSize: 10.5)),
-              Text('248 GB free', style: SText.monoXs().copyWith(fontSize: 10.5)),
-            ]),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(5),
-              child: LinearProgressIndicator(
-                value: 0.62,
-                minHeight: 5,
-                backgroundColor: SColors.bg3,
-                valueColor: AlwaysStoppedAnimation(SColors.lineHi),
-              ),
+          _NavItem(
+            icon: Icons.check_circle_outline_rounded,
+            label: 'Completed',
+            count: completedCount,
+            active: view == _DesktopView.completed,
+            onTap: () => onNavigate(_DesktopView.completed),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 20, 8, 8),
+            child: Text(
+              'LIBRARY',
+              style: SText.monoXs().copyWith(fontSize: 10, letterSpacing: 0.14 * 10),
             ),
-          ]),
-        ),
-        _NavItem(icon: Icons.settings_outlined, label: 'Settings', active: view == _DesktopView.settings,
-          onTap: () => onNavigate(_DesktopView.settings)),
-        const _VersionFooter(),
-      ]),
+          ),
+          _NavItem(
+            icon: Icons.videocam_outlined,
+            label: 'Video',
+            count: 5,
+            active: false,
+            onTap: () => onNavigate(_DesktopView.completed),
+          ),
+          _NavItem(
+            icon: Icons.download_outlined,
+            label: 'Applications',
+            count: 3,
+            active: false,
+            onTap: () => onNavigate(_DesktopView.completed),
+          ),
+          _NavItem(
+            icon: Icons.folder_zip_outlined,
+            label: 'Archives',
+            count: 4,
+            active: false,
+            onTap: () => onNavigate(_DesktopView.completed),
+          ),
+          _NavItem(
+            icon: Icons.music_note_outlined,
+            label: 'Music & Audio',
+            count: 2,
+            active: false,
+            onTap: () => onNavigate(_DesktopView.completed),
+          ),
+          const Spacer(),
+          // storage widget
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: SColors.bg0,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: SColors.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('STORAGE', style: SText.monoXs().copyWith(fontSize: 10.5)),
+                    Text('248 GB free', style: SText.monoXs().copyWith(fontSize: 10.5)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: LinearProgressIndicator(
+                    value: 0.62,
+                    minHeight: 5,
+                    backgroundColor: SColors.bg3,
+                    valueColor: AlwaysStoppedAnimation(SColors.lineHi),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _NavItem(
+            icon: Icons.settings_outlined,
+            label: 'Settings',
+            active: view == _DesktopView.settings,
+            onTap: () => onNavigate(_DesktopView.settings),
+          ),
+          const _VersionFooter(),
+        ],
+      ),
     );
   }
 }
@@ -410,13 +471,19 @@ class _VersionFooter extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0x47FF63B6)),
             ),
-            child: Row(children: [
-              const Icon(Icons.arrow_circle_up_rounded, size: 16, color: SColors.voltPink),
-              const SizedBox(width: 9),
-              Expanded(child: Text('Update available',
-                style: SText.uiBase().copyWith(fontSize: 12.5, fontWeight: FontWeight.w500))),
-              Text('v${update.latest}', style: SText.monoXs(color: SColors.voltPink)),
-            ]),
+            child: Row(
+              children: [
+                const Icon(Icons.arrow_circle_up_rounded, size: 16, color: SColors.voltPink),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'Update available',
+                    style: SText.uiBase().copyWith(fontSize: 12.5, fontWeight: FontWeight.w500),
+                  ),
+                ),
+                Text('v${update.latest}', style: SText.monoXs(color: SColors.voltPink)),
+              ],
+            ),
           ),
         ),
       );
@@ -470,28 +537,41 @@ class _NavItemState extends State<_NavItem> {
             color: widget.active ? SColors.bg3 : (_hovered ? SColors.bg2 : Colors.transparent),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Row(children: [
-            // active accent indicator — reserves its space when inactive so icons stay aligned
-            Container(
-              width: 3,
-              height: 18,
-              decoration: BoxDecoration(
-                gradient: widget.active ? SColors.voltGradient : null,
-                borderRadius: BorderRadius.circular(2),
+          child: Row(
+            children: [
+              // active accent indicator — reserves its space when inactive so icons stay aligned
+              Container(
+                width: 3,
+                height: 18,
+                decoration: BoxDecoration(
+                  gradient: widget.active ? SColors.voltGradient : null,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Icon(widget.icon, size: 17,
-              color: widget.active ? (widget.accent ?? SColors.hi) : SColors.low),
-            const SizedBox(width: 11),
-            Expanded(child: Text(widget.label,
-              style: SText.uiBase(color: widget.active ? SColors.hi : SColors.mid)
-                  .copyWith(fontWeight: widget.active ? FontWeight.w500 : FontWeight.w400))),
-            if (widget.count != null)
-              Text('${widget.count}',
-                style: SText.monoSm(color: widget.active ? SColors.mid : SColors.faint)
-                    .copyWith(fontSize: 11)),
-          ]),
+              const SizedBox(width: 10),
+              Icon(
+                widget.icon,
+                size: 17,
+                color: widget.active ? (widget.accent ?? SColors.hi) : SColors.low,
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: SText.uiBase(
+                    color: widget.active ? SColors.hi : SColors.mid,
+                  ).copyWith(fontWeight: widget.active ? FontWeight.w500 : FontWeight.w400),
+                ),
+              ),
+              if (widget.count != null)
+                Text(
+                  '${widget.count}',
+                  style: SText.monoSm(
+                    color: widget.active ? SColors.mid : SColors.faint,
+                  ).copyWith(fontSize: 11),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -519,35 +599,43 @@ class _Toolbar extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: SColors.line)),
       ),
-      child: Row(children: [
-        Expanded(
-          child: Text(title, style: SText.uiLg(), overflow: TextOverflow.ellipsis),
-        ),
-        if (showClipBanner) ...[
-          GestureDetector(
-            onTap: onClipBannerTap,
-            child: Container(
-              height: 38,
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 0),
-              decoration: BoxDecoration(
-                gradient: SColors.voltSoftGradient,
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(color: const Color(0x47FF63B6)),
-              ),
-              child: Row(children: [
-                const Icon(Icons.content_paste_rounded, size: 15, color: SColors.voltPink),
-                const SizedBox(width: 9),
-                Text('Link copied — download?', style: SText.uiBase().copyWith(fontSize: 12.5)),
-              ]),
-            ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(title, style: SText.uiLg(), overflow: TextOverflow.ellipsis),
           ),
-          const SizedBox(width: 12),
+          if (showClipBanner) ...[
+            GestureDetector(
+              onTap: onClipBannerTap,
+              child: Container(
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 0),
+                decoration: BoxDecoration(
+                  gradient: SColors.voltSoftGradient,
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: const Color(0x47FF63B6)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.content_paste_rounded, size: 15, color: SColors.voltPink),
+                    const SizedBox(width: 9),
+                    Text('Link copied — download?', style: SText.uiBase().copyWith(fontSize: 12.5)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          const SSearchInput(width: 220),
+          const SizedBox(width: 14),
+          SBtn(
+            kind: BtnKind.primary,
+            icon: Icons.add_rounded,
+            onPressed: onAddUrl,
+            child: const Text('Add URL'),
+          ),
         ],
-        const SSearchInput(width: 220),
-        const SizedBox(width: 14),
-        SBtn(kind: BtnKind.primary, icon: Icons.add_rounded, onPressed: onAddUrl,
-          child: const Text('Add URL')),
-      ]),
+      ),
     );
   }
 }

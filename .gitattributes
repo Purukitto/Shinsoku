@@ -10,6 +10,13 @@
 app/lib/src/rust/**      linguist-generated=true
 core/src/frb_generated.rs linguist-generated=true
 
+# Lockfiles are generated; collapse them in diffs and reviews.
+core/Cargo.lock          linguist-generated=true -diff
+app/pubspec.lock         linguist-generated=true -diff
+
+# Parallel branches each append bullets under [Unreleased]; keep both sides.
+CHANGELOG.md             merge=union
+
 # Vendored / non-source — don't count toward language stats
 extension/dist/**        linguist-vendored=true
 docs/**                  linguist-documentation=true

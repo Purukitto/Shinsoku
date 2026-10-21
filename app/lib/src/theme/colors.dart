@@ -41,21 +41,13 @@ abstract final class SColors {
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
     transform: GradientRotation(118 * 3.14159 / 180),
-    colors: [
-      Color(0x29A25CFF),
-      Color(0x24FF63B6),
-      Color(0x29FFCE4D),
-    ],
+    colors: [Color(0x29A25CFF), Color(0x24FF63B6), Color(0x29FFCE4D)],
     stops: [0.0, 0.5, 1.0],
   );
 
-  static BoxDecoration voltBoxDecoration({BorderRadius? radius}) => BoxDecoration(
-    gradient: voltGradient,
-    borderRadius: radius,
-  );
+  static BoxDecoration voltBoxDecoration({BorderRadius? radius}) =>
+      BoxDecoration(gradient: voltGradient, borderRadius: radius);
 
-  static BoxDecoration voltSoftBoxDecoration({BorderRadius? radius}) => BoxDecoration(
-    gradient: voltSoftGradient,
-    borderRadius: radius,
-  );
+  static BoxDecoration voltSoftBoxDecoration({BorderRadius? radius}) =>
+      BoxDecoration(gradient: voltSoftGradient, borderRadius: radius);
 }

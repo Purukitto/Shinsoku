@@ -44,7 +44,9 @@ class SSegmented<T> extends StatelessWidget {
               decoration: BoxDecoration(
                 color: sel ? SColors.bg3 : Colors.transparent,
                 borderRadius: BorderRadius.circular(7),
-                boxShadow: sel ? [BoxShadow(color: Colors.black26, blurRadius: 3, offset: const Offset(0, 1))] : null,
+                boxShadow: sel
+                    ? [BoxShadow(color: Colors.black26, blurRadius: 3, offset: const Offset(0, 1))]
+                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -54,9 +56,12 @@ class SSegmented<T> extends StatelessWidget {
                     if (o.label != null) const SizedBox(width: 6),
                   ],
                   if (o.label != null)
-                    Text(o.label!,
-                      style: SText.uiBase(color: sel ? SColors.hi : SColors.mid)
-                          .copyWith(fontWeight: FontWeight.w500, fontSize: 13)),
+                    Text(
+                      o.label!,
+                      style: SText.uiBase(
+                        color: sel ? SColors.hi : SColors.mid,
+                      ).copyWith(fontWeight: FontWeight.w500, fontSize: 13),
+                    ),
                 ],
               ),
             ),
@@ -68,12 +73,7 @@ class SSegmented<T> extends StatelessWidget {
 }
 
 class SSearchInput extends StatelessWidget {
-  const SSearchInput({
-    super.key,
-    this.placeholder = 'Search',
-    this.controller,
-    this.width = 220,
-  });
+  const SSearchInput({super.key, this.placeholder = 'Search', this.controller, this.width = 220});
 
   final String placeholder;
   final TextEditingController? controller;
@@ -82,7 +82,8 @@ class SSearchInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: width, height: 36,
+      width: width,
+      height: 36,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
@@ -90,23 +91,25 @@ class SSearchInput extends StatelessWidget {
           border: Border.all(color: SColors.line),
           borderRadius: BorderRadius.circular(9),
         ),
-        child: Row(children: [
-          Icon(Icons.search_rounded, size: 16, color: SColors.low),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: SText.uiBase().copyWith(fontSize: 13.5),
-              decoration: InputDecoration(
-                hintText: placeholder,
-                hintStyle: SText.uiBase(color: SColors.low).copyWith(fontSize: 13.5),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded, size: 16, color: SColors.low),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                style: SText.uiBase().copyWith(fontSize: 13.5),
+                decoration: InputDecoration(
+                  hintText: placeholder,
+                  hintStyle: SText.uiBase(color: SColors.low).copyWith(fontSize: 13.5),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }

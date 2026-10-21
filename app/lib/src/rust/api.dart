@@ -66,10 +66,8 @@ Future<List<DownloadItem>> getDownloads({required ShinsokuEngine engine}) =>
 Future<List<DownloadProgress>> getProgress({required ShinsokuEngine engine}) =>
     RustLib.instance.api.crateApiGetProgress(engine: engine);
 
-Future<DownloadItem?> getDownload({
-  required ShinsokuEngine engine,
-  required String id,
-}) => RustLib.instance.api.crateApiGetDownload(engine: engine, id: id);
+Future<DownloadItem?> getDownload({required ShinsokuEngine engine, required String id}) =>
+    RustLib.instance.api.crateApiGetDownload(engine: engine, id: id);
 
 /// HEAD-probe a URL for the Add dialog. One-shot client (runs on the bridge
 /// runtime, not the engine's pool). An `.m3u8` URL is reported as an HLS stream
@@ -145,11 +143,7 @@ class CaptureStatus {
   });
 
   @override
-  int get hashCode =>
-      running.hashCode ^
-      port.hashCode ^
-      lastSeenMs.hashCode ^
-      captures.hashCode;
+  int get hashCode => running.hashCode ^ port.hashCode ^ lastSeenMs.hashCode ^ captures.hashCode;
 
   @override
   bool operator ==(Object other) =>

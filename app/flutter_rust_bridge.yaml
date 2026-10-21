@@ -1,3 +1,5 @@
 rust_input: crate::api
 rust_root: ../core
 dart_output: lib/src/rust
+# Must match `formatter: page_width` in analysis_options.yaml.
+dart_format_line_length: 100

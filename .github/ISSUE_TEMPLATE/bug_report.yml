@@ -1,64 +1,101 @@
-name: 🐛 Bug report
-description: Something isn't working as expected
-title: "[Bug]: "
-labels: ["bug"]
+name: Bug report
+description: Something behaves wrongly
+labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to file a bug! Please search existing issues first to avoid duplicates.
+        Thanks for the report. If this is security-sensitive, please read
+        [SECURITY.md](https://github.com/Purukitto/Shinsoku/blob/main/SECURITY.md)
+        instead of filing here.
+
   - type: textarea
-    id: what-happened
+    id: what
     attributes:
-      label: What happened?
-      description: A clear description of the bug, including what you expected to happen.
-      placeholder: When I pause a multi-segment download and resume, ...
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+      placeholder: |
+        Paused a 4 GB download at 60 % with 8 connections and resumed it.
+        It restarted from 0 % instead of carrying on.
     validations:
       required: true
+
   - type: textarea
     id: steps
     attributes:
       label: Steps to reproduce
-      description: How can we reproduce it?
-      placeholder: |
-        1. Add a download from '...'
-        2. Set connections to '...'
-        3. Click '...'
-        4. See error
+      description: Include the URL if it is public — whether a server honours range requests decides a lot.
+      value: |
+        1.
+        2.
+        3.
     validations:
       required: true
-  - type: input
-    id: platform
+
+  - type: dropdown
+    id: build
     attributes:
-      label: Platform
-      description: OS and version
-      placeholder: Windows 11 26200
+      label: Which build
+      options:
+        - Release zip from GitHub
+        - Built from source (--release)
+        - Built from source (debug)
     validations:
       required: true
+
   - type: input
     id: version
     attributes:
-      label: Shinsoku version / commit
-      placeholder: v1.0.0 or commit b4e48de
+      label: Version
+      description: Shown at the foot of the sidebar, or the commit if you built it yourself.
+      placeholder: 0.1.0
     validations:
-      required: false
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 Pro 24H2
+    validations:
+      required: true
+
   - type: dropdown
     id: area
     attributes:
-      label: Area
+      label: Which part is involved
+      multiple: true
       options:
-        - Download engine (core / Rust)
-        - UI (app / Flutter)
-        - Browser extension
-        - HLS / video capture
+        - Downloading, pause or resume
+        - Queue or speed limit
+        - Off-peak window
+        - Checksum verification
+        - HLS / m3u8 streams
+        - Browser extension or pairing
+        - Clipboard monitor
+        - Settings or persistence
+        - Window, tray or update notice
         - Not sure
-    validations:
-      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and extension version
+      description: Only if the extension is involved.
+      placeholder: Firefox 131, Shinsoku Capture 0.1.0
+
   - type: textarea
     id: logs
     attributes:
-      label: Logs / screenshots
-      description: Paste any relevant logs or attach screenshots. This will be rendered as code, so no need for backticks.
-      render: shell
-    validations:
-      required: false
+      label: Diagnostics
+      description: >
+        The error shown on the download's detail screen, and for the extension the
+        background console (`chrome://extensions` → Inspect views, or
+        `about:debugging` → Inspect).
+      render: text
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, connection count, whether it happens with one connection.

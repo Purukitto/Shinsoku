@@ -5,10 +5,7 @@ import '../widgets/download_row.dart';
 import '../widgets/speed_hero.dart';
 
 class ActiveScreen extends ConsumerWidget {
-  const ActiveScreen({
-    super.key,
-    required this.onOpenDetail,
-  });
+  const ActiveScreen({super.key, required this.onOpenDetail});
 
   final ValueChanged<String> onOpenDetail;
 
@@ -28,11 +25,7 @@ class ActiveScreen extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: RepaintBoundary(
-            child: DownloadRow(
-              key: ValueKey(id),
-              id: id,
-              onOpen: () => onOpenDetail(id),
-            ),
+            child: DownloadRow(key: ValueKey(id), id: id, onOpen: () => onOpenDetail(id)),
           ),
         );
       },

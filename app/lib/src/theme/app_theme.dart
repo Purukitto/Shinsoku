@@ -16,9 +16,11 @@ abstract final class AppTheme {
       onSurface: SColors.hi,
       outline: SColors.line,
     ),
-    textTheme: ThemeData.dark().textTheme.apply(fontFamily: kFontUi).copyWith(
-      bodyMedium: const TextStyle(fontFamily: kFontUi, color: SColors.mid),
-    ),
+    textTheme: ThemeData.dark().textTheme
+        .apply(fontFamily: kFontUi)
+        .copyWith(
+          bodyMedium: const TextStyle(fontFamily: kFontUi, color: SColors.mid),
+        ),
     dividerColor: SColors.line,
     dividerTheme: const DividerThemeData(color: SColors.line, thickness: 1, space: 0),
     scrollbarTheme: ScrollbarThemeData(

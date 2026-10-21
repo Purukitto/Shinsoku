@@ -8,8 +8,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'engine/download.dart';
 import 'frb_generated.dart';
-import 'frb_generated.io.dart'
-    if (dart.library.js_interop) 'frb_generated.web.dart';
+import 'frb_generated.io.dart' if (dart.library.js_interop) 'frb_generated.web.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Main entrypoint of the Rust API
@@ -25,11 +24,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
     BaseHandler? handler,
     ExternalLibrary? externalLibrary,
   }) async {
-    await instance.initImpl(
-      api: api,
-      handler: handler,
-      externalLibrary: externalLibrary,
-    );
+    await instance.initImpl(api: api, handler: handler, externalLibrary: externalLibrary);
   }
 
   /// Initialize flutter_rust_bridge in mock mode.
@@ -45,12 +40,10 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   static void dispose() => instance.disposeImpl();
 
   @override
-  ApiImplConstructor<RustLibApiImpl, RustLibWire> get apiImplConstructor =>
-      RustLibApiImpl.new;
+  ApiImplConstructor<RustLibApiImpl, RustLibWire> get apiImplConstructor => RustLibApiImpl.new;
 
   @override
-  WireConstructor<RustLibWire> get wireConstructor =>
-      RustLibWire.fromExternalLibrary;
+  WireConstructor<RustLibWire> get wireConstructor => RustLibWire.fromExternalLibrary;
 
   @override
   Future<void> executeRustInitializers() async {}
@@ -65,12 +58,11 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   @override
   int get rustContentHash => 1607628354;
 
-  static const kDefaultExternalLibraryLoaderConfig =
-      ExternalLibraryLoaderConfig(
-        stem: 'shinsoku_core',
-        ioDirectory: '../core/target/release/',
-        webPrefix: 'pkg/',
-      );
+  static const kDefaultExternalLibraryLoaderConfig = ExternalLibraryLoaderConfig(
+    stem: 'shinsoku_core',
+    ioDirectory: '../core/target/release/',
+    webPrefix: 'pkg/',
+  );
 }
 
 abstract class RustLibApi extends BaseApi {
@@ -95,50 +87,25 @@ abstract class RustLibApi extends BaseApi {
 
   ShinsokuEngine crateApiCreateEngine({required String dbPath});
 
-  Future<DownloadItem?> crateApiGetDownload({
-    required ShinsokuEngine engine,
-    required String id,
-  });
+  Future<DownloadItem?> crateApiGetDownload({required ShinsokuEngine engine, required String id});
 
-  Future<List<DownloadItem>> crateApiGetDownloads({
-    required ShinsokuEngine engine,
-  });
+  Future<List<DownloadItem>> crateApiGetDownloads({required ShinsokuEngine engine});
 
-  Future<List<DownloadProgress>> crateApiGetProgress({
-    required ShinsokuEngine engine,
-  });
+  Future<List<DownloadProgress>> crateApiGetProgress({required ShinsokuEngine engine});
 
-  void crateApiPauseDownload({
-    required ShinsokuEngine engine,
-    required String id,
-  });
+  void crateApiPauseDownload({required ShinsokuEngine engine, required String id});
 
   Future<ProbeResult> crateApiProbeUrl({required String url});
 
-  void crateApiRemoveDownload({
-    required ShinsokuEngine engine,
-    required String id,
-  });
+  void crateApiRemoveDownload({required ShinsokuEngine engine, required String id});
 
-  void crateApiResumeDownload({
-    required ShinsokuEngine engine,
-    required String id,
-  });
+  void crateApiResumeDownload({required ShinsokuEngine engine, required String id});
 
-  void crateApiSetCategorize({
-    required ShinsokuEngine engine,
-    required bool on_,
-  });
+  void crateApiSetCategorize({required ShinsokuEngine engine, required bool on_});
 
-  void crateApiSetMaxConnections({
-    required ShinsokuEngine engine,
-    required int n,
-  });
+  void crateApiSetMaxConnections({required ShinsokuEngine engine, required int n});
 
-  void crateApiSetMaxSimultaneous({
-    required ShinsokuEngine engine,
-    required int n,
-  });
+  void crateApiSetMaxSimultaneous({required ShinsokuEngine engine, required int n});
 
   void crateApiSetOffPeak({
     required ShinsokuEngine engine,
@@ -147,10 +114,7 @@ abstract class RustLibApi extends BaseApi {
     required int endMin,
   });
 
-  void crateApiSetSpeedLimitBps({
-    required ShinsokuEngine engine,
-    required BigInt bps,
-  });
+  void crateApiSetSpeedLimitBps({required ShinsokuEngine engine, required BigInt bps});
 
   int crateApiStartCaptureServer({
     required ShinsokuEngine engine,
@@ -161,18 +125,13 @@ abstract class RustLibApi extends BaseApi {
 
   void crateApiStopCaptureServer({required ShinsokuEngine engine});
 
-  Stream<DownloadProgress> crateApiSubscribeProgress({
-    required ShinsokuEngine engine,
-  });
+  Stream<DownloadProgress> crateApiSubscribeProgress({required ShinsokuEngine engine});
 
-  RustArcIncrementStrongCountFnType
-  get rust_arc_increment_strong_count_ShinsokuEngine;
+  RustArcIncrementStrongCountFnType get rust_arc_increment_strong_count_ShinsokuEngine;
 
-  RustArcDecrementStrongCountFnType
-  get rust_arc_decrement_strong_count_ShinsokuEngine;
+  RustArcDecrementStrongCountFnType get rust_arc_decrement_strong_count_ShinsokuEngine;
 
-  CrossPlatformFinalizerArg
-  get rust_arc_decrement_strong_count_ShinsokuEnginePtr;
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_ShinsokuEnginePtr;
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -207,19 +166,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_opt_String(expectedChecksum, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_String, decodeErrorData: null),
         constMeta: kCrateApiAddDownloadConstMeta,
-        argValues: [
-          engine,
-          url,
-          destDir,
-          connections,
-          headers,
-          expectedChecksum,
-        ],
+        argValues: [engine, url, destDir, connections, headers, expectedChecksum],
         apiImpl: this,
       ),
     );
@@ -227,14 +176,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiAddDownloadConstMeta => const TaskConstMeta(
     debugName: "add_download",
-    argNames: [
-      "engine",
-      "url",
-      "destDir",
-      "connections",
-      "headers",
-      "expectedChecksum",
-    ],
+    argNames: ["engine", "url", "destDir", "connections", "headers", "expectedChecksum"],
   );
 
   @override
@@ -259,10 +201,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_opt_String(title, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_String, decodeErrorData: null),
         constMeta: kCrateApiAddStreamConstMeta,
         argValues: [engine, url, destDir, headers, title],
         apiImpl: this,
@@ -287,10 +226,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_capture_status,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_capture_status, decodeErrorData: null),
         constMeta: kCrateApiCaptureStatusConstMeta,
         argValues: [engine],
         apiImpl: this,
@@ -326,10 +262,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "create_engine", argNames: ["dbPath"]);
 
   @override
-  Future<DownloadItem?> crateApiGetDownload({
-    required ShinsokuEngine engine,
-    required String id,
-  }) {
+  Future<DownloadItem?> crateApiGetDownload({required ShinsokuEngine engine, required String id}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -339,12 +272,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(id, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 5,
-            port: port_,
-          );
+          pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5, port: port_);
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_opt_box_autoadd_download_item,
@@ -357,15 +285,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiGetDownloadConstMeta => const TaskConstMeta(
-    debugName: "get_download",
-    argNames: ["engine", "id"],
-  );
+  TaskConstMeta get kCrateApiGetDownloadConstMeta =>
+      const TaskConstMeta(debugName: "get_download", argNames: ["engine", "id"]);
 
   @override
-  Future<List<DownloadItem>> crateApiGetDownloads({
-    required ShinsokuEngine engine,
-  }) {
+  Future<List<DownloadItem>> crateApiGetDownloads({required ShinsokuEngine engine}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -374,17 +298,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             engine,
             serializer,
           );
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 6,
-            port: port_,
-          );
+          pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6, port: port_);
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_list_download_item,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_list_download_item, decodeErrorData: null),
         constMeta: kCrateApiGetDownloadsConstMeta,
         argValues: [engine],
         apiImpl: this,
@@ -396,9 +312,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_downloads", argNames: ["engine"]);
 
   @override
-  Future<List<DownloadProgress>> crateApiGetProgress({
-    required ShinsokuEngine engine,
-  }) {
+  Future<List<DownloadProgress>> crateApiGetProgress({required ShinsokuEngine engine}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -407,12 +321,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             engine,
             serializer,
           );
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 7,
-            port: port_,
-          );
+          pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7, port: port_);
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_download_progress,
@@ -429,10 +338,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_progress", argNames: ["engine"]);
 
   @override
-  void crateApiPauseDownload({
-    required ShinsokuEngine engine,
-    required String id,
-  }) {
+  void crateApiPauseDownload({required ShinsokuEngine engine, required String id}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
@@ -444,10 +350,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(id, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiPauseDownloadConstMeta,
         argValues: [engine, id],
         apiImpl: this,
@@ -455,10 +358,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiPauseDownloadConstMeta => const TaskConstMeta(
-    debugName: "pause_download",
-    argNames: ["engine", "id"],
-  );
+  TaskConstMeta get kCrateApiPauseDownloadConstMeta =>
+      const TaskConstMeta(debugName: "pause_download", argNames: ["engine", "id"]);
 
   @override
   Future<ProbeResult> crateApiProbeUrl({required String url}) {
@@ -467,12 +368,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(url, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 9,
-            port: port_,
-          );
+          pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9, port: port_);
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_probe_result,
@@ -489,10 +385,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "probe_url", argNames: ["url"]);
 
   @override
-  void crateApiRemoveDownload({
-    required ShinsokuEngine engine,
-    required String id,
-  }) {
+  void crateApiRemoveDownload({required ShinsokuEngine engine, required String id}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
@@ -504,10 +397,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(id, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiRemoveDownloadConstMeta,
         argValues: [engine, id],
         apiImpl: this,
@@ -515,16 +405,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiRemoveDownloadConstMeta => const TaskConstMeta(
-    debugName: "remove_download",
-    argNames: ["engine", "id"],
-  );
+  TaskConstMeta get kCrateApiRemoveDownloadConstMeta =>
+      const TaskConstMeta(debugName: "remove_download", argNames: ["engine", "id"]);
 
   @override
-  void crateApiResumeDownload({
-    required ShinsokuEngine engine,
-    required String id,
-  }) {
+  void crateApiResumeDownload({required ShinsokuEngine engine, required String id}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
@@ -536,10 +421,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(id, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 11)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiResumeDownloadConstMeta,
         argValues: [engine, id],
         apiImpl: this,
@@ -547,16 +429,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiResumeDownloadConstMeta => const TaskConstMeta(
-    debugName: "resume_download",
-    argNames: ["engine", "id"],
-  );
+  TaskConstMeta get kCrateApiResumeDownloadConstMeta =>
+      const TaskConstMeta(debugName: "resume_download", argNames: ["engine", "id"]);
 
   @override
-  void crateApiSetCategorize({
-    required ShinsokuEngine engine,
-    required bool on_,
-  }) {
+  void crateApiSetCategorize({required ShinsokuEngine engine, required bool on_}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
@@ -568,10 +445,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_bool(on_, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiSetCategorizeConstMeta,
         argValues: [engine, on_],
         apiImpl: this,
@@ -579,16 +453,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiSetCategorizeConstMeta => const TaskConstMeta(
-    debugName: "set_categorize",
-    argNames: ["engine", "on_"],
-  );
+  TaskConstMeta get kCrateApiSetCategorizeConstMeta =>
+      const TaskConstMeta(debugName: "set_categorize", argNames: ["engine", "on_"]);
 
   @override
-  void crateApiSetMaxConnections({
-    required ShinsokuEngine engine,
-    required int n,
-  }) {
+  void crateApiSetMaxConnections({required ShinsokuEngine engine, required int n}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
@@ -600,10 +469,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_u_8(n, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiSetMaxConnectionsConstMeta,
         argValues: [engine, n],
         apiImpl: this,
@@ -611,16 +477,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiSetMaxConnectionsConstMeta => const TaskConstMeta(
-    debugName: "set_max_connections",
-    argNames: ["engine", "n"],
-  );
+  TaskConstMeta get kCrateApiSetMaxConnectionsConstMeta =>
+      const TaskConstMeta(debugName: "set_max_connections", argNames: ["engine", "n"]);
 
   @override
-  void crateApiSetMaxSimultaneous({
-    required ShinsokuEngine engine,
-    required int n,
-  }) {
+  void crateApiSetMaxSimultaneous({required ShinsokuEngine engine, required int n}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
@@ -632,10 +493,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_u_8(n, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiSetMaxSimultaneousConstMeta,
         argValues: [engine, n],
         apiImpl: this,
@@ -643,10 +501,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiSetMaxSimultaneousConstMeta => const TaskConstMeta(
-    debugName: "set_max_simultaneous",
-    argNames: ["engine", "n"],
-  );
+  TaskConstMeta get kCrateApiSetMaxSimultaneousConstMeta =>
+      const TaskConstMeta(debugName: "set_max_simultaneous", argNames: ["engine", "n"]);
 
   @override
   void crateApiSetOffPeak({
@@ -668,10 +524,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_u_16(endMin, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiSetOffPeakConstMeta,
         argValues: [engine, enabled, startMin, endMin],
         apiImpl: this,
@@ -685,10 +538,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  void crateApiSetSpeedLimitBps({
-    required ShinsokuEngine engine,
-    required BigInt bps,
-  }) {
+  void crateApiSetSpeedLimitBps({required ShinsokuEngine engine, required BigInt bps}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
@@ -700,10 +550,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_u_64(bps, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiSetSpeedLimitBpsConstMeta,
         argValues: [engine, bps],
         apiImpl: this,
@@ -711,10 +558,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiSetSpeedLimitBpsConstMeta => const TaskConstMeta(
-    debugName: "set_speed_limit_bps",
-    argNames: ["engine", "bps"],
-  );
+  TaskConstMeta get kCrateApiSetSpeedLimitBpsConstMeta =>
+      const TaskConstMeta(debugName: "set_speed_limit_bps", argNames: ["engine", "bps"]);
 
   @override
   int crateApiStartCaptureServer({
@@ -736,10 +581,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(destDir, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_u_16,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_u_16, decodeErrorData: null),
         constMeta: kCrateApiStartCaptureServerConstMeta,
         argValues: [engine, port, token, destDir],
         apiImpl: this,
@@ -764,10 +606,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18)!;
         },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
-          decodeErrorData: null,
-        ),
+        codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
         constMeta: kCrateApiStopCaptureServerConstMeta,
         argValues: [engine],
         apiImpl: this,
@@ -775,15 +614,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
   }
 
-  TaskConstMeta get kCrateApiStopCaptureServerConstMeta => const TaskConstMeta(
-    debugName: "stop_capture_server",
-    argNames: ["engine"],
-  );
+  TaskConstMeta get kCrateApiStopCaptureServerConstMeta =>
+      const TaskConstMeta(debugName: "stop_capture_server", argNames: ["engine"]);
 
   @override
-  Stream<DownloadProgress> crateApiSubscribeProgress({
-    required ShinsokuEngine engine,
-  }) {
+  Stream<DownloadProgress> crateApiSubscribeProgress({required ShinsokuEngine engine}) {
     final sink = RustStreamSink<DownloadProgress>();
     unawaited(
       handler.executeNormal(
@@ -795,17 +630,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               serializer,
             );
             sse_encode_StreamSink_download_progress_Sse(sink, serializer);
-            pdeCallFfi(
-              generalizedFrbRustBinding,
-              serializer,
-              funcId: 19,
-              port: port_,
-            );
+            pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 19, port: port_);
           },
-          codec: SseCodec(
-            decodeSuccessData: sse_decode_unit,
-            decodeErrorData: null,
-          ),
+          codec: SseCodec(decodeSuccessData: sse_decode_unit, decodeErrorData: null),
           constMeta: kCrateApiSubscribeProgressConstMeta,
           argValues: [engine, sink],
           apiImpl: this,
@@ -815,17 +642,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return sink.stream;
   }
 
-  TaskConstMeta get kCrateApiSubscribeProgressConstMeta => const TaskConstMeta(
-    debugName: "subscribe_progress",
-    argNames: ["engine", "sink"],
-  );
+  TaskConstMeta get kCrateApiSubscribeProgressConstMeta =>
+      const TaskConstMeta(debugName: "subscribe_progress", argNames: ["engine", "sink"]);
 
-  RustArcIncrementStrongCountFnType
-  get rust_arc_increment_strong_count_ShinsokuEngine => wire
+  RustArcIncrementStrongCountFnType get rust_arc_increment_strong_count_ShinsokuEngine => wire
       .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShinsokuEngine;
 
-  RustArcDecrementStrongCountFnType
-  get rust_arc_decrement_strong_count_ShinsokuEngine => wire
+  RustArcDecrementStrongCountFnType get rust_arc_decrement_strong_count_ShinsokuEngine => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShinsokuEngine;
 
   @protected
@@ -862,9 +685,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  RustStreamSink<DownloadProgress> dco_decode_StreamSink_download_progress_Sse(
-    dynamic raw,
-  ) {
+  RustStreamSink<DownloadProgress> dco_decode_StreamSink_download_progress_Sse(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     throw UnimplementedError();
   }
@@ -903,8 +724,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   CaptureStatus dco_decode_capture_status(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 4) throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
     return CaptureStatus(
       running: dco_decode_bool(arr[0]),
       port: dco_decode_u_16(arr[1]),
@@ -917,8 +737,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   DownloadItem dco_decode_download_item(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 27)
-      throw Exception('unexpected arr length: expect 27 but see ${arr.length}');
+    if (arr.length != 27) throw Exception('unexpected arr length: expect 27 but see ${arr.length}');
     return DownloadItem(
       id: dco_decode_String(arr[0]),
       url: dco_decode_String(arr[1]),
@@ -960,8 +779,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   DownloadProgress dco_decode_download_progress(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    if (arr.length != 5) throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
     return DownloadProgress(
       id: dco_decode_String(arr[0]),
       downloadedBytes: dco_decode_u_64(arr[1]),
@@ -1053,8 +871,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ProbeResult dco_decode_probe_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    if (arr.length != 6) throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
     return ProbeResult(
       filename: dco_decode_String(arr[0]),
       totalBytes: dco_decode_u_64(arr[1]),
@@ -1079,8 +896,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   SegmentInfo dco_decode_segment_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    if (arr.length != 5) throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
     return SegmentInfo(
       index: dco_decode_u_8(arr[0]),
       startByte: dco_decode_u_64(arr[1]),
@@ -1197,9 +1013,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  DownloadItem sse_decode_box_autoadd_download_item(
-    SseDeserializer deserializer,
-  ) {
+  DownloadItem sse_decode_box_autoadd_download_item(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_download_item(deserializer));
   }
@@ -1330,9 +1144,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<DownloadItem> sse_decode_list_download_item(
-    SseDeserializer deserializer,
-  ) {
+  List<DownloadItem> sse_decode_list_download_item(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     var len_ = sse_decode_i_32(deserializer);
@@ -1344,9 +1156,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<DownloadProgress> sse_decode_list_download_progress(
-    SseDeserializer deserializer,
-  ) {
+  List<DownloadProgress> sse_decode_list_download_progress(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     var len_ = sse_decode_i_32(deserializer);
@@ -1372,9 +1182,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<(String, String)> sse_decode_list_record_string_string(
-    SseDeserializer deserializer,
-  ) {
+  List<(String, String)> sse_decode_list_record_string_string(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     var len_ = sse_decode_i_32(deserializer);
@@ -1420,9 +1228,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  DownloadItem? sse_decode_opt_box_autoadd_download_item(
-    SseDeserializer deserializer,
-  ) {
+  DownloadItem? sse_decode_opt_box_autoadd_download_item(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     if (sse_decode_bool(deserializer)) {
@@ -1463,9 +1269,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, String) sse_decode_record_string_string(
-    SseDeserializer deserializer,
-  ) {
+  (String, String) sse_decode_record_string_string(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_field0 = sse_decode_String(deserializer);
     var var_field1 = sse_decode_String(deserializer);
@@ -1525,10 +1329,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_AnyhowException(
-    AnyhowException self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_AnyhowException(AnyhowException self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.message, serializer);
   }
@@ -1540,10 +1341,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as ShinsokuEngineImpl).frbInternalSseEncode(move: true),
-      serializer,
-    );
+    sse_encode_usize((self as ShinsokuEngineImpl).frbInternalSseEncode(move: true), serializer);
   }
 
   @protected
@@ -1553,23 +1351,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as ShinsokuEngineImpl).frbInternalSseEncode(move: false),
-      serializer,
-    );
+    sse_encode_usize((self as ShinsokuEngineImpl).frbInternalSseEncode(move: false), serializer);
   }
 
   @protected
-  void
-  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShinsokuEngine(
+  void sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShinsokuEngine(
     ShinsokuEngine self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as ShinsokuEngineImpl).frbInternalSseEncode(move: null),
-      serializer,
-    );
+    sse_encode_usize((self as ShinsokuEngineImpl).frbInternalSseEncode(move: null), serializer);
   }
 
   @protected
@@ -1608,19 +1399,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_box_autoadd_download_item(
-    DownloadItem self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_box_autoadd_download_item(DownloadItem self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_download_item(self, serializer);
   }
 
   @protected
-  void sse_encode_box_autoadd_i_64(
-    PlatformInt64 self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_box_autoadd_i_64(PlatformInt64 self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_64(self, serializer);
   }
@@ -1673,10 +1458,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_download_progress(
-    DownloadProgress self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_download_progress(DownloadProgress self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
     sse_encode_u_64(self.downloadedBytes, serializer);
@@ -1686,10 +1468,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_download_status(
-    DownloadStatus self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_download_status(DownloadStatus self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
   }
@@ -1707,10 +1486,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_list_download_item(
-    List<DownloadItem> self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_list_download_item(List<DownloadItem> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
@@ -1719,10 +1495,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_list_download_progress(
-    List<DownloadProgress> self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_list_download_progress(List<DownloadProgress> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
@@ -1731,30 +1504,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_list_prim_u_64_strict(
-    Uint64List self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_list_prim_u_64_strict(Uint64List self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint64List(self);
   }
 
   @protected
-  void sse_encode_list_prim_u_8_strict(
-    Uint8List self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_list_prim_u_8_strict(Uint8List self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
   }
 
   @protected
-  void sse_encode_list_record_string_string(
-    List<(String, String)> self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_list_record_string_string(List<(String, String)> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
@@ -1763,10 +1527,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_list_segment_info(
-    List<SegmentInfo> self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_list_segment_info(List<SegmentInfo> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
@@ -1795,10 +1556,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_opt_box_autoadd_download_item(
-    DownloadItem? self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_opt_box_autoadd_download_item(DownloadItem? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     sse_encode_bool(self != null, serializer);
@@ -1808,10 +1566,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_opt_box_autoadd_i_64(
-    PlatformInt64? self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_opt_box_autoadd_i_64(PlatformInt64? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     sse_encode_bool(self != null, serializer);
@@ -1832,10 +1587,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_record_string_string(
-    (String, String) self,
-    SseSerializer serializer,
-  ) {
+  void sse_encode_record_string_string((String, String) self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.$1, serializer);
     sse_encode_String(self.$2, serializer);
