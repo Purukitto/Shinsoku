@@ -86,27 +86,21 @@ and Linux. The two are bridged with type-safe async bindings via
 <table>
   <tr>
     <td width="50%" align="center" valign="top">
-      <img src="docs/screenshots/active.png" alt="Active downloads list with live speeds and ETAs" width="100%" /><br/>
-      <sub><b>Active downloads</b> — live speeds, ETAs & per-segment progress</sub>
-    </td>
-    <td width="50%" align="center" valign="top">
       <img src="docs/screenshots/detail.png" alt="Download detail view with segment map, speed chart and integrity hash" width="100%" /><br/>
       <sub><b>Download detail</b> — segment map, speed chart & integrity check</sub>
     </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top">
+    <td width="50%" align="center" valign="top">
       <img src="docs/screenshots/add.png" alt="Add download dialog with custom headers and expected checksum" width="100%" /><br/>
       <sub><b>Add a download</b> — URL probe, custom headers & expected hash</sub>
     </td>
+  </tr>
+  <tr>
     <td align="center" valign="top">
       <img src="docs/screenshots/settings.png" alt="Settings: connections, bandwidth, off-peak window and browser pairing" width="100%" /><br/>
       <sub><b>Settings</b> — connections, throttle, off-peak & browser pairing</sub>
     </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center" valign="top">
-      <img src="docs/screenshots/completed.png" alt="Completed downloads, sorted into categories" width="720" /><br/>
+    <td align="center" valign="top">
+      <img src="docs/screenshots/completed.png" alt="Completed downloads, sorted into categories" width="100%" /><br/>
       <sub><b>Completed</b> — finished, categorized download history</sub>
     </td>
   </tr>
