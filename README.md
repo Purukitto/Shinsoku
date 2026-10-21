@@ -1,85 +1,52 @@
-<div align="center">
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Shinsoku logo" width="112" height="112" />
+</p>
 
-<img src="docs/assets/logo.png" alt="Shinsoku logo" width="128" height="128" />
+<h1 align="center">Shinsoku</h1>
 
-# Shinsoku
+<p align="center">
+  <em>神速 — godspeed.</em>
+</p>
 
-### 神速 — *godspeed.* A blazing-fast, open-source download manager.
+<p align="center">
+  A fast, open-source download manager. Multi-segment parallel downloads, exact resume,
+  HLS video capture and a browser extension, on a Rust engine with a Flutter UI.
+</p>
 
-Multi-segment parallel downloads, resume, queueing, HLS video capture, and a browser
-extension — powered by a **Rust** engine with a **Flutter** UI.
+<p align="center">
+  <a href="https://github.com/Purukitto/Shinsoku/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Purukitto/Shinsoku/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/Purukitto/Shinsoku/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Purukitto/Shinsoku?display_name=tag&sort=semver"></a>
+  <a href="LICENSE"><img alt="GPL-3.0 licence" src="https://img.shields.io/badge/licence-GPL--3.0-blue.svg"></a>
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%2B-lightgrey">
+</p>
 
 <!-- SEO: free open source download manager, fast multi-threaded download accelerator for
      Windows, IDM alternative, m3u8 / HLS video downloader, Flutter Rust desktop app -->
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-8B5CF6.svg?style=flat-square)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Linux-FF63B6?style=flat-square)](#-roadmap)
-[![Built with Rust](https://img.shields.io/badge/engine-Rust-FFCE4D?style=flat-square&logo=rust&logoColor=black)](core/)
-[![Built with Flutter](https://img.shields.io/badge/ui-Flutter-02569B?style=flat-square&logo=flutter&logoColor=white)](app/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-A25CFF?style=flat-square)](CONTRIBUTING.md)
-[![Stars](https://img.shields.io/github/stars/purukitto/Shinsoku?style=flat-square&color=FFCE4D)](https://github.com/purukitto/Shinsoku/stargazers)
-
-[Features](#-features) · [Screenshots](#-screenshots) · [Download](#-download) · [Build from Source](#%EF%B8%8F-build-from-source) · [Browser Extension](#-browser-extension) · [Architecture](#-architecture) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
-
-</div>
-
 ---
 
-## What is Shinsoku?
+Shinsoku splits every download into parallel byte-range segments and writes each one
+straight into its slot of a preallocated file, so a single transfer can use the whole
+connection instead of whatever one TCP stream manages. Pause it, quit, reboot: it picks
+up from the exact byte each segment reached.
 
-**Shinsoku** (Japanese 神速, *"godspeed"*) is a **fast, free, open-source download manager**
-for the desktop. It splits every download into many parallel byte-range segments to
-saturate your connection, resumes cleanly after interruptions, manages a prioritized
-queue, verifies file integrity, and can grab **HLS (`.m3u8`) video streams** as a single
-file. A companion **browser extension** hands off downloads — cookies, referrer and
-User-Agent included — so logged-in and gated links just work.
+The engine is Rust — `tokio`, `reqwest`, one shared connection pool, streaming I/O with
+no whole-file buffering — and it owns all download state. The Flutter UI is a thin view
+over it, bridged with [`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter_rust_bridge).
+A companion browser extension hands downloads over with the cookies, referrer and
+User-Agent the browser would have used, so links behind a login still work.
 
-The download engine is written in **Rust** for true thread-level parallelism and
-zero-copy streaming I/O; the interface is built once in **Flutter** for Windows, Android,
-and Linux. The two are bridged with type-safe async bindings via
-[`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter_rust_bridge).
+> Windows is the shipping target. Android and Linux share the Flutter UI but their
+> native engine build is not wired yet — see [Not built yet](#not-built-yet).
 
-> **Status:** Windows is the primary, actively-developed target. Android and Linux build
-> wiring is in progress — see the [roadmap](#-roadmap).
-
----
-
-## ✨ Features
-
-- ⚡ **Multi-segment parallel downloading** — configurable connections (default 8–16) with
-  per-segment byte-range requests to maximize throughput.
-- ⏯️ **Pause & resume** — exact byte-accurate resume using HTTP range requests; survives
-  app restarts.
-- 📋 **Download queue & priorities** — control how many downloads run at once and in what
-  order.
-- 🎚️ **Bandwidth throttling** — global and per-download speed limits.
-- 🌙 **Off-peak acceleration** — automatically lifts the speed cap during a window you
-  define (re-evaluated live, wraps past midnight).
-- 🔁 **Auto-retry** — transient failures are retried automatically.
-- 🔐 **Integrity verification** — streaming **SHA-256 / MD5** check after completion; paste
-  an expected digest and Shinsoku verifies it (algorithm inferred from digest length).
-- 🎬 **HLS video capture** — parses `.m3u8` playlists, picks the highest-bitrate variant,
-  downloads segments with bounded concurrency, **AES-128 decrypts**, and concatenates to a
-  single `.ts`/`.mp4` file (VOD).
-- 🧩 **Browser extension** — Chromium (Chrome/Edge/Brave) and Firefox MV3 capture with a
-  token-protected loopback handshake; forwards cookies, referrer and User-Agent.
-- 📎 **Clipboard monitoring** — copy a link and Shinsoku offers to grab it.
-- 🗂️ **Auto-categorize** — sort completed files by type.
-- 🔔 **Update checker** — tells you in-app (sidebar) when a newer GitHub release is available
-  and links straight to it.
-- 🖥️ **Native desktop polish** — system tray, custom frameless window, bundled fonts, dark
-  "voltage" theme.
-
----
-
-## 📸 Screenshots
+## Screenshots
 
 <div align="center">
 
 <img src="docs/screenshots/hero.png" alt="Shinsoku main window with active multi-segment downloads" width="860" />
 
 <br/>
-<sub>The main window — live throughput graph, multi-segment progress bars and the active queue.</sub>
+<sub>The main window: live throughput, per-segment progress and the active queue.</sub>
 
 <br/><br/>
 
@@ -87,262 +54,282 @@ and Linux. The two are bridged with type-safe async bindings via
   <tr>
     <td width="50%" align="center" valign="top">
       <img src="docs/screenshots/active.png" alt="Active downloads list with live speeds and ETAs" width="100%" /><br/>
-      <sub><b>Active downloads</b> — live speeds, ETAs & per-segment progress</sub>
+      <sub><b>Active</b> — speeds, ETAs and per-segment progress</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <img src="docs/screenshots/detail.png" alt="Download detail view with segment map, speed chart and integrity hash" width="100%" /><br/>
-      <sub><b>Download detail</b> — segment map, speed chart & integrity check</sub>
+      <img src="docs/screenshots/detail.png" alt="Download detail view with segment map, speed chart and checksum" width="100%" /><br/>
+      <sub><b>Detail</b> — segment map, speed history and checksum</sub>
     </td>
   </tr>
   <tr>
     <td align="center" valign="top">
       <img src="docs/screenshots/add.png" alt="Add download dialog with custom headers and expected checksum" width="100%" /><br/>
-      <sub><b>Add a download</b> — URL probe, custom headers & expected hash</sub>
+      <sub><b>Add</b> — URL probe, request headers and expected digest</sub>
     </td>
     <td align="center" valign="top">
-      <img src="docs/screenshots/settings.png" alt="Settings: connections, bandwidth, off-peak window and browser pairing" width="100%" /><br/>
-      <sub><b>Settings</b> — connections, throttle, off-peak & browser pairing</sub>
+      <img src="docs/screenshots/settings.png" alt="Settings: connections, speed limit, off-peak window and browser pairing" width="100%" /><br/>
+      <sub><b>Settings</b> — connections, speed limit, off-peak and pairing</sub>
     </td>
   </tr>
   <tr>
     <td colspan="2" align="center" valign="top">
       <img src="docs/screenshots/completed.png" alt="Completed downloads, sorted into categories" width="720" /><br/>
-      <sub><b>Completed</b> — finished, categorized download history</sub>
+      <sub><b>Completed</b> — history, sorted into category folders</sub>
     </td>
   </tr>
   <tr>
     <td align="center" valign="top">
-      <img src="docs/screenshots/extension.png" alt="Browser extension popup detecting an HLS stream" width="340" /><br/>
-      <sub><b>Browser extension</b> — HLS stream detection with one-click send</sub>
+      <img src="docs/screenshots/extension.png" alt="Browser extension popup listing a detected HLS stream" width="340" /><br/>
+      <sub><b>Extension</b> — detected streams, one click to send</sub>
     </td>
     <td align="center" valign="top">
       <img src="docs/screenshots/tray.png" alt="Windows system tray menu" width="230" /><br/>
-      <sub><b>System tray</b> — runs in the background with quick controls</sub>
+      <sub><b>Tray</b> — keeps running with the window closed</sub>
     </td>
   </tr>
 </table>
 
 </div>
 
----
+## Download
 
-## 🚀 Download
+Grab the build from the [latest release](https://github.com/Purukitto/Shinsoku/releases/latest):
 
-**Just want to use Shinsoku?** Grab the latest Windows build — no toolchain required.
+| File | What it is |
+| --- | --- |
+| `Shinsoku-x.y.z-windows-x64.zip` | The app. Unzip anywhere and run `shinsoku.exe` — there is no installer yet. |
+| `Shinsoku-Capture-x.y.z-chromium.zip` | Browser extension for Chrome, Edge and Brave. |
+| `Shinsoku-Capture-x.y.z-firefox.zip` | Browser extension for Firefox. |
+| `SHA256SUMS.txt` | Checksums for all of the above. |
 
-➡️ **[Download the latest release](https://github.com/purukitto/Shinsoku/releases/latest)**
+Windows 10 or 11, x64. Like any Flutter desktop app it needs the Microsoft Visual C++
+runtime, which almost every machine already has; if `shinsoku.exe` complains about a
+missing `MSVCP140.dll`, install the
+[Visual C++ Redistributable](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist).
 
-1. Download `Shinsoku-vX.Y.Z-windows-x64.zip` from the release assets.
-2. Unzip it anywhere and run **`shinsoku.exe`** (portable — no installer yet).
-3. *(Optional)* Grab `chromium.zip` / `firefox.zip` from the same release for the
-   [browser extension](#-browser-extension).
+The binaries are unsigned, so SmartScreen warns on first launch — **More info → Run
+anyway**. To check what you downloaded against the release:
 
-Shinsoku checks the release feed on launch and tells you in the sidebar when a newer
-version is available, linking straight to the download.
+```powershell
+Get-FileHash .\Shinsoku-x.y.z-windows-x64.zip -Algorithm SHA256
+```
 
-> **Windows SmartScreen** may warn on first run because the build isn't code-signed yet —
-> choose *More info → Run anyway*. Android and Linux builds are not published yet
-> (see the [roadmap](#-roadmap)).
+### Updating
 
----
+Once per launch Shinsoku asks GitHub for this repository's latest published release.
+If it is newer than what is running, the version line at the foot of the sidebar turns
+into **Update available vX.Y.Z**; clicking it opens the release page. Nothing downloads
+or installs itself.
 
-## 🛠️ Build from Source
+To update, quit Shinsoku, unzip the new release over the old folder or next to it, and
+run the new `shinsoku.exe`. The download list, history and settings live
+in `%APPDATA%\io.shinsoku\shinsoku`, not beside the exe, so they carry over.
+Unfinished downloads come back paused and resume from where they stopped.
 
-For developers and power users who want to build, hack on, or run the latest `main`.
+What changed in each version is in [CHANGELOG.md](CHANGELOG.md) — the release notes
+are that file's section for the version, word for word. If the check fails because you
+are offline or rate-limited, the sidebar just shows the current version.
 
-### Prerequisites
+## Using it
+
+**Add** — or copy a link while **Clipboard monitor** is on and accept the banner —
+probes the URL for its name and size, then queues it. **Advanced** in the Add dialog
+takes extra request headers and an expected checksum.
+
+| Setting | Does |
+| --- | --- |
+| Connections | Most segments one download may open, 1–16 (default 8). The Add dialog picks each download's count within it. |
+| Simultaneous | Downloads running at once, 1–8 (default 3). The rest wait in the queue. |
+| Download limit | One global speed cap shared by every download. 0 is unlimited. |
+| Off-peak | Lifts the limit inside a daily window (default 23:00–07:00, wraps past midnight). |
+| Categorize | Sorts finished files into `Videos`, `Images`, `Documents`, `Music`, `Programs`, `Compressed` or `Other`. |
+| Clipboard monitor | Offers to download a copied `http(s)` link. |
+| Browser integration | Starts the capture server the extension talks to. Off until you turn it on. |
+
+A download whose name is already taken saves as `file (2).ext` rather than overwriting.
+Every finished file is hashed — SHA-256, or MD5 if that is what you gave as the
+expected digest (the two are told apart by length) — and with an expected digest the
+detail screen shows **VERIFIED** or **MISMATCH**.
+
+Minimise hides Shinsoku to the tray, where downloads keep running. Closing the window,
+or **Quit** in the tray menu, exits.
+
+### Browser extension
+
+The extension intercepts downloads in Chromium browsers and Firefox and posts them to
+the app with the site's cookies, referrer and User-Agent; only once the app accepts
+does it cancel the browser's own download, so with Shinsoku closed nothing is lost. It
+also watches for HLS playlists and counts them on its toolbar icon — click it and
+**Send** a stream to download it as one file.
+
+Turn on **Settings → Capture → Browser integration**, copy the pairing code, paste it
+into the extension's options. Full instructions, including Firefox's host-permission
+step, are in [extension/README.md](extension/README.md).
+
+### HLS streams
+
+Paste an `.m3u8` link into Add, or send one from the extension. Shinsoku picks the
+highest-bitrate variant, downloads segments with bounded concurrency, decrypts AES-128,
+and joins them in order into a single `.ts` — or `.mp4` when the stream is fragmented
+MP4. Video on demand only: a playlist without `#EXT-X-ENDLIST` is a live stream and is
+refused rather than recorded forever.
+
+## Privacy
+
+Shinsoku has no telemetry, no analytics and no account. It makes two kinds of network
+request: the downloads you ask for, and the update check — one `GET` to
+`api.github.com` per launch, carrying nothing but the User-Agent `Shinsoku-UpdateCheck`.
+Fonts are bundled.
+
+Three things are worth stating plainly:
+
+- **What is stored.** `%APPDATA%\io.shinsoku\shinsoku\downloads.json` holds the download
+  list and up to 500 finished items: URLs, file paths and **any request headers attached
+  to a download, including cookies the extension forwarded, in plain text**.
+  `settings.json` holds settings and `capture.json` the pairing token. Delete the
+  folder to reset Shinsoku.
+- **The capture server.** It listens on `127.0.0.1` only (port 7878 unless taken), and
+  refuses any request without the pairing token. It sends no CORS headers, so web pages
+  cannot call it; only the extension, through its host permission, can.
+- **The clipboard.** Read only while **Clipboard monitor** is on, and only checked for a
+  single `http(s)` URL. Nothing read leaves the machine.
+
+## Building from source
 
 | Tool | Version | Notes |
-|---|---|---|
-| [Flutter SDK](https://docs.flutter.dev/get-started/install) | 3.12+ (Dart 3.12) | enable desktop: `flutter config --enable-windows-desktop` |
-| [Rust toolchain](https://rustup.rs/) | stable | `rustup` recommended |
-| [`flutter_rust_bridge_codegen`](https://cjycode.com/flutter_rust_bridge/) | 2.9.0 | only needed if you change the Rust API: `cargo install flutter_rust_bridge_codegen --version 2.9.0` |
-| Visual Studio 2022 | — | "Desktop development with C++" workload (Windows builds) |
-
-### Clone, run & build (Windows)
+| --- | --- | --- |
+| [Flutter SDK](https://docs.flutter.dev/get-started/install) | stable, Dart 3.12+ | `flutter config --enable-windows-desktop` |
+| [Rust](https://rustup.rs) | stable | `cargo` must be on `PATH` or in `~/.cargo/bin` |
+| Visual Studio 2022 | — | the **Desktop development with C++** workload |
+| [`flutter_rust_bridge_codegen`](https://cjycode.com/flutter_rust_bridge/) | 2.9.0 | only to change the bridge API: `cargo install flutter_rust_bridge_codegen --version 2.9.0` |
 
 ```bash
-git clone https://github.com/purukitto/Shinsoku.git
-cd Shinsoku/app
+git clone https://github.com/Purukitto/Shinsoku.git
+```
 
-# Fetch Dart deps
-flutter pub get
+```bash
+cd Shinsoku/app && flutter pub get
+```
 
-# Run the desktop app (release recommended for real performance)
+```bash
 flutter run -d windows --release
-
-# …or produce a distributable build (output: app/build/windows/x64/runner/Release/)
-flutter build windows --release
 ```
 
-The Rust engine in [`core/`](core/) is compiled automatically as part of the Flutter
-build via `flutter_rust_bridge` — you don't build it separately.
+The Windows CMake build runs `cargo build --release` on `core/` and bundles
+`shinsoku_core.dll` next to the exe, so there is no separate engine step.
+`flutter build windows --release` leaves a portable build in
+`app/build/windows/x64/runner/Release/`.
 
-### Regenerating the bridge
+<details>
+<summary><strong>Judge speed in release, not debug</strong></summary>
 
-If you change the Rust API surface in `core/src/api.rs`, regenerate the Dart bindings
-(run in `app/`):
+The engine is always compiled in release, even under `flutter run` in debug, so
+throughput is real either way. The UI is not: debug Flutter is JIT-compiled with
+assertions on, and its frame times say nothing about the shipped app. Anything about
+rendering or responsiveness has to be checked with `--profile` or `--release`.
 
-```bash
-flutter_rust_bridge_codegen generate
+</details>
+
+### Commands
+
+| Where | Command | Does |
+| --- | --- | --- |
+| `app/` | `flutter run -d windows --release` | Run the app |
+| `app/` | `flutter analyze` · `flutter test` | Lints and widget tests |
+| `app/` | `flutter_rust_bridge_codegen generate` | Regenerate the bindings after changing `core/src/api.rs` |
+| `core/` | `cargo test` | Engine unit tests and integration tests against a local range server |
+| `core/` | `cargo fmt --all` · `cargo clippy --all-targets -- -D warnings` | Format and lint, as CI does |
+| root | `./tool/screenshots.ps1` | The real app on deterministic mock data; F1–F6 write the gallery PNGs |
+| root | `./extension/build.ps1` | Assemble `extension/dist/chromium` and `dist/firefox` |
+| root | `./tool/check-version.ps1` | Check every manifest carries the same version |
+| root | `./tool/bump-version.ps1 X.Y.Z` | Cut a release — see [CONTRIBUTING.md](CONTRIBUTING.md#releasing) |
+
+## Architecture
+
+```mermaid
+flowchart LR
+    EXT["Browser extension<br/><i>Chromium · Firefox MV3</i>"]
+
+    subgraph core["Engine — Rust (core/)"]
+        direction TB
+        CAP["Capture server<br/><i>127.0.0.1 · token</i>"]
+        QM["QueueManager<br/><i>scheduler · ~250 ms aggregator</i>"]
+        W["Segment workers<br/><i>range → slot in preallocated file</i>"]
+        ST[("downloads.json<br/><i>atomic write</i>")]
+    end
+
+    subgraph ui["UI — Flutter (app/)"]
+        direction TB
+        P["Riverpod providers<br/><i>id list · per-row slices</i>"]
+        S["Screens"]
+    end
+
+    EXT -- "POST /api/add · /api/add-stream" --> CAP
+    CAP --> QM
+    QM --> W
+    QM -- "checkpoint ~5 s" --> ST
+    QM -- "progress stream" --> P
+    P --> S
+    S -. "add · pause · resume · settings" .-> QM
 ```
 
-> ⚠️ Files under `app/lib/src/rust/` and `core/src/frb_generated.rs` are **auto-generated** —
-> don't hand-edit them.
+The engine owns every byte of download state. A ~250 ms aggregator reads per-segment
+atomics, works out speed, re-checks the off-peak window, checkpoints to disk and pushes
+one progress event across the bridge. On the Dart side a light tick patches the one
+row that changed; only a structural change — a status flip, a size first known —
+refetches the list. The list watches an ordered id list and each row its own item, so
+a tick never rebuilds the whole screen.
 
-### Running tests
+### Where things are
 
-```bash
-# Rust engine tests
-cd core && cargo test
+| Path | What |
+| --- | --- |
+| `core/src/api.rs` | The only module the bridge scans: engine handle, control functions, progress stream |
+| `core/src/queue/manager.rs` | `QueueManager` — scheduling, aggregation, off-peak, HLS, persistence |
+| `core/src/engine/orchestrator.rs` | Probe a URL and split it into byte-range segments |
+| `core/src/engine/worker.rs` | Stream one range into its slot, rate-limited and resumable |
+| `core/src/protocols/hls.rs` | Playlist parsing, variant choice, AES-128 |
+| `core/src/storage/` | Partial files, atomic JSON store, streaming SHA-256 / MD5 |
+| `core/src/capture/mod.rs` | Loopback server the extension posts to |
+| `core/tests/download.rs` | Integration tests against a hermetic range server |
+| `app/lib/src/providers/downloads_provider.dart` | Where Rust state becomes UI state |
+| `app/lib/src/providers/settings_provider.dart` | Pushes engine-side settings, debounces the save |
+| `app/lib/src/services/version_service.dart` | The update check |
+| `app/lib/src/ui/desktop/` | Shell, screens and the Add dialog |
+| `app/lib/main_screenshots.dart` | Mock-data harness behind the screenshots |
+| `app/lib/src/rust/`, `core/src/frb_generated.rs` | Generated bindings — never edited by hand |
+| `extension/shared/` | Extension source; `build.ps1` assembles `dist/` from it |
+| `tool/` | Versioning, release and screenshot scripts |
 
-# Flutter analyzer + tests
-cd app && flutter analyze && flutter test
-```
+Design decisions — engine-side persistence, the loopback capture server, how HLS
+progress reuses the byte fields — are recorded in [docs/decisions.md](docs/decisions.md).
 
-### Cutting a release
+## Not built yet
 
-Maintainers bump versions in lockstep and tag — the
-[release workflow](.github/workflows/release.yml) then builds the Windows app + extension
-and publishes a GitHub Release:
+- Android and Linux builds. The Flutter targets exist; the native engine build is wired
+  for Windows only.
+- An installer, and code signing so SmartScreen stops warning.
+- Store listings for the extension. Chromium loads it unpacked in developer mode;
+  Firefox loads it as a temporary add-on, which it forgets on restart.
+- Automatic retry. A failed download stops with its error and waits for you.
+- Queue priorities and per-download speed limits. Every download shares one global
+  limit.
+- FTP and BitTorrent. **Cap upload / seeding** in Settings is saved but has no effect
+  until there is something to seed.
+- Live HLS, DASH, `SAMPLE-AES`, and remuxing `.ts` into `.mp4`.
+- `blob:` and `data:` downloads cannot be captured — the bytes only exist inside the
+  page — so the extension lets the browser save those itself.
 
-```bash
-pwsh tool/bump-version.ps1 X.Y.Z   # bumps app + core + extension, rolls CHANGELOG
-git push && git push --tags        # pushing the vX.Y.Z tag triggers the build
-```
+## Contributing
 
----
+[CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the checks CI runs, commit messages,
+the changelog and how a release is cut. Security issues go through
+[SECURITY.md](SECURITY.md), not the issue tracker.
 
-## 🧩 Browser Extension
+## Licence
 
-Shinsoku ships a browser extension (Chromium + Firefox MV3) that intercepts browser
-downloads and forwards them — **with the cookies, referrer and User-Agent** the browser
-would have used — to the running app, so authenticated and referrer-gated downloads work.
-It also detects **HLS video streams** and lets you send them to Shinsoku from the toolbar.
+[GPL-3.0](LICENSE) © Pulkit Sambhavi Singh
 
-It talks to a tiny **token-protected loopback HTTP server** hosted by the app (no native
-messaging, no per-browser manifest install) and pairs with a single code.
-
-➡️ **Build, install & pairing instructions:** [`extension/README.md`](extension/README.md)
-
----
-
-## 🏗️ Architecture
-
-Shinsoku is a **monorepo**: a Rust engine, a Flutter UI, and a browser extension.
-
-```
-Shinsoku/
-├── app/          # Flutter UI — Windows, Android, Linux (single codebase)
-│   └── lib/src/
-│       ├── rust/        # auto-generated flutter_rust_bridge bindings (do not edit)
-│       ├── ui/          # screens & widgets (desktop shell, detail, settings…)
-│       ├── providers/   # Riverpod state (downloads, settings, capture)
-│       └── services/    # settings, capture, tray
-├── core/         # Rust download engine (libshinsoku)
-│   └── src/
-│       ├── engine/      # multi-segment download, worker, throttle, orchestrator
-│       ├── queue/       # queue, scheduler, off-peak manager
-│       ├── protocols/   # HTTP/HTTPS + HLS (m3u8)
-│       ├── storage/     # partial files, assembly, atomic store, integrity
-│       └── capture/     # loopback server for the browser extension
-├── extension/    # Chromium + Firefox MV3 capture extension
-├── docs/         # screenshots & assets (logo, icon)
-└── packages/     # shared Dart/Flutter packages (UI kit)
-```
-
-**Design principles**
-
-- **All download logic lives in Rust.** The UI never re-implements engine behavior; it
-  watches narrow state slices through Riverpod so rebuilds stay tight.
-- **Engine-owned persistence.** The download list + history serialize to a single atomic
-  JSON file (temp + rename) written by the Rust core. App settings live in a separate
-  app-side JSON.
-- **Performance is a first-class requirement** — see the perf rules in [`CLAUDE.md`](CLAUDE.md).
-
-Key architecture decisions (persistence, capture server, integrity, off-peak, HLS) are
-recorded under **Resolved Decisions** in [`CLAUDE.md`](CLAUDE.md).
-
----
-
-## 🗺️ Roadmap
-
-| Platform | Status |
-|---|---|
-| **Windows** | ✅ Primary target — engine + UI wired end-to-end |
-| **Android** | 🚧 Build wiring in progress |
-| **Linux** | 🚧 Planned (Flutter Linux is mature; low incremental cost) |
-| macOS / iOS | ❌ Out of scope for now |
-
-| Capability | Status |
-|---|---|
-| Multi-segment HTTP/HTTPS downloads | ✅ |
-| Pause / resume / auto-retry | ✅ |
-| Queue, priorities & throttling | ✅ |
-| Off-peak acceleration | ✅ |
-| Integrity check (SHA-256 / MD5) | ✅ |
-| Browser capture (cookies/referrer/UA) | ✅ |
-| HLS / m3u8 capture (AES-128, VOD) | ✅ |
-| Packaging / installers | 🚧 |
-| CI/CD release pipeline | ✅ tag-triggered Windows build + GitHub Release |
-| FTP, magnet / torrent | 💡 Future |
-| Live HLS / DASH / SAMPLE-AES | 💡 Future |
-
-Legend: ✅ done · 🚧 in progress · 💡 idea / future
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Choice | Why |
-|---|---|---|
-| Engine | **Rust** + `tokio` + `reqwest` (rustls) | true thread parallelism, zero-copy streaming, production HTTP |
-| UI | **Flutter** | one codebase for Windows, Android, Linux |
-| Bridge | **`flutter_rust_bridge` v2** | type-safe async Dart ↔ Rust bindings |
-| State | **Riverpod** | narrow, performant state slices |
-| Integrity | `sha2`, `md-5` | streaming hashing |
-| HLS crypto | `aes`, `cbc` | AES-128 segment decryption |
-| Capture server | `axum` | tiny token-guarded loopback API |
-| Persistence | atomic JSON (engine) | no DB dependency; survives restarts |
-
----
-
-## 🤝 Contributing
-
-Contributions are very welcome — bug reports, features, docs and tests!
-
-- Read the [Contributing Guide](CONTRIBUTING.md) for setup, workflow and code conventions.
-- Found a vulnerability? See the [Security Policy](SECURITY.md).
-
-Good first contributions: Android/Linux build wiring, packaging/installers, and
-code-signing the Windows release.
-
----
-
-## 🔒 Security
-
-The browser-capture loopback server binds to `127.0.0.1` and is guarded by a pairing
-token. Please report security issues privately — see [SECURITY.md](SECURITY.md).
-
----
-
-## 📄 License
-
-Shinsoku is licensed under the **GNU General Public License v3.0**. See [LICENSE](LICENSE).
-
-This means you're free to use, study, share and modify it — but derivative works that you
-distribute must also remain open source under the GPL.
-
----
-
-## 🙏 Acknowledgements
-
-- [`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter_rust_bridge) — the FFI bridge that makes this architecture possible.
-- [`reqwest`](https://github.com/seanmonstar/reqwest), [`tokio`](https://tokio.rs/), [`axum`](https://github.com/tokio-rs/axum) and the broader Rust async ecosystem.
-- [Riverpod](https://riverpod.dev/) for Flutter state management.
-- Fonts: [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) and [JetBrains Mono](https://www.jetbrains.com/lp/mono/) (SIL Open Font License).
-
-<div align="center">
-<br/>
-<sub>Built with ⚡ and Rust. If Shinsoku is useful to you, consider leaving a ⭐.</sub>
-</div>
+Fonts: [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) and
+[JetBrains Mono](https://www.jetbrains.com/lp/mono/), both under the SIL Open Font
+Licence.

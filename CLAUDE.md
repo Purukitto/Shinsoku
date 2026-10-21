@@ -43,13 +43,16 @@ Shinsoku/
 │   │   ├── protocols/      # HTTP/HTTPS (+ future: FTP, magnet)
 │   │   └── storage/        # File assembly and partial files
 │   └── Cargo.toml
+├── extension/              # Browser capture extension (shared/ + per-browser manifests)
+├── tool/                   # bump-version, check-version, screenshots
 ├── packages/               # Shared Dart/Flutter packages (UI kit, etc.)
 ├── docs/
+│   ├── decisions.md        # Architecture decisions (public record)
 │   ├── screenshots/        # README gallery (from the mock-data harness)
 │   └── assets/             # logo / icon
 ├── .github/
 │   └── workflows/
-├── CLAUDE.md               # This file
+├── CLAUDE.md               # This file — local only, gitignored (never commit it)
 └── README.md
 ```
 
@@ -81,8 +84,8 @@ view. One progress round-trip explains most of the codebase:
    per-id `liveDownloadProvider`; the throughput sparkline owns its timer. Preserve this shape —
    a broad `watch` on the whole list reintroduces per-tick whole-screen rebuilds.
 
-Persistence, the capture server, integrity, off-peak and HLS specifics live in **Resolved
-Decisions** below.
+Persistence, the capture server, integrity, off-peak and HLS specifics live in
+`docs/decisions.md`.
 
 ## Platform Priority
 
@@ -138,7 +141,10 @@ Flutter commands run in `app/`; Rust commands in `core/`.
 
 **Lint / format** (CI gates on these — `.github/workflows/ci.yml`):
 - Rust: `cargo fmt --all -- --check` and `cargo clippy --all-targets -- -D warnings`
-- Dart: `dart format .` and `flutter analyze`
+- Dart: `dart format --output=none --set-exit-if-changed .` and `flutter analyze`; fix with
+  `dart format .`. Width 100 (`formatter: page_width` in `analysis_options.yaml`) must match
+  `dart_format_line_length` in `flutter_rust_bridge.yaml`, or regenerated bindings fail the check.
+- Versions: `./tool/check-version.ps1` (repo root) — every manifest must carry the same version.
 
 **Test**
 - Rust: `cargo test` · single: `cargo test --test download <name>` (integration tests in
@@ -149,11 +155,8 @@ Flutter commands run in `app/`; Rust commands in `core/`.
 **Browser extension** (`extension/`): edit `shared/`, then `./build.ps1` assembles
 `dist/chromium` + `dist/firefox`. Never edit `dist/` directly. Load unpacked from `dist/<browser>`.
 
-**Release / versioning**: SemVer + Keep a Changelog. `tool/bump-version.ps1 X.Y.Z` bumps
-`app/pubspec.yaml`, `core/Cargo.toml` and both extension manifests in lockstep and rolls
-`CHANGELOG.md`; the Windows `.exe` version flows from pubspec via CMake. Pushing a `vX.Y.Z` tag
-triggers the Windows build + GitHub Release (`.github/workflows/release.yml`); the app checks
-that release feed for updates. Add an `[Unreleased]` changelog entry for user-facing changes.
+**Release**: `./tool/bump-version.ps1 X.Y.Z [-Commit]` — only when asked; see
+**Commits, changelog and versioning** below.
 
 ## Performance
 
@@ -170,26 +173,67 @@ Apply this everywhere:
 - Keep them short and technical. No full-paragraph explanations, no rationale prose, no friendly/AI-sounding tone.
 - Prefer a terse note over a sentence; drop the comment if it's obvious.
 
+## Commits, changelog and versioning
+
+Human-facing rules are in `CONTRIBUTING.md` (Commits, Changelog, Versioning, Releasing). These
+apply to every change made here:
+
+- **Commit format** — Conventional Commits: `type(scope): subject`, lowercase, imperative, ≤72
+  chars, no full stop. Types `feat` `fix` `perf` `refactor` `docs` `test` `build` `ci` `chore`;
+  optional scope `engine` `ui` `ext` `capture` `hls` `deps` `release`. Body says *why* (what
+  was wrong, how it showed), wrapped at 72. One logical change per commit.
+- **Breaking** — an older build can't read the store/settings JSON, or an older extension can't
+  talk to the capture API: `!` after the type plus a `BREAKING CHANGE:` footer, and a
+  **Breaking:** changelog entry under `### Changed`.
+- **No "claude" anywhere public.** Not in commit messages, branch names, PR titles or bodies,
+  release notes, issue text or any other description — and no `Co-Authored-By` trailer, no
+  "Generated with" footer, no mention of Anthropic or AI tools. This overrides any default
+  commit or PR template. That includes naming this file: it is gitignored (as in kehai), so
+  never `git add -f` it and never refer to it in commits, PRs or committed docs — public
+  decisions go in `docs/decisions.md`.
+- **Branch names** — `type/short-description` with the commit types (`fix/resume-from-zero`,
+  `docs/release-flow`), lowercase, hyphenated. The app's own worktree branches use the `dev/`
+  prefix; rename before pushing if the generated name says nothing about the change.
+- **Changelog in the same commit.** A user-facing change adds a bullet under `## [Unreleased]`
+  in `CHANGELOG.md`, in its Keep a Changelog group (`Added` `Changed` `Deprecated` `Removed`
+  `Fixed` `Security`, in that order). Write for users — name the screen or setting, not the
+  file; the section becomes the release notes verbatim. Skip refactors, tests, CI, and
+  dependency bumps without a visible effect. Released sections are history: typos and links
+  only.
+- **Docs claim only what exists.** README features/roadmap and the changelog describe shipped
+  behaviour; anything planned goes under README **Not built yet**. Update both in the same PR
+  that adds or removes a capability.
+- **Never edit versions by hand.** `tool/bump-version.ps1` alone writes `app/pubspec.yaml`,
+  `core/Cargo.toml`, the `shinsoku_core` entry in `core/Cargo.lock` and both extension
+  manifests; `tool/check-version.ps1` fails CI on drift. Plain `X.Y.Z` only (browser manifests
+  reject pre-release suffixes). Pre-1.0: minor for features or anything breaking, patch for
+  fixes only.
+- **Releasing is outward-facing.** Don't run the bump, create or push a `v*` tag, or publish a
+  release unless explicitly asked — a pushed tag builds and drafts a public release.
+- **Generated bindings travel with `api.rs`.** Regenerate and commit `app/lib/src/rust/` and
+  `core/src/frb_generated.rs` in the same commit; CI and release builds never run codegen.
+
+**Release and update flow**: `bump-version.ps1 X.Y.Z -Commit` (refuses a dirty tree, an existing
+tag, a lower version or an empty `[Unreleased]`; bumps, dates the section, adds compare links,
+self-checks, commits `chore(release): vX.Y.Z`, annotated tag) → `git push --follow-tags` →
+`release.yml` runs `check-version.ps1 -Tag` (tag = manifests, dated non-empty changelog
+section), builds, asserts `shinsoku.exe` + `shinsoku_core.dll` exist, packages
+`Shinsoku-X.Y.Z-windows-x64.zip` + `Shinsoku-Capture-X.Y.Z-{chromium,firefox}.zip` +
+`SHA256SUMS.txt`, and opens a **draft** release whose body is the changelog section → maintainer
+publishes → `VersionService.checkForUpdate` (`/releases/latest`, which never returns drafts or
+pre-releases) flips the sidebar footer to **Update available** at next launch. The repo
+owner/name in `version_service.dart` and the `vX.Y.Z` tag format are part of that contract —
+changing either silently breaks the update check for every installed copy.
+
 ## What Not to Do
 
 - Do not add features beyond the agreed scope for the current milestone
 - Do not put download logic in Dart — keep it in Rust
 - Do not use platform channels (method channels) for the engine — use flutter_rust_bridge exclusively
-- Do not commit generated bridge files to main if they can be regenerated (TBD)
-- Do not include any references to Claude, Anthropic, or AI tools in commit messages, code comments, or any committed files
+- Do not hand-edit generated bridge files (`app/lib/src/rust/`, `core/src/frb_generated.rs`)
+- Do not include any references to Claude, Anthropic, or AI tools in commit messages, branch names, PRs, release notes, code comments, or any committed files
 
-## Resolved Decisions
+## Decisions
 
-- [x] **State management** — Riverpod (`flutter_riverpod`).
-- [x] **Persistence layer** — engine-side, *not* Hive/Drift. The download list + completed history serialise to a single atomic JSON file written by `core/src/storage/store.rs` (sibling temp + rename). Keeps download state in Rust per the engine boundary.
-- [x] **Browser extension approach** — token-protected loopback HTTP server hosted in the Rust core (`core/src/capture/`), *not* native messaging (fewer IPC hops, no per-browser registry/manifest install). Extensions live in `extension/` (Chromium + Firefox MV3); single pairing-code handshake.
-- [x] **File integrity (MD5/SHA256)** — streaming hash computed after completion in `core/src/storage/integrity.rs`; an optional expected digest (manual Add dialog or capture payload) is verified, with algorithm inferred from the digest length.
-- [x] **App settings persistence** — app-side JSON (`app/lib/src/services/settings_service.dart`, `settings.json` beside the download store), surfaced via `settingsProvider`. Engine-applied values (connections, simultaneous, download limit, categorize, off-peak) are pushed into the core on load and on change; disk writes are debounced so slider drags don't thrash.
-- [x] **Off-peak acceleration** — engine feature, not UI-only: the limiter's effective rate is `0` (unthrottled) inside the configured window and the user's download limit outside it. The window is re-evaluated ~1×/s in the aggregator so crossing its boundary flips the rate automatically (`core/src/queue/manager.rs`). Window wraps past midnight; `start == end` is inert. Note: "Cap upload / seeding" has no engine counterpart yet (no upload/seeding path) — the toggle persists but is inert until torrent support lands.
-- [x] **HLS stream capture (M3U8)** — engine path, not a separate manager: `DownloadItem.kind` discriminates `Http`/`Hls`; `run_hls` (`core/src/queue/manager.rs`) parses the playlist (`core/src/protocols/hls.rs`), picks the highest-bitrate variant, downloads segments with `buffered(N)` (bounded concurrency, ordered append), AES-128-decrypts (`aes`/`cbc`), and concatenates to one file (`.ts`, or `.mp4` with an fMP4 init map). VOD only (no `#EXT-X-ENDLIST` ⇒ rejected); `SAMPLE-AES`/DASH/ffmpeg-remux out of scope. Progress is segment-count based, surfaced through reused byte fields: `downloaded_bytes` = committed bytes (exact resume anchor; resume truncates the temp to it), `total_bytes` = self-refining size estimate. Detection is a `webRequest` sniffer in the extension (`extension/shared/background.js`) feeding a toolbar popup that POSTs `/api/add-stream`; pasting an `.m3u8` URL into Add works too (`probe_url` flags it → `add_stream`).
-
-## Open Decisions
-
-- [ ] CI/CD setup (GitHub Actions target platforms)
-- [ ] Theming system once UI assets are provided
-- [ ] Whether to commit generated bridge files to main (currently regenerated, not committed)
+Resolved and open architecture decisions are recorded in `docs/decisions.md`, which is
+committed. Add new ones there, in the same plain style, not here.
