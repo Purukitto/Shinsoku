@@ -36,10 +36,12 @@ void main() async {
       await windowManager.focus();
     },
   );
-  runApp(ProviderScope(
-    overrides: [engineProvider.overrideWithValue(engine)],
-    child: const ShinsokuApp(),
-  ));
+  runApp(
+    ProviderScope(
+      overrides: [engineProvider.overrideWithValue(engine)],
+      child: const ShinsokuApp(),
+    ),
+  );
 }
 
 class ShinsokuApp extends ConsumerStatefulWidget {
@@ -71,8 +73,7 @@ class _ShinsokuAppState extends ConsumerState<ShinsokuApp> with WidgetsBindingOb
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Pause the live simulation timers while the window is hidden/minimized;
     // keep them running while focused or merely inactive (still visible).
-    final running = state == AppLifecycleState.resumed ||
-        state == AppLifecycleState.inactive;
+    final running = state == AppLifecycleState.resumed || state == AppLifecycleState.inactive;
     ref.read(downloadsProvider.notifier).setRunning(running);
     ref.read(globalSpeedHistoryProvider.notifier).setRunning(running);
   }

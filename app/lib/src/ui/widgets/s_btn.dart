@@ -3,6 +3,7 @@ import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
 
 enum BtnKind { primary, solid, ghost, plain, danger }
+
 enum BtnSize { sm, md }
 
 class SBtn extends StatefulWidget {
@@ -43,10 +44,7 @@ class _SBtnState extends State<SBtn> {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (widget.icon != null) ...[
-          Icon(widget.icon, size: iconSize),
-          const SizedBox(width: 7),
-        ],
+        if (widget.icon != null) ...[Icon(widget.icon, size: iconSize), const SizedBox(width: 7)],
         DefaultTextStyle(
           style: SText.uiBase().copyWith(fontSize: fontSize),
           child: widget.child,
@@ -68,12 +66,22 @@ class _SBtnState extends State<SBtn> {
               decoration: BoxDecoration(
                 gradient: SColors.voltGradient,
                 borderRadius: BorderRadius.circular(9),
-                boxShadow: [BoxShadow(color: const Color(0x4CA25CFF), blurRadius: 14, offset: const Offset(0, 4))],
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0x4CA25CFF),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: DefaultTextStyle(
-                style: SText.uiBase(color: const Color(0xFF1B1020)).copyWith(
-                  fontSize: fontSize, fontWeight: FontWeight.w600),
-                child: IconTheme(data: const IconThemeData(color: Color(0xFF1B1020)), child: content),
+                style: SText.uiBase(
+                  color: const Color(0xFF1B1020),
+                ).copyWith(fontSize: fontSize, fontWeight: FontWeight.w600),
+                child: IconTheme(
+                  data: const IconThemeData(color: Color(0xFF1B1020)),
+                  child: content,
+                ),
               ),
             ),
           ),
@@ -82,9 +90,9 @@ class _SBtnState extends State<SBtn> {
     }
 
     final (bg, fg, border) = switch (widget.kind) {
-      BtnKind.solid  => (SColors.bg3, SColors.hi,               SColors.lineHi),
-      BtnKind.danger => (Colors.transparent, SColors.danger,    const Color(0x40FF7A6B)),
-      _              => (Colors.transparent, SColors.mid,       SColors.line),
+      BtnKind.solid => (SColors.bg3, SColors.hi, SColors.lineHi),
+      BtnKind.danger => (Colors.transparent, SColors.danger, const Color(0x40FF7A6B)),
+      _ => (Colors.transparent, SColors.mid, SColors.line),
     };
 
     return MouseRegion(
@@ -105,7 +113,10 @@ class _SBtnState extends State<SBtn> {
             ),
             child: DefaultTextStyle(
               style: SText.uiBase(color: _hovered ? SColors.hi : fg).copyWith(fontSize: fontSize),
-              child: IconTheme(data: IconThemeData(color: _hovered ? SColors.hi : fg), child: content),
+              child: IconTheme(
+                data: IconThemeData(color: _hovered ? SColors.hi : fg),
+                child: content,
+              ),
             ),
           ),
         ),
@@ -142,9 +153,7 @@ class _SIconBtnState extends State<SIconBtn> {
   @override
   Widget build(BuildContext context) {
     final iconSize = widget.size > 30 ? 18.0 : 16.0;
-    final fg = _hovered || widget.active
-        ? SColors.hi
-        : (widget.color ?? SColors.mid);
+    final fg = _hovered || widget.active ? SColors.hi : (widget.color ?? SColors.mid);
 
     Widget btn = MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -153,12 +162,15 @@ class _SIconBtnState extends State<SIconBtn> {
         onTap: widget.onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          width: widget.size, height: widget.size,
+          width: widget.size,
+          height: widget.size,
           decoration: BoxDecoration(
             color: _hovered || widget.active ? SColors.bg3 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: widget.active ? SColors.lineHi : Colors.transparent, width: 1),
+              color: widget.active ? SColors.lineHi : Colors.transparent,
+              width: 1,
+            ),
           ),
           child: Icon(widget.icon, size: iconSize, color: fg),
         ),

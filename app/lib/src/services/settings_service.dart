@@ -44,32 +44,31 @@ class AppSettings {
     bool? offPeak,
     int? offPeakStartMin,
     int? offPeakEndMin,
-  }) =>
-      AppSettings(
-        maxConnections: maxConnections ?? this.maxConnections,
-        maxSimultaneous: maxSimultaneous ?? this.maxSimultaneous,
-        downloadLimitMbps: downloadLimitMbps ?? this.downloadLimitMbps,
-        categorize: categorize ?? this.categorize,
-        clipboardMonitor: clipboardMonitor ?? this.clipboardMonitor,
-        uploadCap: uploadCap ?? this.uploadCap,
-        uploadLimitMbps: uploadLimitMbps ?? this.uploadLimitMbps,
-        offPeak: offPeak ?? this.offPeak,
-        offPeakStartMin: offPeakStartMin ?? this.offPeakStartMin,
-        offPeakEndMin: offPeakEndMin ?? this.offPeakEndMin,
-      );
+  }) => AppSettings(
+    maxConnections: maxConnections ?? this.maxConnections,
+    maxSimultaneous: maxSimultaneous ?? this.maxSimultaneous,
+    downloadLimitMbps: downloadLimitMbps ?? this.downloadLimitMbps,
+    categorize: categorize ?? this.categorize,
+    clipboardMonitor: clipboardMonitor ?? this.clipboardMonitor,
+    uploadCap: uploadCap ?? this.uploadCap,
+    uploadLimitMbps: uploadLimitMbps ?? this.uploadLimitMbps,
+    offPeak: offPeak ?? this.offPeak,
+    offPeakStartMin: offPeakStartMin ?? this.offPeakStartMin,
+    offPeakEndMin: offPeakEndMin ?? this.offPeakEndMin,
+  );
 
   Map<String, dynamic> toJson() => {
-        'maxConnections': maxConnections,
-        'maxSimultaneous': maxSimultaneous,
-        'downloadLimitMbps': downloadLimitMbps,
-        'categorize': categorize,
-        'clipboardMonitor': clipboardMonitor,
-        'uploadCap': uploadCap,
-        'uploadLimitMbps': uploadLimitMbps,
-        'offPeak': offPeak,
-        'offPeakStartMin': offPeakStartMin,
-        'offPeakEndMin': offPeakEndMin,
-      };
+    'maxConnections': maxConnections,
+    'maxSimultaneous': maxSimultaneous,
+    'downloadLimitMbps': downloadLimitMbps,
+    'categorize': categorize,
+    'clipboardMonitor': clipboardMonitor,
+    'uploadCap': uploadCap,
+    'uploadLimitMbps': uploadLimitMbps,
+    'offPeak': offPeak,
+    'offPeakStartMin': offPeakStartMin,
+    'offPeakEndMin': offPeakEndMin,
+  };
 
   factory AppSettings.fromJson(Map<String, dynamic> m) {
     const d = AppSettings();
@@ -103,7 +102,9 @@ class SettingsService {
         final m = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
         return AppSettings.fromJson(m);
       }
-    } catch (_) {/* fall through to defaults */}
+    } catch (_) {
+      /* fall through to defaults */
+    }
     return const AppSettings();
   }
 
@@ -111,6 +112,8 @@ class SettingsService {
     try {
       final f = await _file();
       await f.writeAsString(jsonEncode(s.toJson()));
-    } catch (_) {/* best-effort; in-memory state still drives the session */}
+    } catch (_) {
+      /* best-effort; in-memory state still drives the session */
+    }
   }
 }

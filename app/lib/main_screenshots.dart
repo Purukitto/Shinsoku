@@ -60,10 +60,7 @@ Future<void> main() async {
     },
   );
 
-  runApp(ProviderScope(
-    overrides: screenshotOverrides,
-    child: const _ScreenshotHarness(),
-  ));
+  runApp(ProviderScope(overrides: screenshotOverrides, child: const _ScreenshotHarness()));
 }
 
 class _ScreenshotHarness extends StatefulWidget {
@@ -87,9 +84,8 @@ class _ScreenshotHarnessState extends State<_ScreenshotHarness> {
     LogicalKeyboardKey.f6: 'completed.png',
   };
 
-  String get _shotDir => _shotDirDefine.isNotEmpty
-      ? _shotDirDefine
-      : '${Directory.current.path}/../docs/screenshots';
+  String get _shotDir =>
+      _shotDirDefine.isNotEmpty ? _shotDirDefine : '${Directory.current.path}/../docs/screenshots';
 
   @override
   void initState() {
@@ -120,8 +116,7 @@ class _ScreenshotHarnessState extends State<_ScreenshotHarness> {
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
 
-    final boundary =
-        _shotKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    final boundary = _shotKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) return;
     final image = await boundary.toImage(pixelRatio: 2.0);
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -137,38 +132,41 @@ class _ScreenshotHarnessState extends State<_ScreenshotHarness> {
     debugPrint('[screenshot] saved ${file.path} ($w×$h)');
     _msgKey.currentState
       ?..removeCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        width: 340,
-        duration: const Duration(milliseconds: 1400),
-        backgroundColor: SColors.bg3,
-        content: Text('Saved  $filename   ·   $w×$h',
-            style: SText.monoSm(color: SColors.hi)),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          width: 340,
+          duration: const Duration(milliseconds: 1400),
+          backgroundColor: SColors.bg3,
+          content: Text('Saved  $filename   ·   $w×$h', style: SText.monoSm(color: SColors.hi)),
+        ),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: Stack(children: [
-        // Captured subtree — the whole app, dialogs included.
-        Positioned.fill(
-          child: RepaintBoundary(
-            key: _shotKey,
-            child: MaterialApp(
-              title: 'Shinsoku',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.dark,
-              scaffoldMessengerKey: _msgKey,
-              home: const DesktopShell(),
+      child: Stack(
+        children: [
+          // Captured subtree — the whole app, dialogs included.
+          Positioned.fill(
+            child: RepaintBoundary(
+              key: _shotKey,
+              child: MaterialApp(
+                title: 'Shinsoku',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.dark,
+                scaffoldMessengerKey: _msgKey,
+                home: const DesktopShell(),
+              ),
             ),
           ),
-        ),
-        // Operator hint — outside the RepaintBoundary, so it never appears in a
-        // capture even while it overlays the running window.
-        const Positioned(left: 14, bottom: 12, child: _HintBar()),
-      ]),
+          // Operator hint — outside the RepaintBoundary, so it never appears in a
+          // capture even while it overlays the running window.
+          const Positioned(left: 14, bottom: 12, child: _HintBar()),
+        ],
+      ),
     );
   }
 }

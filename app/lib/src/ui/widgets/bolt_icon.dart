@@ -14,10 +14,7 @@ class BoltIcon extends StatelessWidget {
       shaderCallback: (bounds) => SColors.voltGradient.createShader(bounds),
       child: Opacity(
         opacity: dim ? 0.5 : 1.0,
-        child: CustomPaint(
-          size: Size(size, size),
-          painter: _BoltPainter(),
-        ),
+        child: CustomPaint(size: Size(size, size), painter: _BoltPainter()),
       ),
     );
   }
@@ -26,7 +23,9 @@ class BoltIcon extends StatelessWidget {
 class _BoltPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
     final path = Path()
       ..moveTo(size.width * 0.54, 0)
       ..lineTo(size.width * 0.17, size.height * 0.56)

@@ -14,10 +14,10 @@ class CaptureConfig {
   final String token;
 
   CaptureConfig copyWith({bool? enabled, int? port, String? token}) => CaptureConfig(
-        enabled: enabled ?? this.enabled,
-        port: port ?? this.port,
-        token: token ?? this.token,
-      );
+    enabled: enabled ?? this.enabled,
+    port: port ?? this.port,
+    token: token ?? this.token,
+  );
 }
 
 /// Loads/saves [CaptureConfig] as JSON in the app support dir. The token is
@@ -44,7 +44,9 @@ class CaptureService {
           );
         }
       }
-    } catch (_) {/* fall through to fresh defaults */}
+    } catch (_) {
+      /* fall through to fresh defaults */
+    }
     final fresh = CaptureConfig(enabled: false, port: _defaultPort, token: _genToken());
     await save(fresh);
     return fresh;
@@ -53,18 +55,17 @@ class CaptureService {
   static Future<void> save(CaptureConfig c) async {
     try {
       final f = await _file();
-      await f.writeAsString(jsonEncode({
-        'enabled': c.enabled,
-        'port': c.port,
-        'token': c.token,
-      }));
-    } catch (_) {/* best-effort; in-memory state still drives the session */}
+      await f.writeAsString(jsonEncode({'enabled': c.enabled, 'port': c.port, 'token': c.token}));
+    } catch (_) {
+      /* best-effort; in-memory state still drives the session */
+    }
   }
 
   static String _genToken() {
     final r = Random.secure();
-    return List<int>.generate(16, (_) => r.nextInt(256))
-        .map((b) => b.toRadixString(16).padLeft(2, '0'))
-        .join();
+    return List<int>.generate(
+      16,
+      (_) => r.nextInt(256),
+    ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 }
