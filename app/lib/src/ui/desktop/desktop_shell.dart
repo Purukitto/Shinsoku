@@ -458,7 +458,7 @@ class _VersionFooter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final update = ref.watch(updateProvider).valueOrNull;
+    final update = ref.watch(updateProvider).value;
     if (update != null) {
       return Padding(
         padding: const EdgeInsets.only(top: 8),
@@ -488,7 +488,7 @@ class _VersionFooter extends ConsumerWidget {
         ),
       );
     }
-    final version = ref.watch(appVersionProvider).valueOrNull;
+    final version = ref.watch(appVersionProvider).value;
     if (version == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 10, left: 9),

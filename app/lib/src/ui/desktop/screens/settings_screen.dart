@@ -26,7 +26,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final s = ref.watch(settingsProvider);
     final set = ref.read(settingsProvider.notifier);
     final cap = ref.watch(captureProvider);
-    final capStatus = cap.enabled ? ref.watch(captureStatusProvider).valueOrNull : null;
+    final capStatus = cap.enabled ? ref.watch(captureStatusProvider).value : null;
     return SizedBox(
       width: 760,
       child: Column(
