@@ -53,27 +53,21 @@ User-Agent the browser would have used, so links behind a login still work.
 <table>
   <tr>
     <td width="50%" align="center" valign="top">
-      <img src="docs/screenshots/active.png" alt="Active downloads list with live speeds and ETAs" width="100%" /><br/>
-      <sub><b>Active</b> — speeds, ETAs and per-segment progress</sub>
-    </td>
-    <td width="50%" align="center" valign="top">
       <img src="docs/screenshots/detail.png" alt="Download detail view with segment map, speed chart and checksum" width="100%" /><br/>
       <sub><b>Detail</b> — segment map, speed history and checksum</sub>
     </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top">
+    <td width="50%" align="center" valign="top">
       <img src="docs/screenshots/add.png" alt="Add download dialog with custom headers and expected checksum" width="100%" /><br/>
       <sub><b>Add</b> — URL probe, request headers and expected digest</sub>
     </td>
+  </tr>
+  <tr>
     <td align="center" valign="top">
       <img src="docs/screenshots/settings.png" alt="Settings: connections, speed limit, off-peak window and browser pairing" width="100%" /><br/>
       <sub><b>Settings</b> — connections, speed limit, off-peak and pairing</sub>
     </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center" valign="top">
-      <img src="docs/screenshots/completed.png" alt="Completed downloads, sorted into categories" width="720" /><br/>
+    <td align="center" valign="top">
+      <img src="docs/screenshots/completed.png" alt="Completed downloads, sorted into categories" width="100%" /><br/>
       <sub><b>Completed</b> — history, sorted into category folders</sub>
     </td>
   </tr>
