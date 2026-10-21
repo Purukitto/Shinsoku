@@ -11,11 +11,7 @@ import '../../widgets/s_btn.dart';
 import 'status_label.dart';
 
 class DownloadRow extends ConsumerStatefulWidget {
-  const DownloadRow({
-    super.key,
-    required this.id,
-    required this.onOpen,
-  });
+  const DownloadRow({super.key, required this.id, required this.onOpen});
 
   final String id;
   final VoidCallback onOpen;
@@ -61,11 +57,7 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                   children: [
                     Row(
                       children: [
-                        ExtChip(
-                          name: it.name,
-                          type: it.fileType,
-                          active: active,
-                        ),
+                        ExtChip(name: it.name, type: it.fileType, active: active),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Text(
@@ -119,9 +111,7 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                         ),
                         Text(
                           '${fmtPct(p)}${active && eta != null ? "  ·  ${fmtEta(eta)} left" : ""}',
-                          style: SText.monoSm(
-                            color: active ? SColors.mid : SColors.low,
-                          ),
+                          style: SText.monoSm(color: active ? SColors.mid : SColors.low),
                         ),
                       ],
                     ),
@@ -136,9 +126,7 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                 bottom: 0,
                 child: Container(
                   width: 3,
-                  decoration: BoxDecoration(
-                    gradient: active ? SColors.voltGradient : null,
-                  ),
+                  decoration: BoxDecoration(gradient: active ? SColors.voltGradient : null),
                 ),
               ),
             ],

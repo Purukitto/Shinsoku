@@ -23,9 +23,9 @@ List<int> _wave(int base, {int n = 60, double amp = 0.24, double phase = 0}) =>
 /// `count` per-connection bars jittered around overall progress [p] for a
 /// realistic segment map.
 List<SegmentInfo> _segs(int count, double p) => List<SegmentInfo>.generate(count, (i) {
-      final j = (((i * 53) % 31) - 15) / 60.0; // ~ -0.25..0.25
-      return SegmentInfo(index: i, progress: (p + j).clamp(0.04, 1.0));
-    });
+  final j = (((i * 53) % 31) - 15) / 60.0; // ~ -0.25..0.25
+  return SegmentInfo(index: i, progress: (p + j).clamp(0.04, 1.0));
+});
 
 DateTime _ago(Duration d) => DateTime.now().subtract(d);
 

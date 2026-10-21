@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SpeedChart extends StatelessWidget {
-  const SpeedChart({
-    super.key,
-    required this.data,
-    this.strokeWidth = 2.0,
-    this.showFill = true,
-  });
+  const SpeedChart({super.key, required this.data, this.strokeWidth = 2.0, this.showFill = true});
 
   final List<int> data;
   final double strokeWidth;

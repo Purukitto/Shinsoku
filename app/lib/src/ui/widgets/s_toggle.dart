@@ -27,7 +27,8 @@ class SToggle extends StatelessWidget {
         onTap: () => onChanged(!value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          width: w, height: h,
+          width: w,
+          height: h,
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             gradient: value ? SColors.voltGradient : null,
@@ -42,7 +43,8 @@ class SToggle extends StatelessWidget {
             curve: Curves.easeInOut,
             alignment: value ? Alignment.centerRight : Alignment.centerLeft,
             child: Container(
-              width: k, height: k,
+              width: k,
+              height: k,
               decoration: BoxDecoration(
                 color: value ? const Color(0xFF1B1020) : SColors.hi,
                 shape: BoxShape.circle,

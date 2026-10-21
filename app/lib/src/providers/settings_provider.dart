@@ -87,15 +87,9 @@ class SettingsNotifier extends Notifier<AppSettings> {
   }
 
   void setOffPeakWindow(int startMin, int endMin) {
-    rust.setOffPeak(
-      engine: _engine,
-      enabled: state.offPeak,
-      startMin: startMin,
-      endMin: endMin,
-    );
+    rust.setOffPeak(engine: _engine, enabled: state.offPeak, startMin: startMin, endMin: endMin);
     _set(state.copyWith(offPeakStartMin: startMin, offPeakEndMin: endMin));
   }
 }
 
-final settingsProvider =
-    NotifierProvider<SettingsNotifier, AppSettings>(SettingsNotifier.new);
+final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(SettingsNotifier.new);

@@ -18,11 +18,15 @@ class TrayService with TrayListener {
     trayManager.addListener(this);
     await trayManager.setIcon(_iconPath);
     await trayManager.setToolTip('Shinsoku');
-    await trayManager.setContextMenu(Menu(items: [
-      MenuItem(key: 'show', label: 'Show Shinsoku'),
-      MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Quit'),
-    ]));
+    await trayManager.setContextMenu(
+      Menu(
+        items: [
+          MenuItem(key: 'show', label: 'Show Shinsoku'),
+          MenuItem.separator(),
+          MenuItem(key: 'quit', label: 'Quit'),
+        ],
+      ),
+    );
   }
 
   Future<void> hideToTray() async {

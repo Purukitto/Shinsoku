@@ -1,40 +1,54 @@
-name: 💡 Feature request
-description: Suggest an idea or improvement
-title: "[Feature]: "
-labels: ["enhancement"]
+name: Feature request
+description: Suggest a feature or a change
+labels: [enhancement]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        The strongest case for a feature is a download you could not get, or could
+        not get fast, rather than a capability in the abstract. Check the
+        [Not built yet](https://github.com/Purukitto/Shinsoku#not-built-yet) list
+        first — it may already be planned.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of change
+      options:
+        - Download engine (speed, resume, queue)
+        - A protocol or stream format
+        - Browser extension
+        - UI or settings
+        - Platform support (Android / Linux)
+        - Packaging or updates
+        - Something else
+    validations:
+      required: true
+
   - type: textarea
     id: problem
     attributes:
-      label: Problem / motivation
-      description: What problem would this solve? What are you trying to do?
-      placeholder: I often download large files over flaky connections and ...
+      label: What you are trying to do
+      description: The download or workflow that does not work well today.
     validations:
       required: true
+
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed solution
-      description: Describe what you'd like to happen.
+      label: What you have in mind
     validations:
       required: true
+
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives considered
-      description: Any other approaches you've thought about.
-    validations:
-      required: false
-  - type: dropdown
-    id: area
+      label: Alternatives you considered
+      description: Including how other download managers handle it.
+
+  - type: checkboxes
+    id: help
     attributes:
-      label: Area
+      label: Would you like to build it
       options:
-        - Download engine (core / Rust)
-        - UI (app / Flutter)
-        - Browser extension
-        - HLS / video capture
-        - Packaging / distribution
-        - Other
-    validations:
-      required: false
+        - label: I would be willing to open a pull request for this

@@ -19,8 +19,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     required super.portManager,
   });
 
-  CrossPlatformFinalizerArg
-  get rust_arc_decrement_strong_count_ShinsokuEnginePtr => wire
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_ShinsokuEnginePtr => wire
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShinsokuEnginePtr;
 
   @protected
@@ -45,9 +44,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  RustStreamSink<DownloadProgress> dco_decode_StreamSink_download_progress_Sse(
-    dynamic raw,
-  );
+  RustStreamSink<DownloadProgress> dco_decode_StreamSink_download_progress_Sse(dynamic raw);
 
   @protected
   String dco_decode_String(dynamic raw);
@@ -178,9 +175,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_box_autoadd_bool(SseDeserializer deserializer);
 
   @protected
-  DownloadItem sse_decode_box_autoadd_download_item(
-    SseDeserializer deserializer,
-  );
+  DownloadItem sse_decode_box_autoadd_download_item(SseDeserializer deserializer);
 
   @protected
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
@@ -207,14 +202,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
-  List<DownloadItem> sse_decode_list_download_item(
-    SseDeserializer deserializer,
-  );
+  List<DownloadItem> sse_decode_list_download_item(SseDeserializer deserializer);
 
   @protected
-  List<DownloadProgress> sse_decode_list_download_progress(
-    SseDeserializer deserializer,
-  );
+  List<DownloadProgress> sse_decode_list_download_progress(SseDeserializer deserializer);
 
   @protected
   Uint64List sse_decode_list_prim_u_64_strict(SseDeserializer deserializer);
@@ -223,9 +214,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
-  List<(String, String)> sse_decode_list_record_string_string(
-    SseDeserializer deserializer,
-  );
+  List<(String, String)> sse_decode_list_record_string_string(SseDeserializer deserializer);
 
   @protected
   List<SegmentInfo> sse_decode_list_segment_info(SseDeserializer deserializer);
@@ -237,9 +226,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
 
   @protected
-  DownloadItem? sse_decode_opt_box_autoadd_download_item(
-    SseDeserializer deserializer,
-  );
+  DownloadItem? sse_decode_opt_box_autoadd_download_item(SseDeserializer deserializer);
 
   @protected
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
@@ -248,9 +235,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ProbeResult sse_decode_probe_result(SseDeserializer deserializer);
 
   @protected
-  (String, String) sse_decode_record_string_string(
-    SseDeserializer deserializer,
-  );
+  (String, String) sse_decode_record_string_string(SseDeserializer deserializer);
 
   @protected
   SegmentInfo sse_decode_segment_info(SseDeserializer deserializer);
@@ -274,10 +259,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   BigInt sse_decode_usize(SseDeserializer deserializer);
 
   @protected
-  void sse_encode_AnyhowException(
-    AnyhowException self,
-    SseSerializer serializer,
-  );
+  void sse_encode_AnyhowException(AnyhowException self, SseSerializer serializer);
 
   @protected
   void
@@ -294,8 +276,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  void
-  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShinsokuEngine(
+  void sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShinsokuEngine(
     ShinsokuEngine self,
     SseSerializer serializer,
   );
@@ -316,16 +297,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_bool(bool self, SseSerializer serializer);
 
   @protected
-  void sse_encode_box_autoadd_download_item(
-    DownloadItem self,
-    SseSerializer serializer,
-  );
+  void sse_encode_box_autoadd_download_item(DownloadItem self, SseSerializer serializer);
 
   @protected
-  void sse_encode_box_autoadd_i_64(
-    PlatformInt64 self,
-    SseSerializer serializer,
-  );
+  void sse_encode_box_autoadd_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
   void sse_encode_capture_status(CaptureStatus self, SseSerializer serializer);
@@ -337,16 +312,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_download_kind(DownloadKind self, SseSerializer serializer);
 
   @protected
-  void sse_encode_download_progress(
-    DownloadProgress self,
-    SseSerializer serializer,
-  );
+  void sse_encode_download_progress(DownloadProgress self, SseSerializer serializer);
 
   @protected
-  void sse_encode_download_status(
-    DownloadStatus self,
-    SseSerializer serializer,
-  );
+  void sse_encode_download_status(DownloadStatus self, SseSerializer serializer);
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
@@ -355,40 +324,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
-  void sse_encode_list_download_item(
-    List<DownloadItem> self,
-    SseSerializer serializer,
-  );
+  void sse_encode_list_download_item(List<DownloadItem> self, SseSerializer serializer);
 
   @protected
-  void sse_encode_list_download_progress(
-    List<DownloadProgress> self,
-    SseSerializer serializer,
-  );
+  void sse_encode_list_download_progress(List<DownloadProgress> self, SseSerializer serializer);
 
   @protected
-  void sse_encode_list_prim_u_64_strict(
-    Uint64List self,
-    SseSerializer serializer,
-  );
+  void sse_encode_list_prim_u_64_strict(Uint64List self, SseSerializer serializer);
 
   @protected
-  void sse_encode_list_prim_u_8_strict(
-    Uint8List self,
-    SseSerializer serializer,
-  );
+  void sse_encode_list_prim_u_8_strict(Uint8List self, SseSerializer serializer);
 
   @protected
-  void sse_encode_list_record_string_string(
-    List<(String, String)> self,
-    SseSerializer serializer,
-  );
+  void sse_encode_list_record_string_string(List<(String, String)> self, SseSerializer serializer);
 
   @protected
-  void sse_encode_list_segment_info(
-    List<SegmentInfo> self,
-    SseSerializer serializer,
-  );
+  void sse_encode_list_segment_info(List<SegmentInfo> self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
@@ -397,25 +348,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
 
   @protected
-  void sse_encode_opt_box_autoadd_download_item(
-    DownloadItem? self,
-    SseSerializer serializer,
-  );
+  void sse_encode_opt_box_autoadd_download_item(DownloadItem? self, SseSerializer serializer);
 
   @protected
-  void sse_encode_opt_box_autoadd_i_64(
-    PlatformInt64? self,
-    SseSerializer serializer,
-  );
+  void sse_encode_opt_box_autoadd_i_64(PlatformInt64? self, SseSerializer serializer);
 
   @protected
   void sse_encode_probe_result(ProbeResult self, SseSerializer serializer);
 
   @protected
-  void sse_encode_record_string_string(
-    (String, String) self,
-    SseSerializer serializer,
-  );
+  void sse_encode_record_string_string((String, String) self, SseSerializer serializer);
 
   @protected
   void sse_encode_segment_info(SegmentInfo self, SseSerializer serializer);
@@ -446,12 +388,10 @@ class RustLibWire implements BaseWire {
       RustLibWire(lib.ffiDynamicLibrary);
 
   /// Holds the symbol lookup function.
-  final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
-  _lookup;
+  final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) _lookup;
 
   /// The symbols are looked up in [dynamicLibrary].
-  RustLibWire(ffi.DynamicLibrary dynamicLibrary)
-    : _lookup = dynamicLibrary.lookup;
+  RustLibWire(ffi.DynamicLibrary dynamicLibrary) : _lookup = dynamicLibrary.lookup;
 
   void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShinsokuEngine(

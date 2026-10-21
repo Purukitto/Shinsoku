@@ -17,18 +17,20 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# IDE
+# Editor and agent tooling — local to a machine, not part of the project
+.claude/
+.cursor/
 .idea/
 .vscode/
 *.iml
 *.iws
 *.swp
+CLAUDE.md
+AGENTS.md
+.mcp.json
 
 # Logs
 *.log
 
 # Browser extension build output
 extension/dist/
-
-# Claude Code local settings (machine-specific)
-.claude/settings.local.json

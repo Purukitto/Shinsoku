@@ -22,11 +22,11 @@ class CaptureState {
   final String token;
 
   CaptureState copyWith({bool? enabled, bool? running, int? port, String? token}) => CaptureState(
-        enabled: enabled ?? this.enabled,
-        running: running ?? this.running,
-        port: port ?? this.port,
-        token: token ?? this.token,
-      );
+    enabled: enabled ?? this.enabled,
+    running: running ?? this.running,
+    port: port ?? this.port,
+    token: token ?? this.token,
+  );
 
   static const empty = CaptureState(enabled: false, running: false, port: 0, token: '');
 
@@ -77,9 +77,7 @@ class CaptureNotifier extends Notifier<CaptureState> {
 
   Future<void> setEnabled(bool on) async {
     state = state.copyWith(enabled: on);
-    await CaptureService.save(
-      CaptureConfig(enabled: on, port: state.port, token: state.token),
-    );
+    await CaptureService.save(CaptureConfig(enabled: on, port: state.port, token: state.token));
     if (on) {
       await _start();
     } else {
@@ -89,8 +87,7 @@ class CaptureNotifier extends Notifier<CaptureState> {
   }
 }
 
-final captureProvider =
-    NotifierProvider<CaptureNotifier, CaptureState>(CaptureNotifier.new);
+final captureProvider = NotifierProvider<CaptureNotifier, CaptureState>(CaptureNotifier.new);
 
 /// Polls live server activity (last-seen + capture count) while watched, so the
 /// Settings panel can show "Browser connected". Auto-disposes when not visible.

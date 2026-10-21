@@ -1,0 +1,5 @@
+# Bulk reformats, skipped by GitHub blame.
+# Locally: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style(ui): format the Dart tree with dart format
+32d44f71b83e2d6dba6384b9699a53432e818d97

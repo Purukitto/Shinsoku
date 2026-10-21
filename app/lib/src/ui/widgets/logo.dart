@@ -17,14 +17,18 @@ class ShinsokuLogo extends StatelessWidget {
       children: [
         // kanji tile
         Container(
-          width: size, height: size,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             gradient: SColors.voltGradient,
             borderRadius: BorderRadius.circular(size * 0.28),
-            boxShadow: [BoxShadow(color: const Color(0x59A25CFF), blurRadius: 16, offset: const Offset(0, 4))],
+            boxShadow: [
+              BoxShadow(color: const Color(0x59A25CFF), blurRadius: 16, offset: const Offset(0, 4)),
+            ],
           ),
           alignment: Alignment.center,
-          child: Text('速',
+          child: Text(
+            '速',
             style: TextStyle(
               fontFamily: kFontUi,
               fontSize: size * 0.52,
@@ -40,7 +44,8 @@ class ShinsokuLogo extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Shinsoku',
+              Text(
+                'Shinsoku',
                 style: TextStyle(
                   fontFamily: kFontUi,
                   fontSize: size * 0.5,
@@ -51,9 +56,11 @@ class ShinsokuLogo extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 3),
-              Text('神速 · GODSPEED',
-                style: SText.monoXs(color: SColors.low).copyWith(
-                  fontSize: size * 0.235, letterSpacing: 0.18 * size * 0.235),
+              Text(
+                '神速 · GODSPEED',
+                style: SText.monoXs(
+                  color: SColors.low,
+                ).copyWith(fontSize: size * 0.235, letterSpacing: 0.18 * size * 0.235),
               ),
             ],
           ),

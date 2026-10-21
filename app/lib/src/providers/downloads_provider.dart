@@ -7,15 +7,16 @@ import '../rust/engine/download.dart' as rd;
 
 /// Single engine instance. Requires `RustLib.init()` (see main). Overridden in
 /// `main()` with the persistent store path; this fallback runs in-memory.
-final engineProvider =
-    Provider<rust.ShinsokuEngine>((ref) => rust.createEngine(dbPath: ''));
+final engineProvider = Provider<rust.ShinsokuEngine>((ref) => rust.createEngine(dbPath: ''));
 
 /// Default dest: OS Downloads dir, else app documents.
 final downloadDirProvider = FutureProvider<String>((ref) async {
   try {
     final dir = await getDownloadsDirectory();
     if (dir != null) return dir.path;
-  } catch (_) {/* not supported on this platform */}
+  } catch (_) {
+    /* not supported on this platform */
+  }
   return (await getApplicationDocumentsDirectory()).path;
 });
 
@@ -61,9 +62,7 @@ DownloadItem _map(rd.DownloadItem r) => DownloadItem(
   peakBps: r.peakBps.toInt(),
   status: _status(r.status),
   connections: r.connections,
-  segments: r.segments
-      .map((s) => SegmentInfo(index: s.index, progress: _segProgress(s)))
-      .toList(),
+  segments: r.segments.map((s) => SegmentInfo(index: s.index, progress: _segProgress(s))).toList(),
   speedHistory: r.speedHistory.map((e) => e.toInt()).toList(),
   addedAt: DateTime.fromMillisecondsSinceEpoch(r.addedAtMs),
   completedAt: r.completedAtMs == null
@@ -206,10 +205,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
     final idx = state.indexWhere((i) => i.id == id);
     if (idx < 0) return;
     final next = [...state];
-    next[idx] = state[idx].copyWith(
-      status: s,
-      speedBps: zeroSpeed ? 0 : state[idx].speedBps,
-    );
+    next[idx] = state[idx].copyWith(status: s, speedBps: zeroSpeed ? 0 : state[idx].speedBps);
     state = next;
   }
 
@@ -217,8 +213,9 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   void setRunning(bool running) {}
 }
 
-final downloadsProvider =
-    NotifierProvider<DownloadsNotifier, List<DownloadItem>>(DownloadsNotifier.new);
+final downloadsProvider = NotifierProvider<DownloadsNotifier, List<DownloadItem>>(
+  DownloadsNotifier.new,
+);
 
 /// Throughput sparkline; own timer so only the chart rebuilds.
 class GlobalSpeedNotifier extends Notifier<List<int>> {
@@ -250,8 +247,9 @@ class GlobalSpeedNotifier extends Notifier<List<int>> {
   }
 }
 
-final globalSpeedHistoryProvider =
-    NotifierProvider<GlobalSpeedNotifier, List<int>>(GlobalSpeedNotifier.new);
+final globalSpeedHistoryProvider = NotifierProvider<GlobalSpeedNotifier, List<int>>(
+  GlobalSpeedNotifier.new,
+);
 
 int _statusOrder(DownloadStatus s) => switch (s) {
   DownloadStatus.downloading => 0,
@@ -262,30 +260,32 @@ int _statusOrder(DownloadStatus s) => switch (s) {
 };
 
 /// Single download by id; rows watch via `select`.
-final downloadItemProvider =
-    Provider.autoDispose.family<DownloadItem?, String>((ref, id) {
-  return ref.watch(downloadsProvider.select((list) {
-    for (final i in list) {
-      if (i.id == id) return i;
-    }
-    return null;
-  }));
+final downloadItemProvider = Provider.autoDispose.family<DownloadItem?, String>((ref, id) {
+  return ref.watch(
+    downloadsProvider.select((list) {
+      for (final i in list) {
+        if (i.id == id) return i;
+      }
+      return null;
+    }),
+  );
 });
 
 /// Ordered ids of non-completed downloads as one value-equal string, so the list
 /// only rebuilds on structural changes, not every tick.
 final visibleDownloadIdsProvider = Provider.autoDispose<List<String>>((ref) {
-  final csv = ref.watch(downloadsProvider.select((list) {
-    final v = list.where((i) => i.status != DownloadStatus.completed).toList()
-      ..sort((a, b) => _statusOrder(a.status).compareTo(_statusOrder(b.status)));
-    return v.map((i) => i.id).join(' ');
-  }));
+  final csv = ref.watch(
+    downloadsProvider.select((list) {
+      final v = list.where((i) => i.status != DownloadStatus.completed).toList()
+        ..sort((a, b) => _statusOrder(a.status).compareTo(_statusOrder(b.status)));
+      return v.map((i) => i.id).join(' ');
+    }),
+  );
   return csv.isEmpty ? const <String>[] : csv.split(' ');
 });
 
 /// Live full item for detail; polls while open, auto-disposes.
-final liveDownloadProvider =
-    StreamProvider.autoDispose.family<DownloadItem?, String>((ref, id) {
+final liveDownloadProvider = StreamProvider.autoDispose.family<DownloadItem?, String>((ref, id) {
   final engine = ref.watch(engineProvider);
   late final StreamController<DownloadItem?> ctrl;
   Timer? timer;
