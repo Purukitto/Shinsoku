@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU64, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
@@ -20,6 +20,7 @@ use crate::engine::download::{
     classify, DownloadItem, DownloadKind, DownloadProgress, DownloadStatus,
 };
 use crate::engine::orchestrator::{fetch_plan, run_segments};
+use crate::engine::retry::{describe, within, Retry, RetryPolicy};
 use crate::engine::throttle::RateLimiter;
 use crate::protocols::hls::{self, KeyMethod};
 use crate::protocols::http::{build_client, build_headers};
@@ -49,6 +50,8 @@ struct Inner {
 struct Active {
     cancel: CancellationToken,
     seg_done: Vec<Arc<AtomicU64>>,
+    /// Retries this run has made; mirrored into `DownloadItem.retry_count`.
+    retries: Arc<AtomicU32>,
 }
 
 /// Shared engine state behind `Arc`.
@@ -71,6 +74,8 @@ pub(crate) struct Shared {
     off_peak_enabled: AtomicBool,
     off_peak_start_min: AtomicU16,
     off_peak_end_min: AtomicU16,
+    /// Read once per run, so a change applies from the next start or resume.
+    retry_policy: Mutex<RetryPolicy>,
     /// Persistence target; `None` disables persistence (used by tests).
     store: Option<PathBuf>,
     /// Serialises store writes so concurrent saves can't interleave.
@@ -123,6 +128,7 @@ impl QueueManager {
             off_peak_enabled: AtomicBool::new(false),
             off_peak_start_min: AtomicU16::new(0),
             off_peak_end_min: AtomicU16::new(0),
+            retry_policy: Mutex::new(RetryPolicy::default()),
             store,
             persist_lock: Mutex::new(()),
         });
@@ -191,6 +197,7 @@ impl QueueManager {
             kind: DownloadKind::Http,
             segment_total: 0,
             segment_done: 0,
+            retry_count: 0,
         };
         {
             let mut inner = self.shared.inner.write().unwrap();
@@ -244,6 +251,7 @@ impl QueueManager {
             kind: DownloadKind::Hls,
             segment_total: 0,
             segment_done: 0,
+            retry_count: 0,
         };
         {
             let mut inner = self.shared.inner.write().unwrap();
@@ -376,6 +384,10 @@ impl QueueManager {
     pub fn set_categorize(&self, on: bool) {
         self.shared.categorize.store(on, Ordering::Relaxed);
     }
+
+    pub fn set_retry_policy(&self, policy: RetryPolicy) {
+        *self.shared.retry_policy.lock().unwrap() = policy;
+    }
 }
 
 impl Default for QueueManager {
@@ -397,12 +409,11 @@ async fn aggregator(shared: Arc<Shared>) {
         last = now;
         ticks = ticks.wrapping_add(1);
 
-        // snapshot per-segment counters of running downloads
-        let snaps: Vec<(String, Vec<u64>)> = {
+        // snapshot per-segment counters + retry counts of running downloads
+        let snaps: Vec<(String, Vec<u64>, u32)> = {
             let active = shared.active.lock().unwrap();
             active
                 .iter()
-                .filter(|(_, a)| !a.seg_done.is_empty())
                 .map(|(id, a)| {
                     (
                         id.clone(),
@@ -410,19 +421,23 @@ async fn aggregator(shared: Arc<Shared>) {
                             .iter()
                             .map(|c| c.load(Ordering::Relaxed))
                             .collect(),
+                        a.retries.load(Ordering::Relaxed),
                     )
                 })
                 .collect()
         };
+        let segmented = snaps.iter().any(|(_, segs, _)| !segs.is_empty());
 
         let mut emits = Vec::new();
         {
             let mut inner = shared.inner.write().unwrap();
-            for (id, segs) in &snaps {
+            for (id, segs, retries) in &snaps {
                 let Some(item) = inner.items.get_mut(id) else {
                     continue;
                 };
-                if !matches!(item.status, DownloadStatus::Downloading) {
+                item.retry_count = *retries;
+                // HLS has no segment counters; run_hls reports its own bytes
+                if segs.is_empty() || !matches!(item.status, DownloadStatus::Downloading) {
                     continue;
                 }
                 let done: u64 = segs.iter().sum();
@@ -455,7 +470,7 @@ async fn aggregator(shared: Arc<Shared>) {
         }
 
         // checkpoint live segment offsets so a crash resumes near where it left off
-        if ticks.is_multiple_of(CHECKPOINT_TICKS) && !snaps.is_empty() {
+        if ticks.is_multiple_of(CHECKPOINT_TICKS) && segmented {
             schedule_persist(&shared);
         }
     }
@@ -528,6 +543,8 @@ fn minute_in_window(mins: u16, start: u16, end: u16) -> bool {
 }
 
 fn start_download(shared: Arc<Shared>, id: String) {
+    let cancel = CancellationToken::new();
+    let retry = Retry::new(*shared.retry_policy.lock().unwrap());
     {
         let mut active = shared.active.lock().unwrap();
         if active.contains_key(&id) {
@@ -536,23 +553,19 @@ fn start_download(shared: Arc<Shared>, id: String) {
         active.insert(
             id.clone(),
             Active {
-                cancel: CancellationToken::new(),
+                cancel: cancel.clone(),
                 seg_done: Vec::new(),
+                retries: retry.count.clone(),
             },
         );
     }
-    let cancel = shared
-        .active
-        .lock()
-        .unwrap()
-        .get(&id)
-        .unwrap()
-        .cancel
-        .clone();
     {
         let mut inner = shared.inner.write().unwrap();
         match inner.items.get_mut(&id) {
-            Some(it) => it.status = DownloadStatus::Downloading,
+            Some(it) => {
+                it.status = DownloadStatus::Downloading;
+                it.retry_count = 0;
+            }
             None => {
                 shared.active.lock().unwrap().remove(&id);
                 return;
@@ -563,11 +576,11 @@ fn start_download(shared: Arc<Shared>, id: String) {
     let s = shared.clone();
     shared
         .rt
-        .spawn(async move { run_download(s, id, cancel).await });
+        .spawn(async move { run_download(s, id, cancel, retry).await });
 }
 
-async fn run_download(shared: Arc<Shared>, id: String, cancel: CancellationToken) {
-    let result = run_download_inner(&shared, &id, &cancel).await;
+async fn run_download(shared: Arc<Shared>, id: String, cancel: CancellationToken, retry: Retry) {
+    let result = run_download_inner(&shared, &id, &cancel, &retry).await;
 
     // temp to delete after releasing the lock (failure that wrote nothing)
     let mut cleanup_temp: Option<PathBuf> = None;
@@ -577,6 +590,7 @@ async fn run_download(shared: Arc<Shared>, id: String, cancel: CancellationToken
         let mut inner = shared.inner.write().unwrap();
         if let Some(item) = inner.items.get_mut(&id) {
             item.speed_bps = 0;
+            item.retry_count = retry.count.load(Ordering::Relaxed);
             if cancel.is_cancelled() {
                 if matches!(item.status, DownloadStatus::Downloading) {
                     item.status = DownloadStatus::Paused;
@@ -597,7 +611,7 @@ async fn run_download(shared: Arc<Shared>, id: String, cancel: CancellationToken
                     }
                     Err(e) => {
                         item.status = DownloadStatus::Error;
-                        item.error = Some(e.to_string());
+                        item.error = Some(describe(e));
                         // no bytes written → drop temp
                         if item.downloaded_bytes == 0 {
                             cleanup_temp = Some(temp_path(&PathBuf::from(&item.dest_path)));
@@ -659,6 +673,7 @@ async fn run_download_inner(
     shared: &Arc<Shared>,
     id: &str,
     cancel: &CancellationToken,
+    retry: &Retry,
 ) -> Result<()> {
     let kind = {
         let inner = shared.inner.read().unwrap();
@@ -669,7 +684,7 @@ async fn run_download_inner(
             .unwrap_or(DownloadKind::Http)
     };
     if kind == DownloadKind::Hls {
-        return run_hls(shared, id, cancel).await;
+        return run_hls(shared, id, cancel, retry).await;
     }
 
     let (url, dest, mut segments, is_resume, connections, headers) = {
@@ -692,7 +707,12 @@ async fn run_download_inner(
     let mut temp = temp_path(&dest);
 
     if !is_resume {
-        let plan = fetch_plan(&shared.http, &url, connections, &headers).await?;
+        let stall = retry.policy.stall_timeout;
+        let plan = retry
+            .run(cancel, || async {
+                within(stall, fetch_plan(&shared.http, &url, connections, &headers)).await?
+            })
+            .await?;
         let filename = plan.filename.clone().unwrap_or_else(|| filename_of(&dest));
         let ftype = classify(&filename, plan.mime_type.as_deref());
 
@@ -746,6 +766,7 @@ async fn run_download_inner(
         &counters,
         &headers,
         cancel.clone(),
+        retry,
     )
     .await;
 
@@ -768,7 +789,12 @@ async fn run_download_inner(
 /// continues from `segment_done`. Progress is tracked here directly (the item is
 /// not registered with the byte aggregator), so `downloaded_bytes` always equals
 /// the committed byte length (the exact resume anchor).
-async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> Result<()> {
+async fn run_hls(
+    shared: &Arc<Shared>,
+    id: &str,
+    cancel: &CancellationToken,
+    retry: &Retry,
+) -> Result<()> {
     let (playlist_url, dest, headers, resume_committed, resume_done, connections, is_first) = {
         let inner = shared.inner.read().unwrap();
         let it = inner
@@ -785,10 +811,15 @@ async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> 
             it.segment_total == 0,
         )
     };
-    let client = &shared.http;
+    let fetch = Fetcher {
+        client: &shared.http,
+        headers: &headers,
+        retry,
+        cancel,
+    };
 
     let base = Url::parse(&playlist_url).map_err(|e| anyhow::anyhow!("bad playlist url: {e}"))?;
-    let media = fetch_media_playlist(client, &base, &headers).await?;
+    let media = fetch_media_playlist(&fetch, &base).await?;
     if !media.endlist {
         return Err(anyhow::anyhow!("live streams are not supported"));
     }
@@ -841,7 +872,7 @@ async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> 
     let temp = temp_path(&dest);
 
     // Pre-fetch distinct AES-128 keys (usually one for the whole playlist).
-    let keys = fetch_keys(client, &media, &headers).await?;
+    let keys = fetch_keys(&fetch, &media).await?;
 
     // Open temp: resume truncates to the committed prefix; otherwise start fresh,
     // writing the fMP4 init segment first when present.
@@ -860,7 +891,7 @@ async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> 
         let mut f = File::create(&temp).await?;
         let mut committed = 0u64;
         if let Some(init_url) = &media.init {
-            let bytes = fetch_bytes(client, init_url, &headers).await?;
+            let bytes = fetch.bytes(init_url).await?;
             f.write_all(&bytes).await?;
             committed = bytes.len() as u64;
         }
@@ -901,8 +932,9 @@ async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> 
         .collect();
 
     // Bounded-concurrency, order-preserving segment download → ordered append.
+    let (fetch, limiter) = (&fetch, &*shared.limiter);
     let mut stream = futures::stream::iter(tasks)
-        .map(|t| fetch_decrypt_segment(client, &headers, &shared.limiter, t))
+        .map(|t| async move { fetch.segment(limiter, &t).await })
         .buffered(connections);
 
     let mut done = resume_done;
@@ -977,19 +1009,15 @@ async fn run_hls(shared: &Arc<Shared>, id: &str, cancel: &CancellationToken) -> 
 }
 
 /// Fetch the playlist and resolve a master to its highest-bitrate media playlist.
-async fn fetch_media_playlist(
-    client: &Client,
-    url: &Url,
-    headers: &HeaderMap,
-) -> Result<hls::MediaPlaylist> {
-    let text = fetch_text(client, url, headers).await?;
+async fn fetch_media_playlist(fetch: &Fetcher<'_>, url: &Url) -> Result<hls::MediaPlaylist> {
+    let text = fetch.text(url).await?;
     match hls::parse(&text, url)? {
         hls::Playlist::Media(m) => Ok(m),
         hls::Playlist::Master(variants) => {
             let best = hls::pick_best(&variants)
                 .ok_or_else(|| anyhow::anyhow!("master playlist has no variants"))?;
             let burl = best.url.clone();
-            let text = fetch_text(client, &burl, headers).await?;
+            let text = fetch.text(&burl).await?;
             match hls::parse(&text, &burl)? {
                 hls::Playlist::Media(m) => Ok(m),
                 hls::Playlist::Master(_) => {
@@ -1002,9 +1030,8 @@ async fn fetch_media_playlist(
 
 /// Pre-fetch each distinct AES-128 key (16 bytes), mapped by key URI.
 async fn fetch_keys(
-    client: &Client,
+    fetch: &Fetcher<'_>,
     media: &hls::MediaPlaylist,
-    headers: &HeaderMap,
 ) -> Result<HashMap<String, [u8; 16]>> {
     let mut keys = HashMap::new();
     for seg in &media.segments {
@@ -1020,7 +1047,7 @@ async fn fetch_keys(
         if keys.contains_key(id) {
             continue;
         }
-        let bytes = fetch_bytes(client, uri, headers).await?;
+        let bytes = fetch.bytes(uri).await?;
         if bytes.len() != 16 {
             return Err(anyhow::anyhow!(
                 "AES-128 key must be 16 bytes, got {}",
@@ -1042,51 +1069,74 @@ struct SegTask {
     iv: [u8; 16],
 }
 
-/// Download one media segment fully (rate-limited) and AES-128-decrypt it if a
-/// key is supplied. Cancellation is handled by the caller dropping the stream.
-async fn fetch_decrypt_segment(
-    client: &Client,
-    headers: &HeaderMap,
-    limiter: &RateLimiter,
-    task: SegTask,
-) -> Result<Vec<u8>> {
-    let resp = client
-        .get(task.url)
-        .headers(headers.clone())
-        .send()
-        .await?
-        .error_for_status()?;
-    let mut stream = resp.bytes_stream();
-    let mut buf = Vec::new();
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk?;
-        limiter.acquire(chunk.len() as u64).await;
-        buf.extend_from_slice(&chunk);
-    }
-    if let Some(key) = task.key {
-        buf = hls::decrypt_segment(buf, &key, &task.iv)?;
-    }
-    Ok(buf)
+/// HLS requests with the download's headers, retried through transient failures
+/// and bounded by the stall timeout.
+struct Fetcher<'a> {
+    client: &'a Client,
+    headers: &'a HeaderMap,
+    retry: &'a Retry,
+    cancel: &'a CancellationToken,
 }
 
-async fn fetch_text(client: &Client, url: &Url, headers: &HeaderMap) -> Result<String> {
-    let resp = client
-        .get(url.clone())
-        .headers(headers.clone())
-        .send()
-        .await?
-        .error_for_status()?;
-    Ok(resp.text().await?)
-}
+impl Fetcher<'_> {
+    async fn text(&self, url: &Url) -> Result<String> {
+        self.whole(url, |r| r.text()).await
+    }
 
-async fn fetch_bytes(client: &Client, url: &Url, headers: &HeaderMap) -> Result<Vec<u8>> {
-    let resp = client
-        .get(url.clone())
-        .headers(headers.clone())
-        .send()
-        .await?
-        .error_for_status()?;
-    Ok(resp.bytes().await?.to_vec())
+    async fn bytes(&self, url: &Url) -> Result<bytes::Bytes> {
+        self.whole(url, |r| r.bytes()).await
+    }
+
+    /// Small body read in one go (playlist, key, init map); the stall timeout
+    /// bounds the whole request.
+    async fn whole<T, F, Fut>(&self, url: &Url, read: F) -> Result<T>
+    where
+        F: Fn(reqwest::Response) -> Fut,
+        Fut: std::future::Future<Output = reqwest::Result<T>>,
+    {
+        let stall = self.retry.policy.stall_timeout;
+        self.retry
+            .run(self.cancel, || async {
+                within(stall, async {
+                    let resp = self
+                        .client
+                        .get(url.clone())
+                        .headers(self.headers.clone())
+                        .send()
+                        .await?
+                        .error_for_status()?;
+                    Ok::<T, anyhow::Error>(read(resp).await?)
+                })
+                .await?
+            })
+            .await
+    }
+
+    /// Download one media segment fully (rate-limited) and AES-128-decrypt it if
+    /// a key is supplied. Cancellation is handled by the caller dropping the stream.
+    async fn segment(&self, limiter: &RateLimiter, task: &SegTask) -> Result<Vec<u8>> {
+        let stall = self.retry.policy.stall_timeout;
+        self.retry
+            .run(self.cancel, || async {
+                let req = self
+                    .client
+                    .get(task.url.clone())
+                    .headers(self.headers.clone());
+                let resp = within(stall, req.send()).await??.error_for_status()?;
+                let mut stream = resp.bytes_stream();
+                let mut buf = Vec::new();
+                while let Some(chunk) = within(stall, stream.next()).await? {
+                    let chunk = chunk?;
+                    limiter.acquire(chunk.len() as u64).await;
+                    buf.extend_from_slice(&chunk);
+                }
+                match task.key {
+                    Some(key) => hls::decrypt_segment(buf, &key, &task.iv),
+                    None => Ok(buf),
+                }
+            })
+            .await
+    }
 }
 
 /// Write counters back into the item so resume continues from the right offsets.

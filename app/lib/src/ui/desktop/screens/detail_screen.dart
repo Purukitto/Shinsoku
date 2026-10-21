@@ -46,7 +46,18 @@ class DetailScreen extends ConsumerWidget {
     }
     final p = it.progress;
     final active = it.status == DownloadStatus.downloading;
+    final failed = it.status == DownloadStatus.error;
     final eta = it.etaSeconds;
+    final meta = [
+      ['Source', it.host],
+      ['File type', it.isHls ? 'HLS stream' : _kindOf(it.fileType)],
+      ['Destination', '~/Downloads/Shinsoku'],
+      if (it.isHls)
+        ['Segments', '${it.segmentDone} / ${it.segmentTotal}']
+      else
+        ['Connections', '${it.connections} simultaneous'],
+      if (it.retryCount > 0) ['Reconnects', '${it.retryCount}'],
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,9 +114,9 @@ class DetailScreen extends ConsumerWidget {
                 else if (it.status != DownloadStatus.completed)
                   SBtn(
                     kind: BtnKind.primary,
-                    icon: Icons.play_arrow_rounded,
+                    icon: failed ? Icons.refresh_rounded : Icons.play_arrow_rounded,
                     onPressed: () => notifier.resume(it.id),
-                    child: const Text('Resume'),
+                    child: Text(failed ? 'Retry' : 'Resume'),
                   ),
                 if (it.status == DownloadStatus.completed) ...[
                   const SizedBox(width: 8),
@@ -131,6 +142,7 @@ class DetailScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 24),
+        if (failed && it.error != null) ...[_errorCard(it.error!), const SizedBox(height: 16)],
 
         // big progress card
         _card(
@@ -312,17 +324,8 @@ class DetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              for (final row in [
-                ['Source', it.host],
-                ['File type', it.isHls ? 'HLS stream' : _kindOf(it.fileType)],
-                ['Destination', '~/Downloads/Shinsoku'],
-                if (it.isHls)
-                  ['Segments', '${it.segmentDone} / ${it.segmentTotal}']
-                else
-                  ['Connections', '${it.connections} simultaneous'],
-              ]) ...[
-                _metaRow(row[0], row[1], last: row[0] == 'Connections' || row[0] == 'Segments'),
-              ],
+              for (final (i, row) in meta.indexed)
+                _metaRow(row[0], row[1], last: i == meta.length - 1),
             ],
           ),
         ),
@@ -330,6 +333,24 @@ class DetailScreen extends ConsumerWidget {
       ],
     );
   }
+
+  static Widget _errorCard(String error) => Container(
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+    decoration: BoxDecoration(
+      color: const Color(0x1FFF7A6B),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0x40FF7A6B)),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.error_outline_rounded, size: 16, color: SColors.danger),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(error, style: SText.uiBase(color: SColors.danger).copyWith(fontSize: 13)),
+        ),
+      ],
+    ),
+  );
 
   static Widget _checksumCard(DownloadItem it) {
     final algo = (it.checksumAlgo == 'md5' ? 'MD5' : 'SHA-256');

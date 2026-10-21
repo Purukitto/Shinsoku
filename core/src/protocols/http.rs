@@ -8,6 +8,9 @@ pub fn build_client() -> Client {
     Client::builder()
         .use_rustls_tls()
         .pool_max_idle_per_host(16)
+        // a silent server otherwise hangs a connect forever; stalls after
+        // connecting are caught per request by the retry policy
+        .connect_timeout(std::time::Duration::from_secs(15))
         // many CDNs reject requests with no User-Agent
         .user_agent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \

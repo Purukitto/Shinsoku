@@ -33,6 +33,7 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
 
     final p = it.progress;
     final active = it.status == DownloadStatus.downloading;
+    final failed = it.status == DownloadStatus.error;
     final eta = it.etaSeconds;
 
     return MouseRegion(
@@ -87,6 +88,13 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                                 onPressed: () => notifier.resume(it.id),
                                 tooltip: 'Resume',
                               ),
+                            if (failed)
+                              SIconBtn(
+                                icon: Icons.refresh_rounded,
+                                size: 30,
+                                onPressed: () => notifier.resume(it.id),
+                                tooltip: 'Retry',
+                              ),
                             SIconBtn(
                               icon: Icons.close_rounded,
                               size: 30,
@@ -104,8 +112,10 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                       children: [
                         Expanded(
                           child: Text(
-                            '${it.host}  ·  ${fmtBytes(it.downloadedBytes)} / ${fmtBytes(it.totalBytes)}  ·  ${it.connections} connections',
-                            style: SText.monoSm(),
+                            failed
+                                ? '${it.host}  ·  ${it.error ?? 'Failed'}'
+                                : '${it.host}  ·  ${fmtBytes(it.downloadedBytes)} / ${fmtBytes(it.totalBytes)}  ·  ${it.connections} connections',
+                            style: SText.monoSm(color: failed ? SColors.danger : null),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),

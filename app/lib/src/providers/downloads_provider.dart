@@ -74,6 +74,8 @@ DownloadItem _map(rd.DownloadItem r) => DownloadItem(
   isHls: r.kind == rd.DownloadKind.hls,
   segmentTotal: r.segmentTotal,
   segmentDone: r.segmentDone,
+  error: r.error,
+  retryCount: r.retryCount,
 );
 
 // ── live download list ────────────────────────────────────────────────────────
