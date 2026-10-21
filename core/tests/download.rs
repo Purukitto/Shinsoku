@@ -527,7 +527,7 @@ async fn hls_plaintext_concatenates_segments() {
 #[tokio::test]
 async fn hls_aes128_decrypts_segments() {
     use aes::Aes128;
-    use cbc::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
+    use cbc::cipher::{block_padding::Pkcs7, BlockModeEncrypt, KeyIvInit};
     type Enc = cbc::Encryptor<Aes128>;
 
     let key = [0x42u8; 16];
@@ -537,7 +537,7 @@ async fn hls_aes128_decrypts_segments() {
         let mut buf = plain.to_vec();
         buf.resize(buf.len() + (16 - buf.len() % 16), 0); // room for PKCS7
         let n = Enc::new(&key.into(), &iv.into())
-            .encrypt_padded_mut::<Pkcs7>(&mut buf, plain.len())
+            .encrypt_padded::<Pkcs7>(&mut buf, plain.len())
             .unwrap()
             .len();
         buf.truncate(n);
