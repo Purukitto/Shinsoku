@@ -8,6 +8,7 @@ use flutter_rust_bridge::frb;
 
 use crate::capture::CaptureHandle;
 use crate::engine::download::{classify, DownloadItem, DownloadProgress, ProbeResult};
+use crate::engine::retry::{within, RetryPolicy};
 use crate::frb_generated::StreamSink;
 use crate::protocols::http::{build_client, build_headers, probe};
 use crate::queue::manager::QueueManager;
@@ -138,7 +139,8 @@ pub async fn probe_url(url: String) -> anyhow::Result<ProbeResult> {
         });
     }
     let client = build_client();
-    let info = probe(&client, &url, &build_headers(&[])).await?;
+    let stall = RetryPolicy::default().stall_timeout;
+    let info = within(stall, probe(&client, &url, &build_headers(&[]))).await??;
     let filename = info.filename.clone().unwrap_or_else(|| {
         url.split('?')
             .next()

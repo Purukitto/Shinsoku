@@ -145,6 +145,13 @@ Every finished file is hashed — SHA-256, or MD5 if that is what you gave as th
 expected digest (the two are told apart by length) — and with an expected digest the
 detail screen shows **VERIFIED** or **MISMATCH**.
 
+A connection that drops, stalls for 30 seconds or gets a busy server reconnects on its
+own and carries on from the byte it reached, while the other segments keep going.
+Shinsoku gives up only when the server refuses outright (file not found, access
+denied, an expired link) or when nothing has moved for about two minutes. A server
+that ignores the requested byte range, or a file that changes size mid-download, also
+stops it, rather than writing a corrupt file.
+
 Minimise hides Shinsoku to the tray, where downloads keep running. Closing the window,
 or **Quit** in the tray menu, exits.
 
@@ -282,6 +289,7 @@ a tick never rebuilds the whole screen.
 | `core/src/queue/manager.rs` | `QueueManager` — scheduling, aggregation, off-peak, HLS, persistence |
 | `core/src/engine/orchestrator.rs` | Probe a URL and split it into byte-range segments |
 | `core/src/engine/worker.rs` | Stream one range into its slot, rate-limited and resumable |
+| `core/src/engine/retry.rs` | What is worth retrying, the backoff, and the failure reasons the UI shows |
 | `core/src/protocols/hls.rs` | Playlist parsing, variant choice, AES-128 |
 | `core/src/storage/` | Partial files, atomic JSON store, streaming SHA-256 / MD5 |
 | `core/src/capture/mod.rs` | Loopback server the extension posts to |
@@ -305,7 +313,6 @@ progress reuses the byte fields — are recorded in [docs/decisions.md](docs/dec
 - An installer, and code signing so SmartScreen stops warning.
 - Store listings for the extension. Chromium loads it unpacked in developer mode;
   Firefox loads it as a temporary add-on, which it forgets on restart.
-- Automatic retry. A failed download stops with its error and waits for you.
 - Queue priorities and per-download speed limits. Every download shares one global
   limit.
 - FTP and BitTorrent. **Cap upload / seeding** in Settings is saved but has no effect

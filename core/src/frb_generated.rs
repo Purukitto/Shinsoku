@@ -1126,6 +1126,7 @@ impl SseDecode for crate::engine::download::DownloadItem {
         let mut var_kind = <crate::engine::download::DownloadKind>::sse_decode(deserializer);
         let mut var_segmentTotal = <u32>::sse_decode(deserializer);
         let mut var_segmentDone = <u32>::sse_decode(deserializer);
+        let mut var_retryCount = <u32>::sse_decode(deserializer);
         return crate::engine::download::DownloadItem {
             id: var_id,
             url: var_url,
@@ -1154,6 +1155,7 @@ impl SseDecode for crate::engine::download::DownloadItem {
             kind: var_kind,
             segment_total: var_segmentTotal,
             segment_done: var_segmentDone,
+            retry_count: var_retryCount,
         };
     }
 }
@@ -1538,6 +1540,7 @@ impl flutter_rust_bridge::IntoDart for crate::engine::download::DownloadItem {
             self.kind.into_into_dart().into_dart(),
             self.segment_total.into_into_dart().into_dart(),
             self.segment_done.into_into_dart().into_dart(),
+            self.retry_count.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1763,6 +1766,7 @@ impl SseEncode for crate::engine::download::DownloadItem {
         <crate::engine::download::DownloadKind>::sse_encode(self.kind, serializer);
         <u32>::sse_encode(self.segment_total, serializer);
         <u32>::sse_encode(self.segment_done, serializer);
+        <u32>::sse_encode(self.retry_count, serializer);
     }
 }
 

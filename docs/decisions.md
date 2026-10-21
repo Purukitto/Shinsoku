@@ -62,6 +62,31 @@ scope unless added later.
   `webRequest` sniffer in `extension/shared/background.js` feeding the toolbar popup,
   which posts to `/api/add-stream`; pasting an `.m3u8` URL into Add also works, because
   `probe_url` flags it and the app calls `add_stream`.
+- **Retry and failure handling** — in the engine, per segment.
+  `run_segments` (`core/src/engine/orchestrator.rs`) gives each segment its own retry
+  loop, so one bad connection reconnects from its own offset while the others keep
+  going; only a permanent failure, or one that outlasts the budget, cancels the rest.
+  `core/src/engine/retry.rs` decides what is worth retrying: dropped or stalled
+  connections, timeouts, 408, 425, 429 and most 5xx. Missing files, denied access,
+  416, disk errors and a changed file are not. Backoff is 0, 1, 2, 4… up to 30 s
+  with jitter. A segment gives up after 9 retries in a row during which the
+  **download as a whole** made no progress: a host that caps connections per client
+  answers the extra segments with 503, and those segments must wait for a slot, not
+  fail a download that is still moving. Stalls are a 30 s timeout on response
+  headers and on each body read; connecting has its own 15 s timeout.
+- **Segment offsets count flushed bytes only.** `SegmentWriter`
+  (`core/src/storage/partial.rs`) advances the segment counter after a flush, never on
+  a buffered write, and every exit path flushes. The counter is the resume anchor that
+  the aggregator checkpoints, so counting buffered bytes let an error, a crash or
+  **Quit** record an offset past the data on disk, and resume left a hole of zeros.
+  Flushes happen every 256 KiB or 50 ms, so progress still moves on slow links.
+- **Range responses are checked, not trusted.** A ranged request must come back
+  `206` with a `Content-Range` that starts at the requested byte and, when it states
+  a size, matches the planned one. A `200` is accepted only for a segment that starts
+  at byte 0, which restarts from there, and writes never pass the segment's end.
+  Change detection is the size check, not `If-Range`: CDN edges that disagree on an
+  `ETag`, or a `Last-Modified` stamped per request, would turn working downloads
+  into hard failures.
 - **CI/CD** — GitHub Actions. `ci.yml`: version check (Ubuntu), Rust fmt, clippy and
   tests (Ubuntu), Flutter format check, analyze and tests (Windows). `release.yml`: a
   `v*` tag or a manual dispatch builds Windows, packages the extensions and checksums,

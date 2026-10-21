@@ -57,6 +57,10 @@ pub struct DownloadItem {
     /// `total_bytes` is a running size estimate.
     #[serde(default)]
     pub segment_done: u32,
+    /// Reconnects after transient failures during the latest run; reset when a
+    /// run starts.
+    #[serde(default)]
+    pub retry_count: u32,
 }
 
 impl DownloadItem {

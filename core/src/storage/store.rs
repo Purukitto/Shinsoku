@@ -83,6 +83,7 @@ mod tests {
             kind: crate::engine::download::DownloadKind::Http,
             segment_total: 0,
             segment_done: 0,
+            retry_count: 0,
         }
     }
 

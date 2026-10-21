@@ -737,7 +737,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   DownloadItem dco_decode_download_item(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 27) throw Exception('unexpected arr length: expect 27 but see ${arr.length}');
+    if (arr.length != 28) throw Exception('unexpected arr length: expect 28 but see ${arr.length}');
     return DownloadItem(
       id: dco_decode_String(arr[0]),
       url: dco_decode_String(arr[1]),
@@ -766,6 +766,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       kind: dco_decode_download_kind(arr[24]),
       segmentTotal: dco_decode_u_32(arr[25]),
       segmentDone: dco_decode_u_32(arr[26]),
+      retryCount: dco_decode_u_32(arr[27]),
     );
   }
 
@@ -1069,6 +1070,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_kind = sse_decode_download_kind(deserializer);
     var var_segmentTotal = sse_decode_u_32(deserializer);
     var var_segmentDone = sse_decode_u_32(deserializer);
+    var var_retryCount = sse_decode_u_32(deserializer);
     return DownloadItem(
       id: var_id,
       url: var_url,
@@ -1097,6 +1099,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       kind: var_kind,
       segmentTotal: var_segmentTotal,
       segmentDone: var_segmentDone,
+      retryCount: var_retryCount,
     );
   }
 
@@ -1449,6 +1452,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_download_kind(self.kind, serializer);
     sse_encode_u_32(self.segmentTotal, serializer);
     sse_encode_u_32(self.segmentDone, serializer);
+    sse_encode_u_32(self.retryCount, serializer);
   }
 
   @protected

@@ -18,6 +18,14 @@ the entry is marked **Breaking** under **Changed**.
   slot of a preallocated file over one shared, keep-alive connection pool.
 - **Exact pause and resume.** Segments resume from the byte they reached, across app
   restarts. A download that was running when the app closed comes back paused.
+- **Automatic retry.** A connection that drops, stalls for 30 seconds or meets a busy
+  server (HTTP 429 or 5xx) reconnects on its own and carries on from the byte it
+  reached, while the other segments keep going. A download stops only on an error a
+  retry can't fix (a missing file, denied access, an expired link) or after about two
+  minutes with no progress at all.
+- **Resume safety.** A server that ignores the requested byte range, or a file whose
+  size changed on the server, stops the download with an error instead of leaving a
+  corrupt file.
 - **Queue** with a limit on how many downloads run at once (3 by default); the rest
   wait and start in turn.
 - **Global speed limit**, and an **off-peak window** that lifts it between two times
@@ -56,7 +64,6 @@ the entry is marked **Breaking** under **Changed**.
 - Windows only. Android and Linux builds are not wired yet.
 - Portable zip only, no installer. The binaries are unsigned, so SmartScreen warns on
   first launch.
-- A failed download stops with its error. There is no automatic retry yet.
 - No queue priorities and no per-download speed limit.
 - HLS is video on demand only: live streams, DASH and `SAMPLE-AES` are refused, and
   nothing is remuxed.

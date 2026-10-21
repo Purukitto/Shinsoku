@@ -59,6 +59,10 @@ class DownloadItem {
   /// `total_bytes` is a running size estimate.
   final int segmentDone;
 
+  /// Reconnects after transient failures during the latest run; reset when a
+  /// run starts.
+  final int retryCount;
+
   const DownloadItem({
     required this.id,
     required this.url,
@@ -87,6 +91,7 @@ class DownloadItem {
     required this.kind,
     required this.segmentTotal,
     required this.segmentDone,
+    required this.retryCount,
   });
 
   @override
@@ -117,7 +122,8 @@ class DownloadItem {
       checksumVerified.hashCode ^
       kind.hashCode ^
       segmentTotal.hashCode ^
-      segmentDone.hashCode;
+      segmentDone.hashCode ^
+      retryCount.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -150,7 +156,8 @@ class DownloadItem {
           checksumVerified == other.checksumVerified &&
           kind == other.kind &&
           segmentTotal == other.segmentTotal &&
-          segmentDone == other.segmentDone;
+          segmentDone == other.segmentDone &&
+          retryCount == other.retryCount;
 }
 
 /// Download source. `Http` is the byte-range multi-segment path; `Hls` fetches an
