@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  - package-ecosystem: cargo
+    directory: /core
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore'
+      include: scope
+    # The crate, the Dart package and the codegen CLI must move in lockstep, and the
+    # bindings regenerated with them. Dependabot cannot do either.
+    ignore:
+      - dependency-name: flutter_rust_bridge
+    groups:
+      rustcrypto:
+        patterns: ['sha2', 'md-5', 'aes', 'cbc']
+      async:
+        patterns: ['tokio', 'tokio-*', 'futures', 'bytes']
+
+  - package-ecosystem: pub
+    directory: /app
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore'
+      include: scope
+    ignore:
+      - dependency-name: flutter_rust_bridge
+    groups:
+      riverpod:
+        patterns: ['*riverpod*', 'custom_lint']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'ci'

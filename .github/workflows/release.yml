@@ -1,55 +1,149 @@
 name: Release
 
-# Push a SemVer tag to build the Windows app + extension and publish a GitHub
-# Release. The in-app update checker reads this release feed.
-#   git tag -a v0.2.0 -m v0.2.0 && git push origin v0.2.0
+# A vX.Y.Z tag (made by tool/bump-version.ps1) builds the Windows app and both
+# extensions and opens a draft GitHub Release. Publishing the draft is what makes
+# the in-app update check see it.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to rebuild and release, e.g. v0.2.0'
+        required: true
+        type: string
 
 permissions:
   contents: write
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   windows:
-    name: Windows build & release
+    name: Windows x64
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
-      - uses: dtolnay/rust-toolchain@stable
+      # The tag is the single source of truth. A mismatch with the manifests would
+      # ship a build whose sidebar reports the wrong version and that the update
+      # check misjudges; an empty changelog section would ship blank notes. Fail
+      # here rather than after the build.
+      - name: Verify version and changelog
+        id: version
+        shell: pwsh
+        run: ./tool/check-version.ps1 -Tag '${{ inputs.tag || github.ref_name }}' -NotesOut release-notes.md
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+          key: release
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Build (Flutter Windows + Rust core)
+      # CMake runs `cargo build --release` on core/ and installs shinsoku_core.dll
+      # beside the exe.
+      - name: Build
         working-directory: app
         run: |
           flutter config --enable-windows-desktop
           flutter pub get
           flutter build windows --release
 
+      # A build that silently skipped the engine would still zip and publish; the
+      # app would then fail on its first bridge call on every user's machine.
+      - name: Verify build output
+        shell: pwsh
+        run: |
+          $rel = 'app/build/windows/x64/runner/Release'
+          $missing = 'shinsoku.exe', 'shinsoku_core.dll', 'flutter_windows.dll', 'data/app.so' |
+            Where-Object { -not (Test-Path (Join-Path $rel $_)) }
+          if ($missing) { throw "Release build is missing: $($missing -join ', ')" }
+          Get-ChildItem $rel -File | Select-Object Name, Length
+
       - name: Package app
         shell: pwsh
         run: |
-          $rel = "app/build/windows/x64/runner/Release"
-          $zip = "$env:GITHUB_WORKSPACE/Shinsoku-${{ github.ref_name }}-windows-x64.zip"
-          Compress-Archive -Path "$rel/*" -DestinationPath $zip
+          $name = "Shinsoku-${{ steps.version.outputs.version }}-windows-x64"
+          New-Item -ItemType Directory -Path "artifacts/$name" -Force | Out-Null
+          Copy-Item 'app/build/windows/x64/runner/Release/*' "artifacts/$name/" -Recurse
+          Copy-Item README.md, LICENSE, CHANGELOG.md "artifacts/$name/"
+          Compress-Archive -Path "artifacts/$name" -DestinationPath "artifacts/$name.zip"
+          Remove-Item "artifacts/$name" -Recurse -Force
 
-      - name: Package browser extension
+      - name: Package browser extensions
         shell: pwsh
-        working-directory: extension
-        run: ./build.ps1 -Zip
+        run: |
+          ./extension/build.ps1 -Zip
+          foreach ($browser in 'chromium', 'firefox') {
+            Copy-Item "extension/dist/$browser.zip" "artifacts/Shinsoku-Capture-${{ steps.version.outputs.version }}-$browser.zip"
+          }
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
+      - name: Checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem artifacts -File |
+            ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } |
+            Set-Content artifacts/SHA256SUMS.txt -Encoding ascii
+          Get-Content artifacts/SHA256SUMS.txt
+
+      - name: Release notes
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          $tag = '${{ steps.version.outputs.tag }}'
+          $notes = Get-Content release-notes.md -Raw
+          $body = @"
+          $notes
+
+          ---
+
+          ### Install
+
+          | File | What it is |
+          | --- | --- |
+          | ``Shinsoku-$v-windows-x64.zip`` | The app. Unzip anywhere and run ``shinsoku.exe``. |
+          | ``Shinsoku-Capture-$v-chromium.zip`` | Browser extension for Chrome, Edge and Brave. |
+          | ``Shinsoku-Capture-$v-firefox.zip`` | Browser extension for Firefox. |
+          | ``SHA256SUMS.txt`` | Checksums for the files above. |
+
+          Windows 10 or 11, x64. The binaries are unsigned, so SmartScreen warns on first
+          launch. Updating from an earlier version: quit Shinsoku and replace its folder;
+          downloads and settings live in ``%APPDATA%`` and carry over.
+
+          Full history: [CHANGELOG.md](https://github.com/Purukitto/Shinsoku/blob/$tag/CHANGELOG.md)
+          "@
+          Set-Content release-body.md $body -Encoding utf8
+          Get-Content release-body.md
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
         with:
-          name: Shinsoku ${{ github.ref_name }}
+          name: shinsoku-windows-x64
+          path: artifacts/*
+          if-no-files-found: error
+
+      # Draft, so the notes and assets can be checked before anyone is offered them:
+      # the update check reads /releases/latest, which never returns a draft.
+      - name: Draft release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Shinsoku ${{ steps.version.outputs.tag }}
+          draft: true
+          body_path: release-body.md
+          fail_on_unmatched_files: true
           files: |
-            Shinsoku-${{ github.ref_name }}-windows-x64.zip
-            extension/dist/chromium.zip
-            extension/dist/firefox.zip
-          generate_release_notes: true
-          fail_on_unmatched_files: false
+            artifacts/*.zip
+            artifacts/SHA256SUMS.txt

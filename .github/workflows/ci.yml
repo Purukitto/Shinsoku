@@ -5,50 +5,84 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
-# Cancel superseded runs on the same ref
+# A new push to a branch supersedes the run already in flight for it.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
+  versions:
+    name: Version and changelog
+    # Catches a hand-edited manifest in seconds, where the release workflow would
+    # only catch it at tag time.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check versions agree
+        shell: pwsh
+        run: ./tool/check-version.ps1
+
   rust:
-    name: Rust engine (core)
+    name: Engine (core)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: core
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v7
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
         with:
           workspaces: core
+
       - name: Format
         run: cargo fmt --all -- --check
+
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
+
       - name: Test
         run: cargo test --all
 
   flutter:
-    name: Flutter UI (app)
+    name: UI (app)
     runs-on: windows-latest
     defaults:
       run:
         working-directory: app
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v7
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
       - name: Pub get
         run: flutter pub get
+
+      # Not gated on `dart format`: the tree is not formatter-clean yet.
       - name: Analyze
         run: flutter analyze
+
       - name: Test
         run: flutter test
