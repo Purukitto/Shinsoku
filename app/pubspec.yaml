@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^3.1.0
   flutter_rust_bridge: 2.9.0
-  package_info_plus: ^8.0.0
+  package_info_plus: ^10.2.2
   path_provider: ^2.1.5
   riverpod_annotation: ^4.0.0
   tray_manager: ^0.5.3
