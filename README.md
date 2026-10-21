@@ -148,8 +148,9 @@ detail screen shows **VERIFIED** or **MISMATCH**.
 A connection that drops, stalls for 30 seconds or gets a busy server reconnects on its
 own and carries on from the byte it reached, while the other segments keep going.
 Shinsoku gives up only when the server refuses outright (file not found, access
-denied, an expired link) or when nothing has moved for about two minutes. A server
-that ignores the requested byte range, or a file that changes size mid-download, also
+denied, an expired link) or when nothing has moved for about two minutes. The
+download then says why it stopped, and **Retry** picks it up again. A server that
+ignores the requested byte range, or a file that changes size mid-download, also
 stops it, rather than writing a corrupt file.
 
 Minimise hides Shinsoku to the tray, where downloads keep running. Closing the window,

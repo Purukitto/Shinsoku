@@ -22,7 +22,9 @@ the entry is marked **Breaking** under **Changed**.
   server (HTTP 429 or 5xx) reconnects on its own and carries on from the byte it
   reached, while the other segments keep going. A download stops only on an error a
   retry can't fix (a missing file, denied access, an expired link) or after about two
-  minutes with no progress at all.
+  minutes with no progress at all. The detail screen counts the reconnects.
+- **Failure reasons.** A download that stops says why, in the list and on its detail
+  screen, and offers **Retry**.
 - **Resume safety.** A server that ignores the requested byte range, or a file whose
   size changed on the server, stops the download with an error instead of leaving a
   corrupt file.

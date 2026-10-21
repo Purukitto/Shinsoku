@@ -38,6 +38,12 @@ class DownloadItem {
   final int segmentTotal;
   final int segmentDone;
 
+  /// Why the download stopped, when its status is [DownloadStatus.error].
+  final String? error;
+
+  /// Reconnects after dropped or stalled connections during the latest run.
+  final int retryCount;
+
   const DownloadItem({
     required this.id,
     required this.name,
@@ -59,6 +65,8 @@ class DownloadItem {
     this.isHls = false,
     this.segmentTotal = 0,
     this.segmentDone = 0,
+    this.error,
+    this.retryCount = 0,
   });
 
   double get progress => totalBytes > 0 ? downloadedBytes / totalBytes : 0.0;
@@ -89,6 +97,8 @@ class DownloadItem {
     bool? isHls,
     int? segmentTotal,
     int? segmentDone,
+    String? error,
+    int? retryCount,
   }) => DownloadItem(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -110,6 +120,8 @@ class DownloadItem {
     isHls: isHls ?? this.isHls,
     segmentTotal: segmentTotal ?? this.segmentTotal,
     segmentDone: segmentDone ?? this.segmentDone,
+    error: error ?? this.error,
+    retryCount: retryCount ?? this.retryCount,
   );
 }
 
