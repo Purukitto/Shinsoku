@@ -80,7 +80,9 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
-      # Not gated on `dart format`: the tree is not formatter-clean yet.
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed .
+
       - name: Analyze
         run: flutter analyze
 

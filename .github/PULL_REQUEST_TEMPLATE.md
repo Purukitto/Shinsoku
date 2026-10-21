@@ -12,6 +12,7 @@
 - [ ] `cargo fmt --all -- --check` (in `core/`)
 - [ ] `cargo clippy --all-targets -- -D warnings` (in `core/`)
 - [ ] `cargo test` (in `core/`)
+- [ ] `dart format --output=none --set-exit-if-changed .` (in `app/`)
 - [ ] `flutter analyze` and `flutter test` (in `app/`)
 - [ ] User-facing? Entry added under `## [Unreleased]` in `CHANGELOG.md`
 - [ ] Versions untouched — only `tool/bump-version.ps1` changes them

@@ -63,10 +63,10 @@ scope unless added later.
   which posts to `/api/add-stream`; pasting an `.m3u8` URL into Add also works, because
   `probe_url` flags it and the app calls `add_stream`.
 - **CI/CD** — GitHub Actions. `ci.yml`: version check (Ubuntu), Rust fmt, clippy and
-  tests (Ubuntu), Flutter analyze and tests (Windows). `release.yml`: a `v*` tag or a
-  manual dispatch builds Windows, packages the extensions and checksums, and opens a
-  draft GitHub Release. Android and Linux release jobs arrive with their native build
-  wiring.
+  tests (Ubuntu), Flutter format check, analyze and tests (Windows). `release.yml`: a
+  `v*` tag or a manual dispatch builds Windows, packages the extensions and checksums,
+  and opens a draft GitHub Release. Android and Linux release jobs arrive with their
+  native build wiring.
 
 ## Open
 

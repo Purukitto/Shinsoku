@@ -235,7 +235,7 @@ rendering or responsiveness has to be checked with `--profile` or `--release`.
 | Where | Command | Does |
 | --- | --- | --- |
 | `app/` | `flutter run -d windows --release` | Run the app |
-| `app/` | `flutter analyze` · `flutter test` | Lints and widget tests |
+| `app/` | `dart format .` · `flutter analyze` · `flutter test` | Format, lints and widget tests |
 | `app/` | `flutter_rust_bridge_codegen generate` | Regenerate the bindings after changing `core/src/api.rs` |
 | `core/` | `cargo test` | Engine unit tests and integration tests against a local range server |
 | `core/` | `cargo fmt --all` · `cargo clippy --all-targets -- -D warnings` | Format and lint, as CI does |

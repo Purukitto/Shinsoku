@@ -39,6 +39,10 @@ cd core && cargo test
 ```
 
 ```bash
+cd app && dart format --output=none --set-exit-if-changed .
+```
+
+```bash
 cd app && flutter analyze
 ```
 
@@ -50,9 +54,10 @@ cd app && flutter test
 ./tool/check-version.ps1
 ```
 
-Clippy is enforced at `-D warnings`. The Dart tree is not `dart format`-clean yet, so CI
-does not gate on it — and running `dart format .` over the whole tree would bury your
-change under hundreds of unrelated lines. Match the formatting of the code around you.
+Clippy is enforced at `-D warnings`. The format check fails on any Dart file that
+`dart format` would change, generated bindings included; run `dart format .` in `app/`
+to fix it. The page width (100) lives in `app/analysis_options.yaml`, so editors pick it
+up too.
 
 Keep pull requests to one thing. An engine change and the UI that exposes it are one
 thing; a refactor bundled with a feature is two.
