@@ -8,7 +8,7 @@ use flutter_rust_bridge::frb;
 
 use crate::capture::CaptureHandle;
 use crate::engine::download::{classify, DownloadItem, DownloadProgress, ProbeResult};
-use crate::engine::retry::{within, RetryPolicy};
+use crate::engine::retry::{describe, within, RetryPolicy};
 use crate::frb_generated::StreamSink;
 use crate::protocols::http::{build_client, build_headers, probe};
 use crate::queue::manager::QueueManager;
@@ -79,6 +79,46 @@ pub fn resume_download(engine: &ShinsokuEngine, id: String) {
 #[frb(sync)]
 pub fn remove_download(engine: &ShinsokuEngine, id: String) {
     engine.manager.remove(&id);
+}
+
+/// Point a stopped download at a new link for the same file and resume it.
+/// Fails, leaving the download as it was, when the link doesn't work or serves
+/// a different file. Keeps the download's request headers.
+pub async fn refresh_download(
+    engine: &ShinsokuEngine,
+    id: String,
+    url: String,
+) -> anyhow::Result<()> {
+    // the Dart side shows the message as is
+    engine
+        .manager
+        .refresh_url(&id, url, None)
+        .await
+        .map_err(|e| anyhow::anyhow!(describe(&e)))
+}
+
+/// While set, the next link the browser extension captures goes to download
+/// `id` (with the browser's fresh cookies) instead of a new download. `None`
+/// stops waiting.
+#[frb(sync)]
+pub fn await_link(engine: &ShinsokuEngine, id: Option<String>) {
+    engine.manager.await_link(id);
+}
+
+/// The download waiting for a captured link, and why the last link sent to it
+/// was refused.
+pub struct LinkWait {
+    pub id: String,
+    pub error: Option<String>,
+}
+
+/// `None` once a captured link has been taken, or when nothing is waiting.
+#[frb(sync)]
+pub fn link_wait(engine: &ShinsokuEngine) -> Option<LinkWait> {
+    engine.manager.refresh_target().map(|t| LinkWait {
+        id: t.id,
+        error: t.error,
+    })
 }
 
 // ── Live updates ──────────────────────────────────────────────────────────────

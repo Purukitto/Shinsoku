@@ -223,6 +223,7 @@ async function handleDownload(item) {
   };
 
   let ok = false;
+  let body = {};
   try {
     const res = await fetch(endpoint(s, '/api/add'), {
       method: 'POST',
@@ -230,7 +231,12 @@ async function handleDownload(item) {
       body: JSON.stringify(payload),
     });
     ok = res.ok;
-    if (!ok) log('POST rejected', res.status);
+    body = await res.json().catch(() => ({}));
+    if (!ok) log('POST rejected', res.status, body.error || '');
+    // 409: a download waiting in Shinsoku for a fresh link refused this one
+    if (res.status === 409) {
+      return notify('Shinsoku kept its old link', `${body.error || 'Not the same file.'} Downloading in the browser instead.`);
+    }
   } catch (e) {
     log('POST failed (app unreachable?)', String(e));
     ok = false;
@@ -239,8 +245,8 @@ async function handleDownload(item) {
   if (ok) {
     try { await api.downloads.cancel(item.id); } catch (e) { log('cancel failed (already finished?)', String(e)); }
     try { await api.downloads.erase({ id: item.id }); } catch {}
-    log('handed off to Shinsoku', url);
-    notify('Sent to Shinsoku', payload.filename || url);
+    log('handed off to Shinsoku', url, body.refreshed ? '(refreshed link)' : '');
+    notify(body.refreshed ? 'Link refreshed in Shinsoku' : 'Sent to Shinsoku', payload.filename || url);
   } else {
     notify('Shinsoku not reachable', 'Downloading in the browser instead.');
   }

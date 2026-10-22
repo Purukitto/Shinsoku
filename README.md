@@ -153,6 +153,13 @@ download then says why it stopped, and **Retry** picks it up again. A server tha
 ignores the requested byte range, or a file that changes size mid-download, also
 stops it, rather than writing a corrupt file.
 
+When a link has expired, **Refresh link** on the stopped download takes a new link to
+the same file and carries on from the bytes already downloaded. Paste one, or, with
+the extension paired, start the download again on the page it came from while the
+dialog is open: Shinsoku takes the browser's new link and cookies instead of adding a
+second download. A link to a different file — another size, or for a stream another
+number of segments — is refused, and the download keeps its old one.
+
 Minimise hides Shinsoku to the tray, where downloads keep running. Closing the window,
 or **Quit** in the tray menu, exits.
 

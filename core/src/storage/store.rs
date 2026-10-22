@@ -60,6 +60,7 @@ mod tests {
             url: "https://example.com/f.bin".into(),
             filename: "f.bin".into(),
             dest_path: "/tmp/f.bin".into(),
+            dest_dir: "/tmp".into(),
             total_bytes: 100,
             downloaded_bytes: 40,
             speed_bps: 0,

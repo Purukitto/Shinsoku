@@ -63,6 +63,10 @@ class DownloadItem {
   /// run starts.
   final int retryCount;
 
+  /// Folder the download was added to; category subfolders go under it. Empty
+  /// for items persisted before this field, which fall back to `dest_path`'s parent.
+  final String destDir;
+
   const DownloadItem({
     required this.id,
     required this.url,
@@ -92,6 +96,7 @@ class DownloadItem {
     required this.segmentTotal,
     required this.segmentDone,
     required this.retryCount,
+    required this.destDir,
   });
 
   @override
@@ -123,7 +128,8 @@ class DownloadItem {
       kind.hashCode ^
       segmentTotal.hashCode ^
       segmentDone.hashCode ^
-      retryCount.hashCode;
+      retryCount.hashCode ^
+      destDir.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -157,7 +163,8 @@ class DownloadItem {
           kind == other.kind &&
           segmentTotal == other.segmentTotal &&
           segmentDone == other.segmentDone &&
-          retryCount == other.retryCount;
+          retryCount == other.retryCount &&
+          destDir == other.destDir;
 }
 
 /// Download source. `Http` is the byte-range multi-segment path; `Hls` fetches an

@@ -79,3 +79,37 @@ pub async fn probe(client: &Client, url: &str, headers: &HeaderMap) -> Result<Fi
         filename,
     })
 }
+
+/// Probe with a one-byte ranged GET, the request segments actually make: fails
+/// on an error status (unlike [`probe`], whose HEAD some hosts answer
+/// differently), and reads the size from `Content-Range`.
+pub async fn probe_range(client: &Client, url: &str, headers: &HeaderMap) -> Result<FileInfo> {
+    let resp = client
+        .get(url)
+        .headers(headers.clone())
+        .header(reqwest::header::RANGE, "bytes=0-0")
+        .send()
+        .await?
+        .error_for_status()?;
+    let header = |name: &str| {
+        resp.headers()
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_string)
+    };
+    let partial = resp.status() == reqwest::StatusCode::PARTIAL_CONTENT;
+    // "bytes 0-0/1234"; the size may be "*"
+    let total_bytes = if partial {
+        header("content-range")
+            .and_then(|v| v.rsplit('/').next().and_then(|s| s.trim().parse().ok()))
+            .unwrap_or(0)
+    } else {
+        resp.content_length().unwrap_or(0)
+    };
+    Ok(FileInfo {
+        total_bytes,
+        resumable: partial,
+        mime_type: header("content-type").map(|s| s.split(';').next().unwrap_or(&s).trim().into()),
+        filename: None,
+    })
+}
