@@ -97,6 +97,7 @@ beyond that.
 | Other languages | Not started | English only |
 | Backup and restore of the list and settings | Not started | |
 | Lock the app with a PIN or fingerprint | Not started | |
+| Start with the system | Partial | Windows at sign-in, hidden in the tray; Linux writes an XDG autostart entry. *Android*: starting on boot needs only the install-time `RECEIVE_BOOT_COMPLETED` permission, and arrives with the background service it would start |
 
 ## Not needed for parity
 

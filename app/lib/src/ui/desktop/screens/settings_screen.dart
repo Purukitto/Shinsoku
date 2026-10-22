@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/off_peak.dart';
+import '../../../providers/autostart_provider.dart';
 import '../../../providers/capture_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../rust/api.dart' as rust;
@@ -28,6 +30,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final set = ref.read(settingsProvider.notifier);
     final cap = ref.watch(captureProvider);
     final capStatus = cap.enabled ? ref.watch(captureStatusProvider).value : null;
+    final autostart = ref.read(autostartServiceProvider).supported;
     return SizedBox(
       width: 760,
       child: Column(
@@ -127,6 +130,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
           ),
+          if (autostart)
+            _card(
+              icon: Icons.power_settings_new_rounded,
+              title: 'Startup',
+              children: [
+                _row(
+                  Platform.isWindows ? 'Start with Windows' : 'Start when you sign in',
+                  desc:
+                      'Open in the tray when you sign in, so scheduled downloads run on their own.',
+                  last: true,
+                  child: SToggle(
+                    value: ref.watch(autostartProvider),
+                    onChanged: ref.read(autostartProvider.notifier).setEnabled,
+                  ),
+                ),
+              ],
+            ),
           _card(
             icon: Icons.content_paste_rounded,
             title: 'Capture',

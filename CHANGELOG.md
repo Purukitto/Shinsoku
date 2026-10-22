@@ -67,6 +67,11 @@ the entry is marked **Breaking** under **Changed**.
   `file (2).ext` rather than overwriting.
 - **History.** The download list and the 500 most recent finished downloads survive
   restarts, along with every setting.
+- **Start with Windows.** Turn it on in **Settings → Startup** and Shinsoku opens in the
+  tray when you sign in, so scheduled downloads run without you opening it. Turning it
+  off in Task Manager shows in Settings too.
+- **One copy at a time.** Opening Shinsoku while it is already running, in the tray or
+  behind other windows, brings that window forward instead of starting a second copy.
 - **Update notice.** At launch the app checks for a newer release and the sidebar's
   version line becomes **Update available**, linking to the release page.
 - **Desktop app** for Windows: active, completed, detail and settings screens, live

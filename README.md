@@ -144,6 +144,7 @@ the detail screen schedules one already in the list.
 | Categorize | Sorts finished files into `Videos`, `Images`, `Documents`, `Music`, `Programs`, `Compressed` or `Other`. |
 | Clipboard monitor | Offers to download a copied `http(s)` link. |
 | Browser integration | Starts the capture server the extension talks to. Off until you turn it on. |
+| Start with Windows | Opens Shinsoku in the tray when you sign in, so scheduled downloads run on their own. Off until you turn it on. |
 
 A download whose name is already taken saves as `file (2).ext` rather than overwriting.
 Every finished file is hashed — SHA-256, or MD5 if that is what you gave as the
@@ -195,7 +196,7 @@ request: the downloads you ask for, and the update check — one `GET` to
 `api.github.com` per launch, carrying nothing but the User-Agent `Shinsoku-UpdateCheck`.
 Fonts are bundled.
 
-Three things are worth stating plainly:
+Four things are worth stating plainly:
 
 - **What is stored.** `%APPDATA%\io.shinsoku\shinsoku\downloads.json` holds the download
   list and up to 500 finished items: URLs, file paths and **any request headers attached
@@ -207,6 +208,9 @@ Three things are worth stating plainly:
   cannot call it; only the extension, through its host permission, can.
 - **The clipboard.** Read only while **Clipboard monitor** is on, and only checked for a
   single `http(s)` URL. Nothing read leaves the machine.
+- **Starting with Windows.** Off until you turn it on. It writes one value, `Shinsoku`,
+  under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`; turning it off removes
+  it, and so does Task Manager's **Startup apps**.
 
 ## Building from source
 

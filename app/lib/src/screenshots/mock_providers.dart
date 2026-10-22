@@ -8,9 +8,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/misc.dart';
 
 import '../models/download_item.dart';
+import '../providers/autostart_provider.dart';
 import '../providers/capture_provider.dart';
 import '../providers/downloads_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/autostart_service.dart';
 import '../services/settings_service.dart';
 import 'mock_data.dart';
 
@@ -100,6 +102,20 @@ class _MockSettings extends SettingsNotifier {
   void setOffPeakDays(int days) => state = state.copyWith(offPeakDays: days);
 }
 
+/// Startup entry kept in memory, never written to the system.
+class _MockAutostart implements AutostartService {
+  bool _on = false;
+
+  @override
+  bool get supported => true;
+
+  @override
+  bool isEnabled() => _on;
+
+  @override
+  void setEnabled(bool on) => _on = on;
+}
+
 class _MockCapture extends CaptureNotifier {
   @override
   CaptureState build() => mockCapture;
@@ -114,6 +130,7 @@ final List<Override> screenshotOverrides = <Override>[
   globalSpeedHistoryProvider.overrideWith(_MockGlobalSpeed.new),
   settingsProvider.overrideWith(_MockSettings.new),
   captureProvider.overrideWith(_MockCapture.new),
+  autostartServiceProvider.overrideWithValue(_MockAutostart()),
   // Detail screen's live poll — track the (mock) list instead of the engine.
   liveDownloadProvider.overrideWith(
     (ref, id) => Stream<DownloadItem?>.value(ref.watch(downloadItemProvider(id))),

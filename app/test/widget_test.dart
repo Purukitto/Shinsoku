@@ -1,14 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shinsoku/src/models/download_item.dart';
+import 'package:shinsoku/src/providers/autostart_provider.dart';
 import 'package:shinsoku/src/providers/capture_provider.dart';
 import 'package:shinsoku/src/providers/downloads_provider.dart';
 import 'package:shinsoku/src/providers/settings_provider.dart';
 import 'package:shinsoku/src/rust/api.dart' as rust;
+import 'package:shinsoku/src/services/autostart_service.dart';
 import 'package:shinsoku/src/services/settings_service.dart';
 import 'package:shinsoku/src/ui/desktop/screens/detail_screen.dart';
+import 'package:shinsoku/src/ui/desktop/screens/settings_screen.dart';
 import 'package:shinsoku/src/ui/desktop/widgets/download_row.dart';
+import 'package:shinsoku/src/ui/widgets/s_toggle.dart';
 
 /// In-memory list; records calls instead of making them on the engine.
 class _FakeDownloads extends DownloadsNotifier {
@@ -48,6 +54,24 @@ class _FakeDownloads extends DownloadsNotifier {
 class _FakeSettings extends SettingsNotifier {
   @override
   AppSettings build() => const AppSettings();
+}
+
+/// Startup entry in memory; records what Settings asked for.
+class _FakeAutostart implements AutostartService {
+  bool on = false;
+  final List<bool> set = [];
+
+  @override
+  bool get supported => true;
+
+  @override
+  bool isEnabled() => on;
+
+  @override
+  void setEnabled(bool v) {
+    set.add(v);
+    on = v;
+  }
 }
 
 class _FakeCapture extends CaptureNotifier {
@@ -250,5 +274,39 @@ void main() {
     expect(find.text('Resume'), findsOneWidget);
     await tester.tap(find.text('Schedule'));
     expect(downloads.scheduled, [('a', true)]);
+  });
+
+  testWidgets('Settings turns starting at sign-in on and off', (tester) async {
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final autostart = _FakeAutostart();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          settingsProvider.overrideWith(_FakeSettings.new),
+          captureProvider.overrideWith(() => _FakeCapture(running: false)),
+          autostartServiceProvider.overrideWithValue(autostart),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: SingleChildScrollView(child: SettingsScreen())),
+        ),
+      ),
+    );
+
+    final label = Platform.isWindows ? 'Start with Windows' : 'Start when you sign in';
+    final toggle = find.descendant(
+      of: find.ancestor(of: find.text(label), matching: find.byType(Row)).first,
+      matching: find.byType(SToggle),
+    );
+    expect(tester.widget<SToggle>(toggle).value, isFalse);
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(autostart.set, [true]);
+    expect(tester.widget<SToggle>(toggle).value, isTrue);
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(autostart.set, [true, false]);
+    expect(tester.widget<SToggle>(toggle).value, isFalse);
   });
 }
