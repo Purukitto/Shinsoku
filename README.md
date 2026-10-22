@@ -316,6 +316,9 @@ progress reuses the byte fields — are recorded in [docs/decisions.md](docs/dec
 
 ## Not built yet
 
+The goal for 1.0 is every feature of 1DM, on Android and on desktop;
+[docs/roadmap.md](docs/roadmap.md) tracks it feature by feature. Among what is missing:
+
 - Android and Linux builds. The Flutter targets exist; the native engine build is wired
   for Windows only.
 - An installer, and code signing so SmartScreen stops warning.
