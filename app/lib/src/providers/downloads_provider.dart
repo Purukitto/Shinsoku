@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge.dart' show AnyhowException;
 import 'package:path_provider/path_provider.dart';
 import '../models/download_item.dart';
 import '../rust/api.dart' as rust;
@@ -51,9 +52,18 @@ double _segProgress(rd.SegmentInfo s) {
   return (s.downloadedBytes.toInt() / range).clamp(0.0, 1.0);
 }
 
+String? _header(List<(String, String)> headers, String name) {
+  for (final (k, v) in headers) {
+    if (k.toLowerCase() == name) return v;
+  }
+  return null;
+}
+
 DownloadItem _map(rd.DownloadItem r) => DownloadItem(
   id: r.id,
   name: r.filename,
+  url: r.url,
+  referrer: _header(r.headers, 'referer'),
   host: r.host,
   fileType: _fileType(r.fileType),
   totalBytes: r.totalBytes.toInt(),
@@ -202,6 +212,25 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
     rust.removeDownload(engine: ref.read(engineProvider), id: id);
     state = state.where((i) => i.id != id).toList();
   }
+
+  /// Point a stopped download at a new link for the same file and resume it.
+  /// Returns why the engine refused the link, or null once it is in use.
+  Future<String?> refreshLink(String id, String url) async {
+    try {
+      await rust.refreshDownload(engine: ref.read(engineProvider), id: id, url: url);
+    } on AnyhowException catch (e) {
+      return e.message;
+    }
+    _refresh();
+    return null;
+  }
+
+  /// While [id] is set, the next link the browser extension captures goes to
+  /// that download instead of a new one.
+  void awaitLink(String? id) => rust.awaitLink(engine: ref.read(engineProvider), id: id);
+
+  /// The download waiting for a captured link; null once one has been taken.
+  rust.LinkWait? linkWait() => rust.linkWait(engine: ref.read(engineProvider));
 
   void _patchStatus(String id, DownloadStatus s, {bool zeroSpeed = false}) {
     final idx = state.indexWhere((i) => i.id == id);

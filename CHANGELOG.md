@@ -25,6 +25,12 @@ the entry is marked **Breaking** under **Changed**.
   minutes with no progress at all. The detail screen counts the reconnects.
 - **Failure reasons.** A download that stops says why, in the list and on its detail
   screen, and offers **Retry**.
+- **Refresh link.** When a link expires, give the stopped download a new one and it
+  carries on from the bytes it kept. Paste the link into **Refresh link** on the
+  download, or, with the extension paired, start the download again on its page while
+  the dialog is open and Shinsoku takes the browser's new link and cookies instead of
+  adding a download. A link to a different file (another size, or a stream with
+  another number of segments) is refused and the download keeps its old one.
 - **Resume safety.** A server that ignores the requested byte range, or a file whose
   size changed on the server, stops the download with an error instead of leaving a
   corrupt file.

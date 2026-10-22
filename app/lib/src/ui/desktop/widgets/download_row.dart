@@ -8,6 +8,7 @@ import '../../../theme/text_styles.dart';
 import '../../widgets/volt_bar.dart';
 import '../../widgets/ext_chip.dart';
 import '../../widgets/s_btn.dart';
+import '../modals/refresh_modal.dart';
 import 'status_label.dart';
 
 class DownloadRow extends ConsumerStatefulWidget {
@@ -88,13 +89,20 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                                 onPressed: () => notifier.resume(it.id),
                                 tooltip: 'Resume',
                               ),
-                            if (failed)
+                            if (failed) ...[
+                              SIconBtn(
+                                icon: Icons.link_rounded,
+                                size: 30,
+                                onPressed: () => showRefreshLinkModal(context, it.id),
+                                tooltip: 'Refresh link',
+                              ),
                               SIconBtn(
                                 icon: Icons.refresh_rounded,
                                 size: 30,
                                 onPressed: () => notifier.resume(it.id),
                                 tooltip: 'Retry',
                               ),
+                            ],
                             SIconBtn(
                               icon: Icons.close_rounded,
                               size: 30,

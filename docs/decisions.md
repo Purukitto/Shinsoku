@@ -21,6 +21,11 @@ Considered and rejected:
 Platform priority: Windows first, then Android, then Linux. macOS and iOS are out of
 scope unless added later.
 
+## Scope of 1.0 — feature parity with 1DM
+
+1.0 has every feature of 1DM, including the paid 1DM+ extras, on Android and on desktop.
+[roadmap.md](roadmap.md) lists them and tracks what is built.
+
 ## Resolved
 
 - **State management** — Riverpod (`flutter_riverpod`). Engine state is surfaced
@@ -87,6 +92,19 @@ scope unless added later.
   Change detection is the size check, not `If-Range`: CDN edges that disagree on an
   `ETag`, or a `Last-Modified` stamped per request, would turn working downloads
   into hard failures.
+- **Refreshing a link** — in the engine. `QueueManager::refresh_url`
+  (`core/src/queue/manager.rs`) swaps a stopped download's link only after checking
+  that the new one serves the same file: the same size, read from a one-byte ranged
+  `GET` (`probe_range` in `core/src/protocols/http.rs`, because some hosts answer
+  `HEAD` differently from `GET`), or for HLS the same number of segments. Then the
+  download resumes from the bytes it kept. A download that wrote nothing has no file to
+  match, and its old plan may be sized from an error page, so it is probed again from
+  scratch. The Refresh link dialog also arms `await_link`: while it is open, the next
+  link the extension sends goes to that download, with the browser's fresh cookies,
+  instead of becoming a new one. A refused link gets `409` and the reason, so the
+  extension leaves the browser's own download alone. Each item records the folder it
+  was added to (`dest_dir`), so a second plan puts the file under that folder rather
+  than inside the first plan's category subfolder.
 - **CI/CD** — GitHub Actions. `ci.yml`: version check (Ubuntu), Rust fmt, clippy and
   tests (Ubuntu), Flutter format check, analyze and tests (Windows). `release.yml`: a
   `v*` tag or a manual dispatch builds Windows, packages the extensions and checksums,

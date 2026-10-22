@@ -61,6 +61,10 @@ pub struct DownloadItem {
     /// run starts.
     #[serde(default)]
     pub retry_count: u32,
+    /// Folder the download was added to; category subfolders go under it. Empty
+    /// for items persisted before this field, which fall back to `dest_path`'s parent.
+    #[serde(default)]
+    pub dest_dir: String,
 }
 
 impl DownloadItem {

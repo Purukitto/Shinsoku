@@ -56,6 +56,25 @@ void resumeDownload({required ShinsokuEngine engine, required String id}) =>
 void removeDownload({required ShinsokuEngine engine, required String id}) =>
     RustLib.instance.api.crateApiRemoveDownload(engine: engine, id: id);
 
+/// Point a stopped download at a new link for the same file and resume it.
+/// Fails, leaving the download as it was, when the link doesn't work or serves
+/// a different file. Keeps the download's request headers.
+Future<void> refreshDownload({
+  required ShinsokuEngine engine,
+  required String id,
+  required String url,
+}) => RustLib.instance.api.crateApiRefreshDownload(engine: engine, id: id, url: url);
+
+/// While set, the next link the browser extension captures goes to download
+/// `id` (with the browser's fresh cookies) instead of a new download. `None`
+/// stops waiting.
+void awaitLink({required ShinsokuEngine engine, String? id}) =>
+    RustLib.instance.api.crateApiAwaitLink(engine: engine, id: id);
+
+/// `None` once a captured link has been taken, or when nothing is waiting.
+LinkWait? linkWait({required ShinsokuEngine engine}) =>
+    RustLib.instance.api.crateApiLinkWait(engine: engine);
+
 /// Live progress stream; emits on change plus an initial snapshot. Call once.
 Stream<DownloadProgress> subscribeProgress({required ShinsokuEngine engine}) =>
     RustLib.instance.api.crateApiSubscribeProgress(engine: engine);
@@ -154,4 +173,24 @@ class CaptureStatus {
           port == other.port &&
           lastSeenMs == other.lastSeenMs &&
           captures == other.captures;
+}
+
+/// The download waiting for a captured link, and why the last link sent to it
+/// was refused.
+class LinkWait {
+  final String id;
+  final String? error;
+
+  const LinkWait({required this.id, this.error});
+
+  @override
+  int get hashCode => id.hashCode ^ error.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LinkWait &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          error == other.error;
 }

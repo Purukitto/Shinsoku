@@ -14,12 +14,15 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
 
+use crate::engine::download::DownloadKind;
+use crate::engine::retry::describe;
 use crate::queue::manager::QueueManager;
 
 const TOKEN_HEADER: &str = "x-shinsoku-token";
@@ -88,6 +91,15 @@ struct AddStreamReq {
 #[derive(Serialize)]
 struct AddResp {
     id: String,
+    /// The link went to a stopped download waiting for a fresh one.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    refreshed: bool,
+}
+
+/// 409 body when a download waiting for a fresh link refuses the one sent.
+#[derive(Serialize)]
+struct ErrResp {
+    error: String,
 }
 
 #[derive(Serialize)]
@@ -205,13 +217,20 @@ async fn add(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(req): Json<AddReq>,
-) -> Result<Json<AddResp>, StatusCode> {
+) -> Result<Response, StatusCode> {
     check_token(&state, &headers)?;
     if !(req.url.starts_with("http://") || req.url.starts_with("https://")) {
         return Err(StatusCode::BAD_REQUEST);
     }
 
     let hdrs = capture_headers(req.cookie, req.referrer, req.user_agent);
+    if let Some(r) = state
+        .manager
+        .take_captured_link(req.url.clone(), hdrs.clone(), DownloadKind::Http)
+        .await
+    {
+        return Ok(refreshed(&state, r));
+    }
     let conns = state.manager.default_connections().min(CAPTURE_CONNECTIONS);
     let id = state.manager.add(
         req.url,
@@ -221,24 +240,61 @@ async fn add(
         req.checksum,
     );
     state.stats.record_capture();
-    Ok(Json(AddResp { id }))
+    Ok(Json(AddResp {
+        id,
+        refreshed: false,
+    })
+    .into_response())
 }
 
 async fn add_stream(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(req): Json<AddStreamReq>,
-) -> Result<Json<AddResp>, StatusCode> {
+) -> Result<Response, StatusCode> {
     check_token(&state, &headers)?;
     if !(req.url.starts_with("http://") || req.url.starts_with("https://")) {
         return Err(StatusCode::BAD_REQUEST);
     }
     let hdrs = capture_headers(req.cookie, req.referrer, req.user_agent);
+    if let Some(r) = state
+        .manager
+        .take_captured_link(req.url.clone(), hdrs.clone(), DownloadKind::Hls)
+        .await
+    {
+        return Ok(refreshed(&state, r));
+    }
     let id = state
         .manager
         .add_hls(req.url, (*state.dest_dir).clone(), hdrs, req.title);
     state.stats.record_capture();
-    Ok(Json(AddResp { id }))
+    Ok(Json(AddResp {
+        id,
+        refreshed: false,
+    })
+    .into_response())
+}
+
+/// Reply for a link handed to a download waiting for a fresh one: 409 with the
+/// reason when refused, so the extension leaves the browser's download alone.
+fn refreshed(state: &AppState, r: anyhow::Result<String>) -> Response {
+    match r {
+        Ok(id) => {
+            state.stats.record_capture();
+            Json(AddResp {
+                id,
+                refreshed: true,
+            })
+            .into_response()
+        }
+        Err(e) => (
+            StatusCode::CONFLICT,
+            Json(ErrResp {
+                error: describe(&e),
+            }),
+        )
+            .into_response(),
+    }
 }
 
 /// Build the Cookie/Referer/User-Agent header vec the browser would have sent,

@@ -153,6 +153,13 @@ download then says why it stopped, and **Retry** picks it up again. A server tha
 ignores the requested byte range, or a file that changes size mid-download, also
 stops it, rather than writing a corrupt file.
 
+When a link has expired, **Refresh link** on the stopped download takes a new link to
+the same file and carries on from the bytes already downloaded. Paste one, or, with
+the extension paired, start the download again on the page it came from while the
+dialog is open: Shinsoku takes the browser's new link and cookies instead of adding a
+second download. A link to a different file — another size, or for a stream another
+number of segments — is refused, and the download keeps its old one.
+
 Minimise hides Shinsoku to the tray, where downloads keep running. Closing the window,
 or **Quit** in the tray menu, exits.
 
@@ -308,6 +315,9 @@ Design decisions — engine-side persistence, the loopback capture server, how H
 progress reuses the byte fields — are recorded in [docs/decisions.md](docs/decisions.md).
 
 ## Not built yet
+
+The goal for 1.0 is every feature of 1DM, on Android and on desktop;
+[docs/roadmap.md](docs/roadmap.md) tracks it feature by feature. Among what is missing:
 
 - Android and Linux builds. The Flutter targets exist; the native engine build is wired
   for Windows only.

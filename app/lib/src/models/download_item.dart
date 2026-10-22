@@ -15,6 +15,10 @@ class SegmentInfo {
 class DownloadItem {
   final String id;
   final String name;
+  final String url;
+
+  /// Page the download came from (its `Referer` header), when known.
+  final String? referrer;
   final String host;
   final FileType fileType;
   final int totalBytes;
@@ -47,6 +51,8 @@ class DownloadItem {
   const DownloadItem({
     required this.id,
     required this.name,
+    this.url = '',
+    this.referrer,
     required this.host,
     required this.fileType,
     required this.totalBytes,
@@ -79,6 +85,8 @@ class DownloadItem {
   DownloadItem copyWith({
     String? id,
     String? name,
+    String? url,
+    String? referrer,
     String? host,
     FileType? fileType,
     int? totalBytes,
@@ -102,6 +110,8 @@ class DownloadItem {
   }) => DownloadItem(
     id: id ?? this.id,
     name: name ?? this.name,
+    url: url ?? this.url,
+    referrer: referrer ?? this.referrer,
     host: host ?? this.host,
     fileType: fileType ?? this.fileType,
     totalBytes: totalBytes ?? this.totalBytes,

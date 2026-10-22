@@ -12,6 +12,7 @@ import '../../widgets/speed_chart.dart';
 import '../../widgets/ext_chip.dart';
 import '../../widgets/s_btn.dart';
 import '../../widgets/bolt_icon.dart';
+import '../modals/refresh_modal.dart';
 import '../widgets/status_label.dart';
 
 class DetailScreen extends ConsumerWidget {
@@ -118,6 +119,15 @@ class DetailScreen extends ConsumerWidget {
                     onPressed: () => notifier.resume(it.id),
                     child: Text(failed ? 'Retry' : 'Resume'),
                   ),
+                if (failed || it.status == DownloadStatus.paused) ...[
+                  const SizedBox(width: 8),
+                  SBtn(
+                    kind: BtnKind.solid,
+                    icon: Icons.link_rounded,
+                    onPressed: () => showRefreshLinkModal(context, it.id),
+                    child: const Text('Refresh link'),
+                  ),
+                ],
                 if (it.status == DownloadStatus.completed) ...[
                   const SizedBox(width: 8),
                   SBtn(

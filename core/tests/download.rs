@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -13,6 +13,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
 
+use shinsoku_core::capture;
 use shinsoku_core::engine::download::DownloadStatus;
 use shinsoku_core::engine::orchestrator::{fetch_plan, run_segments, Plan};
 use shinsoku_core::engine::retry::{describe, FetchError, Retry, RetryPolicy};
@@ -1034,5 +1035,326 @@ async fn hls_retries_failed_fetches() {
     let written = tokio::fs::read(&it.dest_path).await.unwrap();
     let expected: Vec<u8> = segs.into_iter().flatten().collect();
     assert!(written == expected, "stream with retried fetches differs");
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+// ── link refresh ────────────────────────────────────────────────────────────
+
+/// Manager that fails fast, writing into a fresh folder without categories.
+fn refresh_manager(tag: &str) -> (QueueManager, PathBuf) {
+    let manager = QueueManager::new();
+    manager.set_categorize(false);
+    manager.set_retry_policy(fast_retry(0).policy);
+    (manager, tmp_dir(tag))
+}
+
+/// A download whose link died partway, on a server whose every GET drops.
+async fn stopped_partway(manager: &QueueManager, dir: &Path, data: Arc<Vec<u8>>) -> String {
+    let (old, _) = serve_faulty(data, Arc::new(|_| Fault::DropAfter(50_000))).await;
+    let id = manager.add(
+        format!("http://{old}/blob.bin"),
+        dir.to_string_lossy().to_string(),
+        1,
+        vec![],
+        None,
+    );
+    assert_eq!(wait_done(manager, &id).await, DownloadStatus::Error);
+    assert!(
+        manager.get(&id).unwrap().downloaded_bytes > 0,
+        "nothing written"
+    );
+    id
+}
+
+/// A download whose link was refused before a byte arrived.
+async fn refused_at_once(manager: &QueueManager, dir: &Path) -> String {
+    let (old, _) = serve_faulty(Arc::new(make_data(1_000)), Arc::new(|_| Fault::Status(403))).await;
+    let id = manager.add(
+        format!("http://{old}/blob.bin"),
+        dir.to_string_lossy().to_string(),
+        4,
+        vec![],
+        None,
+    );
+    assert_eq!(wait_done(manager, &id).await, DownloadStatus::Error);
+    id
+}
+
+#[tokio::test]
+async fn refreshed_link_resumes_where_it_stopped() {
+    let data = Arc::new(make_data(300_000));
+    let starts = Arc::new(Mutex::new(Vec::new()));
+    let seen = starts.clone();
+    let (new, _) = serve_faulty(
+        data.clone(),
+        Arc::new(move |start| {
+            seen.lock().unwrap().push(start);
+            Fault::None
+        }),
+    )
+    .await;
+    let (manager, dir) = refresh_manager("resume");
+    let id = stopped_partway(&manager, &dir, data.clone()).await;
+    let stopped = manager.get(&id).unwrap().downloaded_bytes as usize;
+
+    let url = format!("http://{new}/blob.bin");
+    manager.refresh_url(&id, url.clone(), None).await.unwrap();
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+
+    let it = manager.get(&id).unwrap();
+    assert_eq!(it.url, url);
+    // a one-byte probe, then the rest from the byte it reached
+    assert_eq!(*starts.lock().unwrap(), vec![0, stopped]);
+    assert!(tokio::fs::read(&it.dest_path).await.unwrap() == *data);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+#[tokio::test]
+async fn refresh_refuses_a_different_file() {
+    let other = serve(Arc::new(make_data(123_456))).await;
+    let (manager, dir) = refresh_manager("other");
+    let id = stopped_partway(&manager, &dir, Arc::new(make_data(300_000))).await;
+    let before = manager.get(&id).unwrap();
+
+    let err = manager
+        .refresh_url(&id, format!("http://{other}/blob.bin"), None)
+        .await
+        .unwrap_err();
+    assert_eq!(
+        describe(&err),
+        "That link is a different file (120.6 KB; this download is 293.0 KB)"
+    );
+    let it = manager.get(&id).unwrap();
+    assert_eq!(it.url, before.url);
+    assert_eq!(it.status, DownloadStatus::Error);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+/// With nothing written, the old plan (often sized from an error page) is
+/// dropped and the new link probed afresh, whatever its size.
+#[tokio::test]
+async fn refresh_before_any_bytes_starts_over() {
+    let data = Arc::new(make_data(250_000));
+    let new = serve(data.clone()).await;
+    let (manager, dir) = refresh_manager("fresh");
+    let id = refused_at_once(&manager, &dir).await;
+    assert_eq!(
+        manager.get(&id).unwrap().error.as_deref(),
+        Some("Access denied (HTTP 403); the link may have expired")
+    );
+
+    manager
+        .refresh_url(&id, format!("http://{new}/blob.bin"), None)
+        .await
+        .unwrap();
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+    let it = manager.get(&id).unwrap();
+    assert_eq!(it.total_bytes, data.len() as u64);
+    assert_eq!(PathBuf::from(&it.dest_path), dir.join("blob.bin"));
+    assert!(tokio::fs::read(&it.dest_path).await.unwrap() == *data);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+/// Regression: a failure before the first byte removes the temp file, and
+/// Retry then found no file to resume into.
+#[tokio::test]
+async fn retry_after_failing_before_any_bytes() {
+    let data = Arc::new(make_data(200_000));
+    let refuse = Arc::new(AtomicBool::new(true));
+    let flag = refuse.clone();
+    let (addr, _) = serve_faulty(
+        data.clone(),
+        Arc::new(move |_| match flag.load(Ordering::SeqCst) {
+            true => Fault::Status(503),
+            false => Fault::None,
+        }),
+    )
+    .await;
+    let (manager, dir) = refresh_manager("retry0");
+    let id = manager.add(
+        format!("http://{addr}/blob.bin"),
+        dir.to_string_lossy().to_string(),
+        4,
+        vec![],
+        None,
+    );
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Error);
+
+    refuse.store(false, Ordering::SeqCst);
+    manager.resume(&id);
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+    let it = manager.get(&id).unwrap();
+    assert!(tokio::fs::read(&it.dest_path).await.unwrap() == *data);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+/// Resuming after the partial file was deleted starts it over instead of
+/// failing on the missing file.
+#[tokio::test]
+async fn resume_recreates_a_deleted_partial_file() {
+    let data = Arc::new(make_data(300_000));
+    let faulty = Arc::new(AtomicBool::new(true));
+    let flag = faulty.clone();
+    let (addr, _) = serve_faulty(
+        data.clone(),
+        Arc::new(move |_| match flag.load(Ordering::SeqCst) {
+            true => Fault::DropAfter(50_000),
+            false => Fault::None,
+        }),
+    )
+    .await;
+    let (manager, dir) = refresh_manager("deleted");
+    let id = manager.add(
+        format!("http://{addr}/blob.bin"),
+        dir.to_string_lossy().to_string(),
+        1,
+        vec![],
+        None,
+    );
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Error);
+    let it = manager.get(&id).unwrap();
+    assert!(it.downloaded_bytes > 0);
+    tokio::fs::remove_file(temp_path(Path::new(&it.dest_path)))
+        .await
+        .unwrap();
+
+    faulty.store(false, Ordering::SeqCst);
+    manager.resume(&id);
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+    let it = manager.get(&id).unwrap();
+    assert!(tokio::fs::read(&it.dest_path).await.unwrap() == *data);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+async fn capture_post(port: u16, url: &str) -> reqwest::Response {
+    reqwest::Client::new()
+        .post(format!("http://127.0.0.1:{port}/api/add"))
+        .header("X-Shinsoku-Token", "t")
+        .json(&serde_json::json!({ "url": url, "cookie": "sid=fresh" }))
+        .send()
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn captured_link_goes_to_the_waiting_download() {
+    let data = Arc::new(make_data(200_000));
+    let new = serve(data.clone()).await;
+    let (manager, dir) = refresh_manager("capture");
+    let id = refused_at_once(&manager, &dir).await;
+    let server = capture::start(
+        manager.clone(),
+        dir.to_string_lossy().to_string(),
+        0,
+        "t".into(),
+    )
+    .unwrap();
+
+    manager.await_link(Some(id.clone()));
+    let resp = capture_post(server.port, &format!("http://{new}/blob.bin")).await;
+    assert_eq!(resp.status(), 200);
+    let body: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(body["id"], id.as_str());
+    assert_eq!(body["refreshed"], true);
+    assert!(manager.refresh_target().is_none(), "still waiting");
+    assert_eq!(manager.snapshot().len(), 1, "added a new download");
+
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+    let it = manager.get(&id).unwrap();
+    assert!(it.headers.contains(&("Cookie".into(), "sid=fresh".into())));
+    assert!(tokio::fs::read(&it.dest_path).await.unwrap() == *data);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+#[tokio::test]
+async fn waiting_download_refuses_a_different_file() {
+    let other = serve(Arc::new(make_data(5_000))).await;
+    let (manager, dir) = refresh_manager("capture_other");
+    let id = stopped_partway(&manager, &dir, Arc::new(make_data(300_000))).await;
+    let server = capture::start(
+        manager.clone(),
+        dir.to_string_lossy().to_string(),
+        0,
+        "t".into(),
+    )
+    .unwrap();
+    let other = format!("http://{other}/blob.bin");
+
+    manager.await_link(Some(id.clone()));
+    let resp = capture_post(server.port, &other).await;
+    assert_eq!(resp.status(), 409);
+    let body: serde_json::Value = resp.json().await.unwrap();
+    let reason = "That link is a different file (4.9 KB; this download is 293.0 KB)";
+    assert_eq!(body["error"], reason);
+    let target = manager.refresh_target().expect("stopped waiting");
+    assert_eq!(target.id, id);
+    assert_eq!(target.error.as_deref(), Some(reason));
+    assert_eq!(manager.snapshot().len(), 1);
+
+    // nothing waiting: a capture adds a download, as before
+    manager.await_link(None);
+    let resp = capture_post(server.port, &other).await;
+    assert_eq!(resp.status(), 200);
+    let body: serde_json::Value = resp.json().await.unwrap();
+    assert!(body.get("refreshed").is_none());
+    assert_eq!(manager.snapshot().len(), 2);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+#[tokio::test]
+async fn refreshed_playlist_continues_the_stream() {
+    let segs: Vec<Vec<u8>> = (0..4).map(|i| make_data(15_000 + i * 1_000)).collect();
+    let playlist = |n: usize| {
+        let mut p = String::from(
+            "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXT-X-MEDIA-SEQUENCE:0\n",
+        );
+        for i in 0..n {
+            p.push_str(&format!("#EXTINF:4.0,\nseg{i}.ts\n"));
+        }
+        p.push_str("#EXT-X-ENDLIST\n");
+        p.into_bytes()
+    };
+    // the old host's link dies after two segments
+    let mut old = HashMap::from([("/v.m3u8".to_string(), playlist(4))]);
+    let mut new = HashMap::from([("/v.m3u8".to_string(), playlist(4))]);
+    for (i, s) in segs.iter().enumerate() {
+        if i < 2 {
+            old.insert(format!("/seg{i}.ts"), s.clone());
+        }
+        new.insert(format!("/seg{i}.ts"), s.clone());
+    }
+    let short = HashMap::from([("/v.m3u8".to_string(), playlist(3))]);
+    let old = serve_map(old, 0, &[]).await;
+    let new = serve_map(new, 0, &[]).await;
+    let short = serve_map(short, 0, &[]).await;
+
+    let (manager, dir) = refresh_manager("hls_refresh");
+    manager.set_max_connections(1);
+    let id = manager.add_hls(
+        format!("http://{old}/v.m3u8"),
+        dir.to_string_lossy().to_string(),
+        vec![],
+        None,
+    );
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Error);
+    assert_eq!(manager.get(&id).unwrap().segment_done, 2);
+
+    let err = manager
+        .refresh_url(&id, format!("http://{short}/v.m3u8"), None)
+        .await
+        .unwrap_err();
+    assert_eq!(
+        describe(&err),
+        "That playlist has 3 segments; this download has 4"
+    );
+
+    manager
+        .refresh_url(&id, format!("http://{new}/v.m3u8"), None)
+        .await
+        .unwrap();
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+    let it = manager.get(&id).unwrap();
+    let expected: Vec<u8> = segs.into_iter().flatten().collect();
+    assert!(tokio::fs::read(&it.dest_path).await.unwrap() == expected);
     let _ = tokio::fs::remove_dir_all(&dir).await;
 }

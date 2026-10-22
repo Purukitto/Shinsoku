@@ -58,6 +58,13 @@ python tool/gen_ext_icons.py   # one-time: generate icons/ (needs Pillow + numpy
 3. Click the icon, then **Send** next to the stream you want. It appears in
    Shinsoku and downloads to completion.
 
+## Refresh an expired link
+
+With **Refresh link** open on a stopped download in the app, the next download you
+start in the browser goes to that download, with fresh cookies, instead of becoming a
+new one. If it is a different file, the app refuses it, the notification says why,
+and the browser downloads it as usual.
+
 ## Options
 
 - **Capture downloads** — master on/off (also gates the stream popup).

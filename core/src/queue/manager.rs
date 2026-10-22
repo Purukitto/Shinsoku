@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU64, AtomicU8, O
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use chrono::Timelike;
 use futures::StreamExt;
 use reqwest::header::HeaderMap;
@@ -23,7 +23,7 @@ use crate::engine::orchestrator::{fetch_plan, run_segments};
 use crate::engine::retry::{describe, within, Retry, RetryPolicy};
 use crate::engine::throttle::RateLimiter;
 use crate::protocols::hls::{self, KeyMethod};
-use crate::protocols::http::{build_client, build_headers};
+use crate::protocols::http::{build_client, build_headers, probe_range};
 use crate::storage::assembler::{finalize, temp_path};
 use crate::storage::integrity::{hash_file, HashAlgo};
 use crate::storage::partial::prepare_destination;
@@ -80,6 +80,17 @@ pub(crate) struct Shared {
     store: Option<PathBuf>,
     /// Serialises store writes so concurrent saves can't interleave.
     persist_lock: Mutex<()>,
+    /// Download waiting for its next captured link (see [`QueueManager::await_link`]).
+    refresh_target: Mutex<Option<RefreshTarget>>,
+}
+
+/// A stopped download that the next link captured from the browser goes to,
+/// instead of a new download.
+#[derive(Debug, Clone)]
+pub struct RefreshTarget {
+    pub id: String,
+    /// Why the last captured link was refused; the target stays armed.
+    pub error: Option<String>,
 }
 
 /// Handle to the engine; interior mutability throughout, so tasks and bridge
@@ -131,6 +142,7 @@ impl QueueManager {
             retry_policy: Mutex::new(RetryPolicy::default()),
             store,
             persist_lock: Mutex::new(()),
+            refresh_target: Mutex::new(None),
         });
         // background loop: progress/speed, scheduler, emit
         let agg = shared.clone();
@@ -165,7 +177,7 @@ impl QueueManager {
     ) -> String {
         let id = Uuid::new_v4().to_string();
         let filename = filename_from_url(&url);
-        let host = url.split('/').nth(2).unwrap_or("").to_string();
+        let host = host_of(&url);
         let conns = connections
             .max(1)
             .min(self.shared.max_connections.load(Ordering::Relaxed));
@@ -174,6 +186,7 @@ impl QueueManager {
             url,
             filename: filename.clone(),
             dest_path: join_path(&dest_dir, &filename),
+            dest_dir,
             total_bytes: 0,
             downloaded_bytes: 0,
             speed_bps: 0,
@@ -221,13 +234,14 @@ impl QueueManager {
     ) -> String {
         let id = Uuid::new_v4().to_string();
         let filename = hls_filename(&url, title.as_deref());
-        let host = url.split('/').nth(2).unwrap_or("").to_string();
+        let host = host_of(&url);
         let conns = self.shared.max_connections.load(Ordering::Relaxed).max(1);
         let item = DownloadItem {
             id: id.clone(),
             url,
             filename: filename.clone(),
             dest_path: join_path(&dest_dir, &filename),
+            dest_dir,
             total_bytes: 0,
             downloaded_bytes: 0,
             speed_bps: 0,
@@ -314,6 +328,108 @@ impl QueueManager {
             });
         }
         schedule_persist(&self.shared);
+    }
+
+    /// Point a stopped download at a new link for the same file, then queue it
+    /// to resume. The link must serve that file: the same size for a byte-range
+    /// download, the same segment count for HLS. `headers` replaces the stored
+    /// request headers (a capture brings fresh cookies); `None` keeps them.
+    pub async fn refresh_url(
+        &self,
+        id: &str,
+        url: String,
+        headers: Option<Vec<(String, String)>>,
+    ) -> Result<()> {
+        let url = url.trim().to_string();
+        if !(url.starts_with("http://") || url.starts_with("https://")) {
+            bail!("Not an http(s) link");
+        }
+        let it = self
+            .get(id)
+            .ok_or_else(|| anyhow::anyhow!("Download not found"))?;
+        check_refreshable(&it.status)?;
+        let hdrs = headers.clone().unwrap_or_else(|| it.headers.clone());
+        let (shared, check) = (self.shared.clone(), url.clone());
+        // on the engine runtime: the pooled client belongs to it
+        self.shared
+            .rt
+            .spawn(async move { verify_same_file(&shared, &it, &check, &hdrs).await })
+            .await??;
+
+        {
+            let mut inner = self.shared.inner.write().unwrap();
+            let it = inner
+                .items
+                .get_mut(id)
+                .ok_or_else(|| anyhow::anyhow!("Download not found"))?;
+            check_refreshable(&it.status)?;
+            it.host = host_of(&url);
+            it.url = url;
+            if let Some(h) = headers {
+                it.headers = h;
+            }
+            it.error = None;
+            it.retry_count = 0;
+            it.status = DownloadStatus::Queued;
+        }
+        emit_item(&self.shared, id);
+        schedule(&self.shared);
+        schedule_persist(&self.shared);
+        Ok(())
+    }
+
+    /// Send the next link captured from the browser to download `id` instead of
+    /// adding a new one; `None` stops waiting.
+    pub fn await_link(&self, id: Option<String>) {
+        *self.shared.refresh_target.lock().unwrap() =
+            id.map(|id| RefreshTarget { id, error: None });
+    }
+
+    pub fn refresh_target(&self) -> Option<RefreshTarget> {
+        self.shared.refresh_target.lock().unwrap().clone()
+    }
+
+    /// Hand a captured link to the download waiting for one (see
+    /// [`Self::await_link`]). `None` when nothing is waiting, so the caller adds
+    /// a new download. A refused link leaves the download waiting, with the
+    /// reason recorded for the UI.
+    pub async fn take_captured_link(
+        &self,
+        url: String,
+        headers: Vec<(String, String)>,
+        kind: DownloadKind,
+    ) -> Option<Result<String>> {
+        let id = self.refresh_target()?.id;
+        let result = match self.get(&id).map(|it| it.kind) {
+            None => {
+                self.clear_target(&id);
+                return None;
+            }
+            Some(k) if k != kind => Err(anyhow::anyhow!(match k {
+                DownloadKind::Http => "Expected a file download, not a stream",
+                DownloadKind::Hls => "Expected a stream; send it from the toolbar popup",
+            })),
+            Some(_) => self.refresh_url(&id, url, Some(headers)).await,
+        };
+        match &result {
+            Ok(()) => self.clear_target(&id),
+            Err(e) => {
+                if let Some(t) = self.shared.refresh_target.lock().unwrap().as_mut() {
+                    if t.id == id {
+                        t.error = Some(describe(e));
+                    }
+                }
+            }
+        }
+        Some(result.map(|()| id))
+    }
+
+    /// Stop waiting for a link, unless the target has since moved to another id.
+    fn clear_target(&self, id: &str) {
+        let mut t = self.shared.refresh_target.lock().unwrap();
+        if t.as_ref().is_some_and(|t| t.id == id) {
+            *t = None;
+        }
     }
 
     /// Full snapshot — initial load and detail views (not per-tick polling).
@@ -687,45 +803,69 @@ async fn run_download_inner(
         return run_hls(shared, id, cancel, retry).await;
     }
 
-    let (url, dest, mut segments, is_resume, connections, headers) = {
+    let (url, dest, base, total, mut segments, planned, kept, connections, headers) = {
         let inner = shared.inner.read().unwrap();
         let it = inner
             .items
             .get(id)
             .ok_or_else(|| anyhow::anyhow!("download {id} not found"))?;
-        let is_resume = it.total_bytes > 0 && !it.segments.is_empty();
         (
             it.url.clone(),
             PathBuf::from(&it.dest_path),
+            base_dir(it),
+            it.total_bytes,
             it.segments.clone(),
-            is_resume,
+            !it.segments.is_empty(),
+            it.downloaded_bytes > 0,
             it.connections,
             build_headers(&it.headers),
         )
     };
+    // with nothing kept, plan afresh: a plan made when the link failed may be
+    // sized from an error page
+    let is_resume = total > 0 && planned && kept;
     let mut dest = dest;
     let mut temp = temp_path(&dest);
 
+    if is_resume && !tokio::fs::try_exists(&temp).await.unwrap_or(false) {
+        // the partial file is gone: start over under the same plan
+        for s in &mut segments {
+            s.downloaded_bytes = 0;
+        }
+        prepare_destination(&temp, total).await?;
+    }
+
     if !is_resume {
+        let connections = if planned {
+            // drop the earlier plan's empty partial file, or this plan's name
+            // becomes "file (1).ext"; its segment count may be the error page's
+            let _ = tokio::fs::remove_file(&temp).await;
+            shared.max_connections.load(Ordering::Relaxed)
+        } else {
+            connections
+        };
         let stall = retry.policy.stall_timeout;
         let plan = retry
             .run(cancel, || async {
                 within(stall, fetch_plan(&shared.http, &url, connections, &headers)).await?
             })
             .await?;
-        let filename = plan.filename.clone().unwrap_or_else(|| filename_of(&dest));
+        let filename = plan
+            .filename
+            .as_deref()
+            .map(sanitize_filename)
+            .filter(|n| !n.is_empty())
+            .unwrap_or_else(|| filename_of(&dest));
         let ftype = classify(&filename, plan.mime_type.as_deref());
 
         // route into a category subfolder of the base dir when enabled
-        if shared.categorize.load(Ordering::Relaxed) {
-            let base = dest
-                .parent()
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| PathBuf::from("."));
-            dest = base.join(category_folder(&ftype)).join(&filename);
-            if let Some(parent) = dest.parent() {
-                let _ = tokio::fs::create_dir_all(parent).await;
-            }
+        dest = if shared.categorize.load(Ordering::Relaxed) {
+            base.join(category_folder(&ftype)).join(&filename)
+        } else {
+            base.join(&filename)
+        };
+        if let Some(parent) = dest.parent() {
+            let _ = tokio::fs::create_dir_all(parent).await;
         }
 
         // don't clobber an existing file: file.ext → file (1).ext, …
@@ -741,6 +881,7 @@ async fn run_download_inner(
                 it.segments = plan.segments.clone();
                 it.connections = plan.segments.len() as u8;
                 it.file_type = ftype;
+                it.filename = filename_of(&dest);
                 it.dest_path = dest.to_string_lossy().to_string();
             }
         }
@@ -795,7 +936,7 @@ async fn run_hls(
     cancel: &CancellationToken,
     retry: &Retry,
 ) -> Result<()> {
-    let (playlist_url, dest, headers, resume_committed, resume_done, connections, is_first) = {
+    let (playlist_url, dest, root, headers, resume_committed, resume_done, connections, is_first) = {
         let inner = shared.inner.read().unwrap();
         let it = inner
             .items
@@ -804,6 +945,7 @@ async fn run_hls(
         (
             it.url.clone(),
             PathBuf::from(&it.dest_path),
+            base_dir(it),
             build_headers(&it.headers),
             it.downloaded_bytes,
             it.segment_done,
@@ -844,13 +986,7 @@ async fn run_hls(
             dest
         };
         if shared.categorize.load(Ordering::Relaxed) {
-            let base_dir = d
-                .parent()
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| PathBuf::from("."));
-            d = base_dir
-                .join(category_folder("video"))
-                .join(filename_of(&d));
+            d = root.join(category_folder("video")).join(filename_of(&d));
             if let Some(parent) = d.parent() {
                 let _ = tokio::fs::create_dir_all(parent).await;
             }
@@ -1139,6 +1275,88 @@ impl Fetcher<'_> {
     }
 }
 
+// ── link refresh ────────────────────────────────────────────────────────────
+
+fn check_refreshable(status: &DownloadStatus) -> Result<()> {
+    match status {
+        DownloadStatus::Downloading => bail!("Pause the download before changing its link"),
+        DownloadStatus::Completed => bail!("This download has already finished"),
+        _ => Ok(()),
+    }
+}
+
+/// Check that `url` serves the file `it` was downloading. Fails fast: this runs
+/// while the user waits, so no retries.
+async fn verify_same_file(
+    shared: &Arc<Shared>,
+    it: &DownloadItem,
+    url: &str,
+    headers: &[(String, String)],
+) -> Result<()> {
+    let policy = RetryPolicy {
+        retries: 0,
+        ..*shared.retry_policy.lock().unwrap()
+    };
+    let headers = build_headers(headers);
+    match it.kind {
+        DownloadKind::Http => {
+            let info = within(
+                policy.stall_timeout,
+                probe_range(&shared.http, url, &headers),
+            )
+            .await??;
+            // with nothing written there is no file to match; the run re-probes
+            if it.downloaded_bytes == 0 {
+                return Ok(());
+            }
+            if info.total_bytes > 0 && info.total_bytes != it.total_bytes {
+                bail!(
+                    "That link is a different file ({}; this download is {})",
+                    fmt_size(info.total_bytes),
+                    fmt_size(it.total_bytes)
+                );
+            }
+            if it.segments.len() > 1 && !info.resumable {
+                bail!("That link can't resume a partial download: the server ignores byte ranges");
+            }
+        }
+        DownloadKind::Hls => {
+            let base = Url::parse(url).map_err(|e| anyhow::anyhow!("Bad playlist link: {e}"))?;
+            let (retry, cancel) = (Retry::new(policy), CancellationToken::new());
+            let fetch = Fetcher {
+                client: &shared.http,
+                headers: &headers,
+                retry: &retry,
+                cancel: &cancel,
+            };
+            let media = fetch_media_playlist(&fetch, &base).await?;
+            let n = media.segments.len() as u32;
+            if it.segment_total > 0 && n != it.segment_total {
+                bail!(
+                    "That playlist has {n} segments; this download has {}",
+                    it.segment_total
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Binary units, as the app shows sizes.
+fn fmt_size(n: u64) -> String {
+    const UNITS: [&str; 4] = ["KB", "MB", "GB", "TB"];
+    if n < 1024 {
+        return format!("{n} B");
+    }
+    let mut v = n as f64 / 1024.0;
+    let mut i = 0;
+    while v >= 1024.0 && i < UNITS.len() - 1 {
+        v /= 1024.0;
+        i += 1;
+    }
+    format!("{v:.1} {}", UNITS[i])
+}
+
 /// Write counters back into the item so resume continues from the right offsets.
 fn persist_progress(shared: &Shared, id: &str, counters: &[Arc<AtomicU64>]) {
     let mut inner = shared.inner.write().unwrap();
@@ -1255,6 +1473,10 @@ fn push_history(h: &mut Vec<u64>, v: u64) {
     h.push(v);
 }
 
+fn host_of(url: &str) -> String {
+    url.split('/').nth(2).unwrap_or("").to_string()
+}
+
 fn filename_from_url(url: &str) -> String {
     url.split('?')
         .next()
@@ -1337,6 +1559,18 @@ fn category_folder(file_type: &str) -> &'static str {
         "app" | "iso" => "Programs",
         _ => "Other",
     }
+}
+
+/// Folder the download was added to: category subfolders and re-plans start
+/// here, so a second plan doesn't nest inside the first one's category folder.
+fn base_dir(it: &DownloadItem) -> PathBuf {
+    if !it.dest_dir.is_empty() {
+        return PathBuf::from(&it.dest_dir);
+    }
+    Path::new(&it.dest_path)
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from("."))
 }
 
 fn filename_of(p: &Path) -> String {

@@ -40,9 +40,15 @@ async function send(stream, tab, s, btn) {
       headers: { 'Content-Type': 'application/json', 'X-Shinsoku-Token': s.token },
       body: JSON.stringify(payload),
     });
+    const body = await res.json().catch(() => ({}));
     if (res.ok) {
       btn.textContent = 'Sent ✓';
-      setStatus('Sent to Shinsoku.', true);
+      setStatus(body.refreshed ? 'Link refreshed in Shinsoku.' : 'Sent to Shinsoku.', true);
+    } else if (res.status === 409) {
+      // a download waiting in Shinsoku for a fresh link refused this one
+      btn.disabled = false;
+      btn.textContent = 'Send';
+      setStatus(body.error || 'Not the same stream.', false);
     } else if (res.status === 401) {
       btn.disabled = false;
       btn.textContent = 'Send';

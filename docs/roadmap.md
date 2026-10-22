@@ -1,0 +1,110 @@
+# Roadmap to 1.0
+
+Shinsoku 1.0 ships with every feature of [1DM](https://play.google.com/store/apps/details?id=idm.internet.download.manager),
+including the paid 1DM+ extras, on **both Android and desktop** (Windows, then Linux).
+This page tracks how far along that is. It describes the code as it stands; when a row
+changes, change it in the same pull request.
+
+**Done** works on Windows today. **Partial** exists but falls short of 1DM. **Not
+started** is not built yet. Everything in the engine (`core/`) is shared, so it reaches
+Android once the Android build is wired. Rows marked *Android* need Android-specific work
+beyond that.
+
+## Platforms
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Windows app | Done | Portable zip, no installer yet |
+| Android app | Not started | Flutter target exists; the native engine build and a mobile shell do not |
+| Linux app | Not started | Flutter target exists; the native engine build does not |
+
+## Downloading
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Multi-part downloads (16 parts; 32 in 1DM+) | Partial | The engine takes up to 32; the UI stops at 16 |
+| Pause and resume, across restarts | Done | |
+| Automatic retry that never corrupts the file | Done | |
+| Refresh an expired link | Done | Paste a new link, or catch it from the browser |
+| Resume on its own after the app is killed | Partial | Interrupted downloads come back paused |
+| Simultaneous downloads (10; 30 in 1DM+) | Partial | 1–8 in Settings; the engine takes 16 |
+| Speed limiter | Done | One global limit |
+| Scheduler: start and stop at set times (1DM+) | Partial | Only the off-peak speed window; the Add dialog's off-peak toggle does nothing yet |
+| Daily download or data limit | Not started | |
+| Wi-Fi only, pause on mobile data | Not started | *Android* |
+| Large files | Done | |
+| Keep downloading in the background | Partial | Tray on Windows. *Android* needs a foreground service |
+| Progress and completion notifications | Not started | *Android* and desktop |
+| After-download actions (move file, turn off Wi-Fi, exit) | Not started | |
+| Name and folder per download before it starts | Not started | |
+| When a name is taken: rename, overwrite or skip | Partial | Rename only |
+| Downloads that need a login (basic auth) | Partial | Through a custom `Authorization` header |
+| Custom User-Agent | Partial | Through a custom header |
+| Checksums: MD5, SHA-1, SHA-256, compare with clipboard | Partial | MD5 and SHA-256, verified against a digest given at add time |
+| Start all, pause all, stop all | Not started | |
+| Hidden download folder | Not started | *Android* |
+| Sort files into folders by type | Done | |
+| Search, sort and filter the list | Not started | The search box is a placeholder |
+
+## Catching links
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Offer to download a copied link | Partial | Desktop only. *Android* |
+| Take downloads from the browser | Partial | Desktop, through the extension. *Android*: the share menu and opening links |
+| Import links from a text file or the clipboard | Not started | |
+| Batch download by pattern (`file[1-20].jpg`) | Not started | |
+| Grab every file on a page | Not started | |
+
+## Video and streams
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| HLS (`.m3u8`) | Partial | Video on demand; AES-128. No live streams, no `SAMPLE-AES` |
+| `.m3u` playlists | Not started | |
+| MPEG-DASH | Not started | |
+| Convert `.ts` to `.mp4` when done | Not started | |
+| Join separate audio and video streams | Not started | |
+| Spot videos on a page | Partial | The extension spots HLS on desktop. *Android* needs the built-in browser |
+| Built-in player: play while downloading, picture-in-picture | Not started | |
+
+## Torrents
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Magnet links, torrent URLs, `.torrent` files | Not started | |
+| Pick files and priorities, trackers, peer exchange, recheck | Not started | |
+| Seeding and the upload cap | Not started | The **Cap upload / seeding** setting is saved but does nothing |
+
+## Built-in browser
+
+1DM's browser is how Android users find and catch downloads.
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Tabs, history, bookmarks | Not started | |
+| Ad, tracker and pop-up blocking with filter lists | Not started | |
+| Incognito mode, clearing history, cache and cookies | Not started | |
+| Userscripts, page translation, hiding page elements | Not started | |
+| Custom DNS (DNS over HTTPS or TLS) | Not started | |
+| Password manager with autofill | Not started | |
+
+## The app
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Themes, following the system light or dark mode | Not started | Dark only |
+| Other languages | Not started | English only |
+| Backup and restore of the list and settings | Not started | |
+| Lock the app with a PIN or fingerprint | Not started | |
+
+## Not needed for parity
+
+- **YouTube.** 1DM doesn't download from it.
+
+## Open questions
+
+- **A built-in browser on desktop.** On Windows and Linux the extension already catches
+  downloads in the browser people use. Building 1DM's browser there as well is a choice
+  still to make.
+- **Torrent engine.** Which library, or whether to write one, is not decided.
