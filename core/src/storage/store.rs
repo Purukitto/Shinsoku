@@ -85,6 +85,7 @@ mod tests {
             segment_total: 0,
             segment_done: 0,
             retry_count: 0,
+            scheduled: false,
         }
     }
 

@@ -228,7 +228,7 @@ const AppSettings mockSettings = AppSettings(
   clipboardMonitor: false,
   uploadCap: false,
   uploadLimitMbps: 20,
-  offPeak: true,
+  offPeakFullSpeed: true,
   offPeakStartMin: 23 * 60,
   offPeakEndMin: 7 * 60,
 );

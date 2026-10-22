@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 473732022;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2023864199;
 
 // Section: executor
 
@@ -75,6 +75,7 @@ fn wire__crate__api__add_download_impl(
             let api_connections = <u8>::sse_decode(&mut deserializer);
             let api_headers = <Vec<(String, String)>>::sse_decode(&mut deserializer);
             let api_expected_checksum = <Option<String>>::sse_decode(&mut deserializer);
+            let api_scheduled = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, ()>((move || {
                 let mut api_engine_guard = None;
@@ -100,6 +101,7 @@ fn wire__crate__api__add_download_impl(
                     api_connections,
                     api_headers,
                     api_expected_checksum,
+                    api_scheduled,
                 ))?;
                 Ok(output_ok)
             })())
@@ -134,6 +136,7 @@ fn wire__crate__api__add_stream_impl(
             let api_dest_dir = <String>::sse_decode(&mut deserializer);
             let api_headers = <Vec<(String, String)>>::sse_decode(&mut deserializer);
             let api_title = <Option<String>>::sse_decode(&mut deserializer);
+            let api_scheduled = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, ()>((move || {
                 let mut api_engine_guard = None;
@@ -158,6 +161,7 @@ fn wire__crate__api__add_stream_impl(
                     api_dest_dir,
                     api_headers,
                     api_title,
+                    api_scheduled,
                 ))?;
                 Ok(output_ok)
             })())
@@ -926,9 +930,10 @@ fn wire__crate__api__set_off_peak_impl(
             let api_engine = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ShinsokuEngine>,
             >>::sse_decode(&mut deserializer);
-            let api_enabled = <bool>::sse_decode(&mut deserializer);
+            let api_full_speed = <bool>::sse_decode(&mut deserializer);
             let api_start_min = <u16>::sse_decode(&mut deserializer);
             let api_end_min = <u16>::sse_decode(&mut deserializer);
+            let api_days = <u8>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, ()>((move || {
                 let mut api_engine_guard = None;
@@ -950,10 +955,63 @@ fn wire__crate__api__set_off_peak_impl(
                 let output_ok = Result::<_, ()>::Ok({
                     crate::api::set_off_peak(
                         &*api_engine_guard,
-                        api_enabled,
+                        api_full_speed,
                         api_start_min,
                         api_end_min,
+                        api_days,
                     );
+                })?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__set_scheduled_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_scheduled",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_engine = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ShinsokuEngine>,
+            >>::sse_decode(&mut deserializer);
+            let api_id = <String>::sse_decode(&mut deserializer);
+            let api_on = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_engine_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_engine,
+                            0,
+                            false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_engine_guard = Some(api_engine.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_engine_guard = api_engine_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok({
+                    crate::api::set_scheduled(&*api_engine_guard, api_id, api_on);
                 })?;
                 Ok(output_ok)
             })())
@@ -1288,6 +1346,7 @@ impl SseDecode for crate::engine::download::DownloadItem {
         let mut var_segmentDone = <u32>::sse_decode(deserializer);
         let mut var_retryCount = <u32>::sse_decode(deserializer);
         let mut var_destDir = <String>::sse_decode(deserializer);
+        let mut var_scheduled = <bool>::sse_decode(deserializer);
         return crate::engine::download::DownloadItem {
             id: var_id,
             url: var_url,
@@ -1318,6 +1377,7 @@ impl SseDecode for crate::engine::download::DownloadItem {
             segment_done: var_segmentDone,
             retry_count: var_retryCount,
             dest_dir: var_destDir,
+            scheduled: var_scheduled,
         };
     }
 }
@@ -1629,7 +1689,7 @@ fn pde_ffi_dispatcher_primary_impl(
         8 => wire__crate__api__get_progress_impl(port, ptr, rust_vec_len, data_len),
         11 => wire__crate__api__probe_url_impl(port, ptr, rust_vec_len, data_len),
         12 => wire__crate__api__refresh_download_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__subscribe_progress_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__subscribe_progress_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1655,9 +1715,10 @@ fn pde_ffi_dispatcher_sync_impl(
         16 => wire__crate__api__set_max_connections_impl(ptr, rust_vec_len, data_len),
         17 => wire__crate__api__set_max_simultaneous_impl(ptr, rust_vec_len, data_len),
         18 => wire__crate__api__set_off_peak_impl(ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__set_speed_limit_bps_impl(ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__start_capture_server_impl(ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__stop_capture_server_impl(ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__set_scheduled_impl(ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__set_speed_limit_bps_impl(ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__start_capture_server_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__stop_capture_server_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1730,6 +1791,7 @@ impl flutter_rust_bridge::IntoDart for crate::engine::download::DownloadItem {
             self.segment_done.into_into_dart().into_dart(),
             self.retry_count.into_into_dart().into_dart(),
             self.dest_dir.into_into_dart().into_dart(),
+            self.scheduled.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1973,6 +2035,7 @@ impl SseEncode for crate::engine::download::DownloadItem {
         <u32>::sse_encode(self.segment_done, serializer);
         <u32>::sse_encode(self.retry_count, serializer);
         <String>::sse_encode(self.dest_dir, serializer);
+        <bool>::sse_encode(self.scheduled, serializer);
     }
 }
 

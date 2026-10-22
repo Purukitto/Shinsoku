@@ -41,6 +41,7 @@ class _MockDownloads extends DownloadsNotifier {
     required int connections,
     List<(String, String)> headers = const [],
     String? expectedChecksum,
+    bool scheduled = false,
   }) async {}
 
   @override
@@ -48,7 +49,15 @@ class _MockDownloads extends DownloadsNotifier {
     required String url,
     List<(String, String)> headers = const [],
     String? title,
+    bool scheduled = false,
   }) async {}
+
+  @override
+  void setScheduled(String id, bool on) {
+    final i = state.indexWhere((d) => d.id == id);
+    if (i < 0) return;
+    state = [...state]..[i] = state[i].copyWith(scheduled: on);
+  }
 
   @override
   void setRunning(bool running) {}
@@ -83,10 +92,12 @@ class _MockSettings extends SettingsNotifier {
   @override
   void setUploadLimitMbps(int mbps) => state = state.copyWith(uploadLimitMbps: mbps);
   @override
-  void setOffPeak(bool on) => state = state.copyWith(offPeak: on);
+  void setOffPeakFullSpeed(bool on) => state = state.copyWith(offPeakFullSpeed: on);
   @override
   void setOffPeakWindow(int startMin, int endMin) =>
       state = state.copyWith(offPeakStartMin: startMin, offPeakEndMin: endMin);
+  @override
+  void setOffPeakDays(int days) => state = state.copyWith(offPeakDays: days);
 }
 
 class _MockCapture extends CaptureNotifier {

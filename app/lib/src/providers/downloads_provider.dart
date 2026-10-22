@@ -86,6 +86,7 @@ DownloadItem _map(rd.DownloadItem r) => DownloadItem(
   segmentDone: r.segmentDone,
   error: r.error,
   retryCount: r.retryCount,
+  scheduled: r.scheduled,
 );
 
 // ── live download list ────────────────────────────────────────────────────────
@@ -171,6 +172,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
     required int connections,
     List<(String, String)> headers = const [],
     String? expectedChecksum,
+    bool scheduled = false,
   }) async {
     final engine = ref.read(engineProvider);
     final dir = await ref.read(downloadDirProvider.future);
@@ -181,6 +183,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       connections: connections,
       headers: headers,
       expectedChecksum: expectedChecksum,
+      scheduled: scheduled,
     );
     _refresh();
   }
@@ -191,10 +194,18 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
     required String url,
     List<(String, String)> headers = const [],
     String? title,
+    bool scheduled = false,
   }) async {
     final engine = ref.read(engineProvider);
     final dir = await ref.read(downloadDirProvider.future);
-    rust.addStream(engine: engine, url: url, destDir: dir, headers: headers, title: title);
+    rust.addStream(
+      engine: engine,
+      url: url,
+      destDir: dir,
+      headers: headers,
+      title: title,
+      scheduled: scheduled,
+    );
     _refresh();
   }
 
@@ -211,6 +222,15 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   void remove(String id) {
     rust.removeDownload(engine: ref.read(engineProvider), id: id);
     state = state.where((i) => i.id != id).toList();
+  }
+
+  /// Run [id] only during off-peak hours, or (`on == false`) as soon as a slot
+  /// is free. The engine may also change its status, so refetch it.
+  void setScheduled(String id, bool on) {
+    rust.setScheduled(engine: ref.read(engineProvider), id: id, on_: on);
+    final idx = state.indexWhere((i) => i.id == id);
+    if (idx >= 0) state = [...state]..[idx] = state[idx].copyWith(scheduled: on);
+    _refresh();
   }
 
   /// Point a stopped download at a new link for the same file and resume it.

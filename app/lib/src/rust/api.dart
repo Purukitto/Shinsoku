@@ -15,6 +15,7 @@ ShinsokuEngine createEngine({required String dbPath}) =>
     RustLib.instance.api.crateApiCreateEngine(dbPath: dbPath);
 
 /// Queue a download, return its id; probe + start run on a background task.
+/// A `scheduled` download waits for off-peak hours (see [`set_off_peak`]).
 String addDownload({
   required ShinsokuEngine engine,
   required String url,
@@ -22,6 +23,7 @@ String addDownload({
   required int connections,
   required List<(String, String)> headers,
   String? expectedChecksum,
+  required bool scheduled,
 }) => RustLib.instance.api.crateApiAddDownload(
   engine: engine,
   url: url,
@@ -29,6 +31,7 @@ String addDownload({
   connections: connections,
   headers: headers,
   expectedChecksum: expectedChecksum,
+  scheduled: scheduled,
 );
 
 /// Queue an HLS (M3U8) stream. The engine fetches the playlist, picks the
@@ -39,12 +42,14 @@ String addStream({
   required String destDir,
   required List<(String, String)> headers,
   String? title,
+  required bool scheduled,
 }) => RustLib.instance.api.crateApiAddStream(
   engine: engine,
   url: url,
   destDir: destDir,
   headers: headers,
   title: title,
+  scheduled: scheduled,
 );
 
 void pauseDownload({required ShinsokuEngine engine, required String id}) =>
@@ -55,6 +60,11 @@ void resumeDownload({required ShinsokuEngine engine, required String id}) =>
 
 void removeDownload({required ShinsokuEngine engine, required String id}) =>
     RustLib.instance.api.crateApiRemoveDownload(engine: engine, id: id);
+
+/// Run a download only during off-peak hours (`on`), or as soon as a slot is
+/// free. Scheduling a stopped download queues it for the next off-peak hours.
+void setScheduled({required ShinsokuEngine engine, required String id, required bool on_}) =>
+    RustLib.instance.api.crateApiSetScheduled(engine: engine, id: id, on_: on_);
 
 /// Point a stopped download at a new link for the same file and resume it.
 /// Fails, leaving the download as it was, when the link doesn't work or serves
@@ -107,19 +117,23 @@ void setMaxSimultaneous({required ShinsokuEngine engine, required int n}) =>
 void setCategorize({required ShinsokuEngine engine, required bool on_}) =>
     RustLib.instance.api.crateApiSetCategorize(engine: engine, on_: on_);
 
-/// Off-peak acceleration window (minutes since local midnight; `start > end`
-/// wraps past midnight). Inside it downloads ignore the speed limit; outside it
-/// the limit set via [`set_speed_limit_bps`] applies.
+/// Off-peak hours (minutes since local midnight; `start > end` wraps past
+/// midnight) and the days they begin on (`days`: bit 0 = Monday … bit 6 =
+/// Sunday). Scheduled downloads start when they open and stop when they close.
+/// With `full_speed`, downloads also ignore the limit set via
+/// [`set_speed_limit_bps`] inside them.
 void setOffPeak({
   required ShinsokuEngine engine,
-  required bool enabled,
+  required bool fullSpeed,
   required int startMin,
   required int endMin,
+  required int days,
 }) => RustLib.instance.api.crateApiSetOffPeak(
   engine: engine,
-  enabled: enabled,
+  fullSpeed: fullSpeed,
   startMin: startMin,
   endMin: endMin,
+  days: days,
 );
 
 /// Start the loopback capture server the browser extension posts to. Tries

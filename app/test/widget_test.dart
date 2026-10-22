@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shinsoku/src/models/download_item.dart';
 import 'package:shinsoku/src/providers/capture_provider.dart';
 import 'package:shinsoku/src/providers/downloads_provider.dart';
+import 'package:shinsoku/src/providers/settings_provider.dart';
 import 'package:shinsoku/src/rust/api.dart' as rust;
+import 'package:shinsoku/src/services/settings_service.dart';
 import 'package:shinsoku/src/ui/desktop/screens/detail_screen.dart';
 import 'package:shinsoku/src/ui/desktop/widgets/download_row.dart';
 
@@ -16,6 +18,7 @@ class _FakeDownloads extends DownloadsNotifier {
   final List<String> resumed = [];
   final List<(String, String)> refreshed = [];
   final List<String?> awaited = [];
+  final List<(String, bool)> scheduled = [];
   String? refuseWith;
   rust.LinkWait? wait;
 
@@ -35,7 +38,16 @@ class _FakeDownloads extends DownloadsNotifier {
   void awaitLink(String? id) => awaited.add(id);
 
   @override
+  void setScheduled(String id, bool on) => scheduled.add((id, on));
+
+  @override
   rust.LinkWait? linkWait() => wait;
+}
+
+/// Default settings, never pushed to the engine or written to disk.
+class _FakeSettings extends SettingsNotifier {
+  @override
+  AppSettings build() => const AppSettings();
 }
 
 class _FakeCapture extends CaptureNotifier {
@@ -83,6 +95,33 @@ final _failed = DownloadItem(
   error: 'Connection lost; gave up after 10 attempts',
   retryCount: 10,
 );
+
+final _waiting = _failed.copyWith(status: DownloadStatus.queued, scheduled: true);
+
+final _paused = _failed.copyWith(status: DownloadStatus.paused);
+
+Future<void> _pumpDetail(WidgetTester tester, _FakeDownloads downloads, DownloadItem item) async {
+  tester.view.physicalSize = const Size(1400, 2400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        downloadsProvider.overrideWith(() => downloads),
+        settingsProvider.overrideWith(_FakeSettings.new),
+        liveDownloadProvider.overrideWith((ref, id) => Stream.value(item)),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: DetailScreen(itemId: 'a', onBack: () {}),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+}
 
 void main() {
   testWidgets('a failed row shows why and offers Retry', (tester) async {
@@ -180,5 +219,36 @@ void main() {
     expect(find.text('Refresh and resume'), findsNothing);
     // the engine stopped waiting itself when it took the link
     expect(downloads.awaited, ['a', null, 'a']);
+  });
+
+  testWidgets('a scheduled row waits for off-peak hours and can start now', (tester) async {
+    final downloads = _FakeDownloads([_waiting]);
+    await _pumpRow(tester, downloads);
+
+    expect(find.text('SCHEDULED'), findsOneWidget);
+    expect(find.textContaining('waiting for off-peak hours'), findsOneWidget);
+    expect(find.byTooltip('Resume'), findsNothing);
+    await tester.tap(find.byTooltip('Start now'));
+    expect(downloads.scheduled, [('a', false)]);
+  });
+
+  testWidgets('a waiting download detail shows its hours and starts now', (tester) async {
+    final downloads = _FakeDownloads([_waiting]);
+    await _pumpDetail(tester, downloads, _waiting);
+
+    expect(find.text('Off-peak hours, 23:00–07:00'), findsOneWidget);
+    expect(find.text('Resume'), findsNothing);
+    expect(find.text('Unschedule'), findsNothing);
+    await tester.tap(find.text('Start now'));
+    expect(downloads.scheduled, [('a', false)]);
+  });
+
+  testWidgets('a paused download can be scheduled', (tester) async {
+    final downloads = _FakeDownloads([_paused]);
+    await _pumpDetail(tester, downloads, _paused);
+
+    expect(find.text('Resume'), findsOneWidget);
+    await tester.tap(find.text('Schedule'));
+    expect(downloads.scheduled, [('a', true)]);
   });
 }

@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/download_item.dart';
 import '../../../models/format.dart';
+import '../../../models/off_peak.dart';
 import '../../../providers/downloads_provider.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../theme/colors.dart';
 import '../../../theme/text_styles.dart';
 import '../../widgets/volt_bar.dart';
@@ -58,6 +60,7 @@ class DetailScreen extends ConsumerWidget {
       else
         ['Connections', '${it.connections} simultaneous'],
       if (it.retryCount > 0) ['Reconnects', '${it.retryCount}'],
+      if (it.scheduled) ['Schedule', _offPeakLabel(ref)],
     ];
 
     return Column(
@@ -112,6 +115,13 @@ class DetailScreen extends ConsumerWidget {
                     onPressed: () => notifier.pause(it.id),
                     child: const Text('Pause'),
                   )
+                else if (it.waitingForOffPeak)
+                  SBtn(
+                    kind: BtnKind.primary,
+                    icon: Icons.play_arrow_rounded,
+                    onPressed: () => notifier.setScheduled(it.id, false),
+                    child: const Text('Start now'),
+                  )
                 else if (it.status != DownloadStatus.completed)
                   SBtn(
                     kind: BtnKind.primary,
@@ -119,6 +129,15 @@ class DetailScreen extends ConsumerWidget {
                     onPressed: () => notifier.resume(it.id),
                     child: Text(failed ? 'Retry' : 'Resume'),
                   ),
+                if (it.status != DownloadStatus.completed && !it.waitingForOffPeak) ...[
+                  const SizedBox(width: 8),
+                  SBtn(
+                    kind: BtnKind.solid,
+                    icon: Icons.schedule_rounded,
+                    onPressed: () => notifier.setScheduled(it.id, !it.scheduled),
+                    child: Text(it.scheduled ? 'Unschedule' : 'Schedule'),
+                  ),
+                ],
                 if (failed || it.status == DownloadStatus.paused) ...[
                   const SizedBox(width: 8),
                   SBtn(
@@ -342,6 +361,13 @@ class DetailScreen extends ConsumerWidget {
         if (it.checksum != null) ...[const SizedBox(height: 16), _checksumCard(it)],
       ],
     );
+  }
+
+  static String _offPeakLabel(WidgetRef ref) {
+    final (start, end) = ref.watch(
+      settingsProvider.select((s) => (s.offPeakStartMin, s.offPeakEndMin)),
+    );
+    return 'Off-peak hours, ${fmtClock(start)}–${fmtClock(end)}';
   }
 
   static Widget _errorCard(String error) => Container(

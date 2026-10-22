@@ -48,6 +48,9 @@ class DownloadItem {
   /// Reconnects after dropped or stalled connections during the latest run.
   final int retryCount;
 
+  /// Runs only during off-peak hours.
+  final bool scheduled;
+
   const DownloadItem({
     required this.id,
     required this.name,
@@ -73,9 +76,13 @@ class DownloadItem {
     this.segmentDone = 0,
     this.error,
     this.retryCount = 0,
+    this.scheduled = false,
   });
 
   double get progress => totalBytes > 0 ? downloadedBytes / totalBytes : 0.0;
+
+  /// Scheduled and waiting for off-peak hours to begin.
+  bool get waitingForOffPeak => scheduled && status == DownloadStatus.queued;
 
   int? get etaSeconds {
     if (speedBps <= 0 || status != DownloadStatus.downloading) return null;
@@ -107,6 +114,7 @@ class DownloadItem {
     int? segmentDone,
     String? error,
     int? retryCount,
+    bool? scheduled,
   }) => DownloadItem(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -132,6 +140,7 @@ class DownloadItem {
     segmentDone: segmentDone ?? this.segmentDone,
     error: error ?? this.error,
     retryCount: retryCount ?? this.retryCount,
+    scheduled: scheduled ?? this.scheduled,
   );
 }
 

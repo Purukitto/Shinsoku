@@ -9,19 +9,21 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use chrono::Timelike;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
 
 use shinsoku_core::capture;
-use shinsoku_core::engine::download::DownloadStatus;
+use shinsoku_core::engine::download::{DownloadItem, DownloadStatus};
 use shinsoku_core::engine::orchestrator::{fetch_plan, run_segments, Plan};
 use shinsoku_core::engine::retry::{describe, FetchError, Retry, RetryPolicy};
 use shinsoku_core::engine::throttle::RateLimiter;
 use shinsoku_core::protocols::http::{build_client, build_headers};
-use shinsoku_core::queue::manager::QueueManager;
+use shinsoku_core::queue::manager::{QueueManager, EVERY_DAY};
 use shinsoku_core::storage::assembler::{finalize, temp_path};
 use shinsoku_core::storage::partial::prepare_destination;
+use shinsoku_core::storage::store;
 
 /// Serves `data` over HTTP/1.1 with `Accept-Ranges: bytes`, honouring `Range`
 /// on GET (206) and answering HEAD with the size. One request per connection
@@ -506,6 +508,7 @@ async fn hls_plaintext_concatenates_segments() {
         dir.to_string_lossy().to_string(),
         vec![],
         None,
+        false,
     );
     assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
 
@@ -569,6 +572,7 @@ async fn hls_aes128_decrypts_segments() {
         dir.to_string_lossy().to_string(),
         vec![],
         Some("Movie".to_string()),
+        false,
     );
     assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
 
@@ -607,6 +611,7 @@ async fn hls_resumes_after_pause() {
         dir.to_string_lossy().to_string(),
         vec![],
         None,
+        false,
     );
 
     // wait until a couple of segments have committed, then pause
@@ -926,6 +931,7 @@ async fn not_found_is_not_retried() {
         4,
         vec![],
         None,
+        false,
     );
     assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Error);
     let it = manager.get(&id).unwrap();
@@ -1027,6 +1033,7 @@ async fn hls_retries_failed_fetches() {
         dir.to_string_lossy().to_string(),
         vec![],
         None,
+        false,
     );
     assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
 
@@ -1057,6 +1064,7 @@ async fn stopped_partway(manager: &QueueManager, dir: &Path, data: Arc<Vec<u8>>)
         1,
         vec![],
         None,
+        false,
     );
     assert_eq!(wait_done(manager, &id).await, DownloadStatus::Error);
     assert!(
@@ -1075,6 +1083,7 @@ async fn refused_at_once(manager: &QueueManager, dir: &Path) -> String {
         4,
         vec![],
         None,
+        false,
     );
     assert_eq!(wait_done(manager, &id).await, DownloadStatus::Error);
     id
@@ -1177,6 +1186,7 @@ async fn retry_after_failing_before_any_bytes() {
         4,
         vec![],
         None,
+        false,
     );
     assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Error);
 
@@ -1210,6 +1220,7 @@ async fn resume_recreates_a_deleted_partial_file() {
         1,
         vec![],
         None,
+        false,
     );
     assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Error);
     let it = manager.get(&id).unwrap();
@@ -1335,6 +1346,7 @@ async fn refreshed_playlist_continues_the_stream() {
         dir.to_string_lossy().to_string(),
         vec![],
         None,
+        false,
     );
     assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Error);
     assert_eq!(manager.get(&id).unwrap().segment_done, 2);
@@ -1356,5 +1368,183 @@ async fn refreshed_playlist_continues_the_stream() {
     let it = manager.get(&id).unwrap();
     let expected: Vec<u8> = segs.into_iter().flatten().collect();
     assert!(tokio::fs::read(&it.dest_path).await.unwrap() == expected);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+// ── scheduled downloads ─────────────────────────────────────────────────────
+
+/// Manager writing into a fresh folder without categories.
+fn sched_manager(tag: &str) -> (QueueManager, PathBuf) {
+    let manager = QueueManager::new();
+    manager.set_categorize(false);
+    (manager, tmp_dir(tag))
+}
+
+/// Off-peak hours, every day, that are open for the hour around now, or that
+/// open an hour from now. Either way no edge falls inside a test's run.
+fn set_hours(manager: &QueueManager, open: bool) {
+    let now = chrono::Local::now();
+    let mins = (now.hour() * 60 + now.minute()) as u16;
+    let (start, end) = if open {
+        ((mins + 1440 - 60) % 1440, (mins + 60) % 1440)
+    } else {
+        ((mins + 60) % 1440, (mins + 120) % 1440)
+    };
+    manager.set_off_peak(false, start, end, EVERY_DAY);
+}
+
+fn add_scheduled(manager: &QueueManager, addr: SocketAddr, dir: &Path) -> String {
+    manager.add(
+        format!("http://{addr}/blob.bin"),
+        dir.to_string_lossy().to_string(),
+        2,
+        vec![],
+        None,
+        true,
+    )
+}
+
+/// Poll the download until `done` holds, then return it.
+async fn wait_until(
+    manager: &QueueManager,
+    id: &str,
+    done: impl Fn(&DownloadItem) -> bool,
+) -> DownloadItem {
+    for _ in 0..200 {
+        if let Some(it) = manager.get(id).filter(|it| done(it)) {
+            return it;
+        }
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    panic!("download never got there");
+}
+
+async fn assert_saved(manager: &QueueManager, id: &str, data: &[u8]) {
+    let it = manager.get(id).unwrap();
+    assert!(tokio::fs::read(&it.dest_path).await.unwrap() == data);
+}
+
+#[tokio::test]
+async fn scheduled_download_waits_for_off_peak_hours() {
+    let data = Arc::new(make_data(200_000));
+    let (addr, gets) = serve_faulty(data.clone(), Arc::new(|_| Fault::None)).await;
+    let (manager, dir) = sched_manager("sched_wait");
+    set_hours(&manager, false);
+    let id = add_scheduled(&manager, addr, &dir);
+
+    tokio::time::sleep(Duration::from_millis(1500)).await;
+    assert_eq!(manager.get(&id).unwrap().status, DownloadStatus::Queued);
+    assert_eq!(
+        gets.load(Ordering::SeqCst),
+        0,
+        "started outside off-peak hours"
+    );
+
+    set_hours(&manager, true);
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+    assert_saved(&manager, &id, &data).await;
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+/// When off-peak hours end, a scheduled download goes back to waiting with the
+/// bytes it has, and carries on from them when the hours open again.
+#[tokio::test]
+async fn off_peak_end_sends_scheduled_download_back_to_waiting() {
+    let data = Arc::new(make_data(600_000));
+    let addr = serve(data.clone()).await;
+    let (manager, dir) = sched_manager("sched_stop");
+    manager.set_speed_limit(150_000);
+    set_hours(&manager, true);
+    let id = add_scheduled(&manager, addr, &dir);
+    wait_until(&manager, &id, |it| it.downloaded_bytes > 0).await;
+
+    set_hours(&manager, false);
+    assert_eq!(manager.get(&id).unwrap().status, DownloadStatus::Queued);
+    // let the run unwind, then check nothing moves while the hours are closed
+    tokio::time::sleep(Duration::from_millis(600)).await;
+    let held = manager.get(&id).unwrap();
+    assert_eq!(held.status, DownloadStatus::Queued);
+    assert!(held.downloaded_bytes > 0 && held.downloaded_bytes < data.len() as u64);
+    tokio::time::sleep(Duration::from_millis(1200)).await;
+    let later = manager.get(&id).unwrap();
+    assert_eq!(later.status, DownloadStatus::Queued);
+    assert_eq!(later.downloaded_bytes, held.downloaded_bytes, "kept going");
+
+    manager.set_speed_limit(0);
+    set_hours(&manager, true);
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+    assert_saved(&manager, &id, &data).await;
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+#[tokio::test]
+async fn unscheduling_starts_at_once() {
+    let data = Arc::new(make_data(100_000));
+    let addr = serve(data.clone()).await;
+    let (manager, dir) = sched_manager("sched_now");
+    set_hours(&manager, false);
+    let id = add_scheduled(&manager, addr, &dir);
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert_eq!(manager.get(&id).unwrap().status, DownloadStatus::Queued);
+
+    manager.set_scheduled(&id, false);
+    assert_eq!(wait_done(&manager, &id).await, DownloadStatus::Completed);
+    assert_saved(&manager, &id, &data).await;
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+/// Scheduling a running download outside off-peak hours holds it there.
+#[tokio::test]
+async fn scheduling_a_running_download_holds_it() {
+    let data = Arc::new(make_data(600_000));
+    let addr = serve(data.clone()).await;
+    let (manager, dir) = sched_manager("sched_hold");
+    manager.set_speed_limit(150_000);
+    set_hours(&manager, false);
+    let id = manager.add(
+        format!("http://{addr}/blob.bin"),
+        dir.to_string_lossy().to_string(),
+        2,
+        vec![],
+        None,
+        false,
+    );
+    wait_until(&manager, &id, |it| it.downloaded_bytes > 0).await;
+
+    manager.set_scheduled(&id, true);
+    let it = manager.get(&id).unwrap();
+    assert!(it.scheduled);
+    assert_eq!(it.status, DownloadStatus::Queued);
+    let _ = tokio::fs::remove_dir_all(&dir).await;
+}
+
+/// A scheduled download cut off by the app closing waits for off-peak hours
+/// again on the next launch, while any other comes back paused.
+#[tokio::test]
+async fn interrupted_scheduled_download_waits_after_restart() {
+    let (manager, dir) = sched_manager("sched_restart");
+    // the hours never open, so nothing starts
+    let id = manager.add(
+        "http://127.0.0.1:9/blob.bin".to_string(),
+        dir.to_string_lossy().to_string(),
+        2,
+        vec![],
+        None,
+        true,
+    );
+    let mut scheduled = manager.get(&id).unwrap();
+    scheduled.status = DownloadStatus::Downloading;
+    let mut plain = scheduled.clone();
+    plain.id = "plain".to_string();
+    plain.scheduled = false;
+    let path = dir.join("downloads.json");
+    store::save(&path, &[scheduled, plain]).unwrap();
+
+    let restored = QueueManager::with_store(path);
+    assert_eq!(restored.get(&id).unwrap().status, DownloadStatus::Queued);
+    assert_eq!(
+        restored.get("plain").unwrap().status,
+        DownloadStatus::Paused
+    );
     let _ = tokio::fs::remove_dir_all(&dir).await;
 }

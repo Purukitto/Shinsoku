@@ -36,12 +36,21 @@ class SettingsNotifier extends Notifier<AppSettings> {
     rust.setMaxSimultaneous(engine: e, n: s.maxSimultaneous);
     rust.setSpeedLimitBps(engine: e, bps: BigInt.from(s.downloadLimitMbps * _bytesPerMb));
     rust.setCategorize(engine: e, on_: s.categorize);
-    rust.setOffPeak(
-      engine: e,
-      enabled: s.offPeak,
-      startMin: s.offPeakStartMin,
-      endMin: s.offPeakEndMin,
-    );
+    _pushOffPeak(s);
+  }
+
+  void _pushOffPeak(AppSettings s) => rust.setOffPeak(
+    engine: _engine,
+    fullSpeed: s.offPeakFullSpeed,
+    startMin: s.offPeakStartMin,
+    endMin: s.offPeakEndMin,
+    days: s.offPeakDays,
+  );
+
+  /// Off-peak changes all go to the engine together.
+  void _setOffPeak(AppSettings next) {
+    _pushOffPeak(next);
+    _set(next);
   }
 
   void _set(AppSettings next) {
@@ -76,20 +85,12 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   void setUploadLimitMbps(int mbps) => _set(state.copyWith(uploadLimitMbps: mbps));
 
-  void setOffPeak(bool on) {
-    rust.setOffPeak(
-      engine: _engine,
-      enabled: on,
-      startMin: state.offPeakStartMin,
-      endMin: state.offPeakEndMin,
-    );
-    _set(state.copyWith(offPeak: on));
-  }
+  void setOffPeakFullSpeed(bool on) => _setOffPeak(state.copyWith(offPeakFullSpeed: on));
 
-  void setOffPeakWindow(int startMin, int endMin) {
-    rust.setOffPeak(engine: _engine, enabled: state.offPeak, startMin: startMin, endMin: endMin);
-    _set(state.copyWith(offPeakStartMin: startMin, offPeakEndMin: endMin));
-  }
+  void setOffPeakWindow(int startMin, int endMin) =>
+      _setOffPeak(state.copyWith(offPeakStartMin: startMin, offPeakEndMin: endMin));
+
+  void setOffPeakDays(int days) => _setOffPeak(state.copyWith(offPeakDays: days));
 }
 
 final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(SettingsNotifier.new);

@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+import '../models/off_peak.dart';
+
 /// User-tunable engine + app settings. Engine-applied values (connections,
-/// simultaneous, download limit, categorize, off-peak) are pushed into the Rust
+/// simultaneous, download limit, categorize, off-peak hours) are pushed into the Rust
 /// core on load and on change; the rest gate app-side behaviour (clipboard
 /// monitor) or are stored for a feature not yet active (upload cap — there is no
 /// seeding/upload path in the engine yet).
@@ -17,9 +19,10 @@ class AppSettings {
     this.clipboardMonitor = true,
     this.uploadCap = true,
     this.uploadLimitMbps = 20,
-    this.offPeak = true,
+    this.offPeakFullSpeed = true,
     this.offPeakStartMin = 23 * 60,
     this.offPeakEndMin = 7 * 60,
+    this.offPeakDays = OffPeakHours.everyDay,
   });
 
   final int maxConnections; // segments per download
@@ -29,9 +32,17 @@ class AppSettings {
   final bool clipboardMonitor;
   final bool uploadCap;
   final int uploadLimitMbps;
-  final bool offPeak;
+
+  /// Lift the download limit during off-peak hours.
+  final bool offPeakFullSpeed;
   final int offPeakStartMin; // minutes since midnight
   final int offPeakEndMin;
+
+  /// Days off-peak hours begin on: bit 0 = Monday … bit 6 = Sunday.
+  final int offPeakDays;
+
+  OffPeakHours get offPeakHours =>
+      OffPeakHours(startMin: offPeakStartMin, endMin: offPeakEndMin, days: offPeakDays);
 
   AppSettings copyWith({
     int? maxConnections,
@@ -41,9 +52,10 @@ class AppSettings {
     bool? clipboardMonitor,
     bool? uploadCap,
     int? uploadLimitMbps,
-    bool? offPeak,
+    bool? offPeakFullSpeed,
     int? offPeakStartMin,
     int? offPeakEndMin,
+    int? offPeakDays,
   }) => AppSettings(
     maxConnections: maxConnections ?? this.maxConnections,
     maxSimultaneous: maxSimultaneous ?? this.maxSimultaneous,
@@ -52,9 +64,10 @@ class AppSettings {
     clipboardMonitor: clipboardMonitor ?? this.clipboardMonitor,
     uploadCap: uploadCap ?? this.uploadCap,
     uploadLimitMbps: uploadLimitMbps ?? this.uploadLimitMbps,
-    offPeak: offPeak ?? this.offPeak,
+    offPeakFullSpeed: offPeakFullSpeed ?? this.offPeakFullSpeed,
     offPeakStartMin: offPeakStartMin ?? this.offPeakStartMin,
     offPeakEndMin: offPeakEndMin ?? this.offPeakEndMin,
+    offPeakDays: offPeakDays ?? this.offPeakDays,
   );
 
   Map<String, dynamic> toJson() => {
@@ -65,9 +78,11 @@ class AppSettings {
     'clipboardMonitor': clipboardMonitor,
     'uploadCap': uploadCap,
     'uploadLimitMbps': uploadLimitMbps,
-    'offPeak': offPeak,
+    // named before the hours also scheduled downloads
+    'offPeak': offPeakFullSpeed,
     'offPeakStartMin': offPeakStartMin,
     'offPeakEndMin': offPeakEndMin,
+    'offPeakDays': offPeakDays,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> m) {
@@ -80,9 +95,10 @@ class AppSettings {
       clipboardMonitor: m['clipboardMonitor'] as bool? ?? d.clipboardMonitor,
       uploadCap: m['uploadCap'] as bool? ?? d.uploadCap,
       uploadLimitMbps: m['uploadLimitMbps'] as int? ?? d.uploadLimitMbps,
-      offPeak: m['offPeak'] as bool? ?? d.offPeak,
+      offPeakFullSpeed: m['offPeak'] as bool? ?? d.offPeakFullSpeed,
       offPeakStartMin: m['offPeakStartMin'] as int? ?? d.offPeakStartMin,
       offPeakEndMin: m['offPeakEndMin'] as int? ?? d.offPeakEndMin,
+      offPeakDays: m['offPeakDays'] as int? ?? d.offPeakDays,
     );
   }
 }

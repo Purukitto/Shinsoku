@@ -81,7 +81,14 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                                 onPressed: () => notifier.pause(it.id),
                                 tooltip: 'Pause',
                               ),
-                            if (it.status == DownloadStatus.paused ||
+                            if (it.waitingForOffPeak)
+                              SIconBtn(
+                                icon: Icons.play_arrow_rounded,
+                                size: 30,
+                                onPressed: () => notifier.setScheduled(it.id, false),
+                                tooltip: 'Start now',
+                              )
+                            else if (it.status == DownloadStatus.paused ||
                                 it.status == DownloadStatus.queued)
                               SIconBtn(
                                 icon: Icons.play_arrow_rounded,
@@ -122,7 +129,8 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                           child: Text(
                             failed
                                 ? '${it.host}  ·  ${it.error ?? 'Failed'}'
-                                : '${it.host}  ·  ${fmtBytes(it.downloadedBytes)} / ${fmtBytes(it.totalBytes)}  ·  ${it.connections} connections',
+                                : '${it.host}  ·  ${fmtBytes(it.downloadedBytes)} / ${fmtBytes(it.totalBytes)}  ·  '
+                                      '${it.waitingForOffPeak ? 'waiting for off-peak hours' : '${it.connections} connections'}',
                             style: SText.monoSm(color: failed ? SColors.danger : null),
                             overflow: TextOverflow.ellipsis,
                           ),
