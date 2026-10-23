@@ -11,6 +11,12 @@ class StatusLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (item.status) {
+      DownloadStatus.queued when item.scheduled => const Pill(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [Icon(Icons.schedule_rounded, size: 12), SizedBox(width: 5), Text('SCHEDULED')],
+        ),
+      ),
       DownloadStatus.queued => const Pill(child: Text('QUEUED')),
       DownloadStatus.paused => Pill(tone: PillTone.amber, child: const Text('PAUSED')),
       DownloadStatus.completed => Pill(

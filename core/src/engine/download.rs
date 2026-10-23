@@ -65,6 +65,10 @@ pub struct DownloadItem {
     /// for items persisted before this field, which fall back to `dest_path`'s parent.
     #[serde(default)]
     pub dest_dir: String,
+    /// Runs only during off-peak hours: waits queued until they begin, and goes
+    /// back to waiting when they end.
+    #[serde(default)]
+    pub scheduled: bool,
 }
 
 impl DownloadItem {

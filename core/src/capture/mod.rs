@@ -238,6 +238,7 @@ async fn add(
         conns,
         hdrs,
         req.checksum,
+        false,
     );
     state.stats.record_capture();
     Ok(Json(AddResp {
@@ -266,7 +267,7 @@ async fn add_stream(
     }
     let id = state
         .manager
-        .add_hls(req.url, (*state.dest_dir).clone(), hdrs, req.title);
+        .add_hls(req.url, (*state.dest_dir).clone(), hdrs, req.title, false);
     state.stats.record_capture();
     Ok(Json(AddResp {
         id,

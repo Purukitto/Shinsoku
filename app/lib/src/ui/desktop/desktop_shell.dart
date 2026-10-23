@@ -88,19 +88,29 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
       barrierColor: Colors.black.withValues(alpha: 0.66),
       builder: (_) => AddDownloadModal(
         fromClipboard: fromClipboard,
-        onStart: ({required url, required connections, required headers, expectedChecksum}) {
+        onStart:
+            ({
+              required url,
+              required connections,
+              required headers,
+              expectedChecksum,
+              required scheduled,
+            }) {
+              ref
+                  .read(downloadsProvider.notifier)
+                  .add(
+                    url: url,
+                    connections: connections,
+                    headers: headers,
+                    expectedChecksum: expectedChecksum,
+                    scheduled: scheduled,
+                  );
+              _navigate(_DesktopView.active);
+            },
+        onStartStream: ({required url, required headers, title, required scheduled}) {
           ref
               .read(downloadsProvider.notifier)
-              .add(
-                url: url,
-                connections: connections,
-                headers: headers,
-                expectedChecksum: expectedChecksum,
-              );
-          _navigate(_DesktopView.active);
-        },
-        onStartStream: ({required url, required headers, title}) {
-          ref.read(downloadsProvider.notifier).addStream(url: url, headers: headers, title: title);
+              .addStream(url: url, headers: headers, title: title, scheduled: scheduled);
           _navigate(_DesktopView.active);
         },
       ),

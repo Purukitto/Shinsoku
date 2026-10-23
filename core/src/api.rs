@@ -39,6 +39,7 @@ pub fn create_engine(db_path: String) -> ShinsokuEngine {
 // ── Download control ──────────────────────────────────────────────────────────
 
 /// Queue a download, return its id; probe + start run on a background task.
+/// A `scheduled` download waits for off-peak hours (see [`set_off_peak`]).
 #[frb(sync)]
 pub fn add_download(
     engine: &ShinsokuEngine,
@@ -47,10 +48,16 @@ pub fn add_download(
     connections: u8,
     headers: Vec<(String, String)>,
     expected_checksum: Option<String>,
+    scheduled: bool,
 ) -> String {
-    engine
-        .manager
-        .add(url, dest_dir, connections, headers, expected_checksum)
+    engine.manager.add(
+        url,
+        dest_dir,
+        connections,
+        headers,
+        expected_checksum,
+        scheduled,
+    )
 }
 
 /// Queue an HLS (M3U8) stream. The engine fetches the playlist, picks the
@@ -62,8 +69,11 @@ pub fn add_stream(
     dest_dir: String,
     headers: Vec<(String, String)>,
     title: Option<String>,
+    scheduled: bool,
 ) -> String {
-    engine.manager.add_hls(url, dest_dir, headers, title)
+    engine
+        .manager
+        .add_hls(url, dest_dir, headers, title, scheduled)
 }
 
 #[frb(sync)]
@@ -79,6 +89,13 @@ pub fn resume_download(engine: &ShinsokuEngine, id: String) {
 #[frb(sync)]
 pub fn remove_download(engine: &ShinsokuEngine, id: String) {
     engine.manager.remove(&id);
+}
+
+/// Run a download only during off-peak hours (`on`), or as soon as a slot is
+/// free. Scheduling a stopped download queues it for the next off-peak hours.
+#[frb(sync)]
+pub fn set_scheduled(engine: &ShinsokuEngine, id: String, on: bool) {
+    engine.manager.set_scheduled(&id, on);
 }
 
 /// Point a stopped download at a new link for the same file and resume it.
@@ -226,12 +243,22 @@ pub fn set_categorize(engine: &ShinsokuEngine, on: bool) {
     engine.manager.set_categorize(on);
 }
 
-/// Off-peak acceleration window (minutes since local midnight; `start > end`
-/// wraps past midnight). Inside it downloads ignore the speed limit; outside it
-/// the limit set via [`set_speed_limit_bps`] applies.
+/// Off-peak hours (minutes since local midnight; `start > end` wraps past
+/// midnight) and the days they begin on (`days`: bit 0 = Monday … bit 6 =
+/// Sunday). Scheduled downloads start when they open and stop when they close.
+/// With `full_speed`, downloads also ignore the limit set via
+/// [`set_speed_limit_bps`] inside them.
 #[frb(sync)]
-pub fn set_off_peak(engine: &ShinsokuEngine, enabled: bool, start_min: u16, end_min: u16) {
-    engine.manager.set_off_peak(enabled, start_min, end_min);
+pub fn set_off_peak(
+    engine: &ShinsokuEngine,
+    full_speed: bool,
+    start_min: u16,
+    end_min: u16,
+    days: u8,
+) {
+    engine
+        .manager
+        .set_off_peak(full_speed, start_min, end_min, days);
 }
 
 // ── Browser capture ─────────────────────────────────────────────────────────

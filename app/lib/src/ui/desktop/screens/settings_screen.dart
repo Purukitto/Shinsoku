@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../models/off_peak.dart';
+import '../../../providers/autostart_provider.dart';
 import '../../../providers/capture_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../rust/api.dart' as rust;
@@ -27,6 +30,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final set = ref.read(settingsProvider.notifier);
     final cap = ref.watch(captureProvider);
     final capStatus = cap.enabled ? ref.watch(captureStatusProvider).value : null;
+    final autostart = ref.read(autostartServiceProvider).supported;
     return SizedBox(
       width: 760,
       child: Column(
@@ -112,15 +116,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Scheduling',
             children: [
               _row(
-                'Off-peak acceleration',
+                'Off-peak hours',
                 desc:
-                    'Run heavy downloads at full speed during your quiet hours; the '
-                    'download speed limit applies the rest of the day.',
-                child: SToggle(value: s.offPeak, onChanged: set.setOffPeak),
+                    'Scheduled downloads start when these hours begin and stop when they '
+                    'end, carrying on the next time.',
+                child: _DayPicker(days: s.offPeakDays, onChanged: set.setOffPeakDays),
               ),
-              if (s.offPeak) _scheduleTimeline(s, set),
+              _scheduleTimeline(s, set),
+              _row(
+                'Full speed off-peak',
+                desc: 'Ignore the download speed limit during off-peak hours.',
+                child: SToggle(value: s.offPeakFullSpeed, onChanged: set.setOffPeakFullSpeed),
+              ),
             ],
           ),
+          if (autostart)
+            _card(
+              icon: Icons.power_settings_new_rounded,
+              title: 'Startup',
+              children: [
+                _row(
+                  Platform.isWindows ? 'Start with Windows' : 'Start when you sign in',
+                  desc:
+                      'Open in the tray when you sign in, so scheduled downloads run on their own.',
+                  last: true,
+                  child: SToggle(
+                    value: ref.watch(autostartProvider),
+                    onChanged: ref.read(autostartProvider.notifier).setEnabled,
+                  ),
+                ),
+              ],
+            ),
           _card(
             icon: Icons.content_paste_rounded,
             title: 'Capture',
@@ -329,7 +355,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _scheduleTimeline(AppSettings s, SettingsNotifier set) {
-    final label = 'FULL SPEED ${_fmtTime(s.offPeakStartMin)}–${_fmtTime(s.offPeakEndMin)}';
+    final label = 'OFF-PEAK ${fmtClock(s.offPeakStartMin)}–${fmtClock(s.offPeakEndMin)}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
@@ -423,12 +449,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-String _fmtTime(int m) {
-  final h = (m ~/ 60) % 24;
-  final mm = m % 60;
-  return '${h.toString().padLeft(2, '0')}:${mm.toString().padLeft(2, '0')}';
-}
-
 /// Compact 30-min time spinner matching the dark/mono aesthetic (no Material
 /// clock dialog). Wraps at midnight.
 class _TimeStepper extends StatelessWidget {
@@ -466,7 +486,7 @@ class _TimeStepper extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _fmtTime(minutes),
+                  fmtClock(minutes),
                   style: const TextStyle(fontFamily: kFontMono, fontSize: 15, color: SColors.hi),
                 ),
               ],
@@ -479,6 +499,66 @@ class _TimeStepper extends StatelessWidget {
       ),
     );
   }
+}
+
+/// One toggle per weekday, Monday first, over the off-peak day mask.
+class _DayPicker extends StatelessWidget {
+  const _DayPicker({required this.days, required this.onChanged});
+
+  static const _names = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  final int days;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < 7; i++) ...[
+          if (i > 0) const SizedBox(width: 4),
+          _day(i, on: days & (1 << i) != 0),
+        ],
+      ],
+    );
+  }
+
+  Widget _day(int i, {required bool on}) => Tooltip(
+    message: _names[i],
+    child: Semantics(
+      label: _names[i],
+      selected: on,
+      button: true,
+      child: InkWell(
+        onTap: () => onChanged(days ^ (1 << i)),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: on ? SColors.voltSoftGradient : null,
+            color: on ? null : SColors.bg0,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: on ? const Color(0x40FF63B6) : SColors.line),
+          ),
+          child: Text(
+            _names[i][0],
+            style: SText.monoSm(
+              color: on ? SColors.voltPink : SColors.low,
+            ).copyWith(fontSize: 11.5, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _StepBtn extends StatelessWidget {

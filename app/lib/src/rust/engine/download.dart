@@ -67,6 +67,10 @@ class DownloadItem {
   /// for items persisted before this field, which fall back to `dest_path`'s parent.
   final String destDir;
 
+  /// Runs only during off-peak hours: waits queued until they begin, and goes
+  /// back to waiting when they end.
+  final bool scheduled;
+
   const DownloadItem({
     required this.id,
     required this.url,
@@ -97,6 +101,7 @@ class DownloadItem {
     required this.segmentDone,
     required this.retryCount,
     required this.destDir,
+    required this.scheduled,
   });
 
   @override
@@ -129,7 +134,8 @@ class DownloadItem {
       segmentTotal.hashCode ^
       segmentDone.hashCode ^
       retryCount.hashCode ^
-      destDir.hashCode;
+      destDir.hashCode ^
+      scheduled.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -164,7 +170,8 @@ class DownloadItem {
           segmentTotal == other.segmentTotal &&
           segmentDone == other.segmentDone &&
           retryCount == other.retryCount &&
-          destDir == other.destDir;
+          destDir == other.destDir &&
+          scheduled == other.scheduled;
 }
 
 /// Download source. `Http` is the byte-range multi-segment path; `Hls` fetches an

@@ -7,11 +7,12 @@ import 'src/providers/downloads_provider.dart';
 import 'src/providers/settings_provider.dart';
 import 'src/rust/api.dart' as rust;
 import 'src/rust/frb_generated.dart';
+import 'src/services/autostart_service.dart';
 import 'src/services/tray_service.dart';
 import 'src/theme/app_theme.dart';
 import 'src/ui/desktop/desktop_shell.dart';
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
 
@@ -32,8 +33,13 @@ void main() async {
       titleBarStyle: TitleBarStyle.hidden,
     ),
     () async {
-      await windowManager.show();
-      await windowManager.focus();
+      // started at sign-in: stay in the tray until the user opens the window
+      if (args.contains(AutostartService.flag)) {
+        await TrayService.instance.hideToTray();
+      } else {
+        await windowManager.show();
+        await windowManager.focus();
+      }
     },
   );
   runApp(

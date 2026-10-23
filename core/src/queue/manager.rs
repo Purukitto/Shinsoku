@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Result};
-use chrono::Timelike;
+use chrono::{Datelike, Timelike};
 use futures::StreamExt;
 use reqwest::header::HeaderMap;
 use reqwest::Client;
@@ -36,6 +36,8 @@ const HISTORY_LEN: usize = 60;
 const CHECKPOINT_TICKS: u32 = 20;
 /// Cap persisted completed downloads (most recent kept) to bound the store file.
 const HISTORY_CAP: usize = 500;
+/// Off-peak day mask with every day of the week set.
+pub const EVERY_DAY: u8 = 0x7f;
 
 /// Progress sink; the bridge layer forwards to a `StreamSink`.
 pub type ProgressEmitter = Box<dyn Fn(DownloadProgress) + Send + Sync>;
@@ -68,12 +70,15 @@ pub(crate) struct Shared {
     /// User-configured global download limit (bytes/s; 0 = unlimited). The rate
     /// actually pushed to `limiter` is derived from this and the off-peak window.
     speed_limit: AtomicU64,
-    /// Off-peak window: while inside it the limiter runs unthrottled regardless
-    /// of `speed_limit`. Minutes since local midnight; wraps past midnight when
-    /// start > end. Inert when disabled or start == end.
-    off_peak_enabled: AtomicBool,
+    /// Off-peak hours, in minutes since local midnight; they wrap past midnight
+    /// when start > end and never open when start == end. `off_peak_days` picks
+    /// the days they begin on (bit 0 = Monday … bit 6 = Sunday). Scheduled
+    /// downloads run only inside them; with `off_peak_full_speed` the limiter
+    /// also runs unthrottled inside them, regardless of `speed_limit`.
+    off_peak_full_speed: AtomicBool,
     off_peak_start_min: AtomicU16,
     off_peak_end_min: AtomicU16,
+    off_peak_days: AtomicU8,
     /// Read once per run, so a change applies from the next start or resume.
     retry_policy: Mutex<RetryPolicy>,
     /// Persistence target; `None` disables persistence (used by tests).
@@ -136,9 +141,10 @@ impl QueueManager {
             max_simultaneous: AtomicU8::new(3),
             categorize: AtomicBool::new(true),
             speed_limit: AtomicU64::new(0),
-            off_peak_enabled: AtomicBool::new(false),
+            off_peak_full_speed: AtomicBool::new(false),
             off_peak_start_min: AtomicU16::new(0),
             off_peak_end_min: AtomicU16::new(0),
+            off_peak_days: AtomicU8::new(EVERY_DAY),
             retry_policy: Mutex::new(RetryPolicy::default()),
             store,
             persist_lock: Mutex::new(()),
@@ -174,6 +180,7 @@ impl QueueManager {
         connections: u8,
         headers: Vec<(String, String)>,
         expected_checksum: Option<String>,
+        scheduled: bool,
     ) -> String {
         let id = Uuid::new_v4().to_string();
         let filename = filename_from_url(&url);
@@ -211,6 +218,7 @@ impl QueueManager {
             segment_total: 0,
             segment_done: 0,
             retry_count: 0,
+            scheduled,
         };
         {
             let mut inner = self.shared.inner.write().unwrap();
@@ -231,6 +239,7 @@ impl QueueManager {
         dest_dir: String,
         headers: Vec<(String, String)>,
         title: Option<String>,
+        scheduled: bool,
     ) -> String {
         let id = Uuid::new_v4().to_string();
         let filename = hls_filename(&url, title.as_deref());
@@ -266,6 +275,7 @@ impl QueueManager {
             segment_total: 0,
             segment_done: 0,
             retry_count: 0,
+            scheduled,
         };
         {
             let mut inner = self.shared.inner.write().unwrap();
@@ -482,19 +492,49 @@ impl QueueManager {
         apply_effective_limit(&self.shared);
     }
 
-    /// Configure the off-peak window (minutes since local midnight). Inside it
-    /// downloads run unthrottled; outside it the configured `speed_limit` applies.
-    pub fn set_off_peak(&self, enabled: bool, start_min: u16, end_min: u16) {
+    /// Configure off-peak hours (minutes since local midnight) and the days they
+    /// begin on (bit 0 = Monday). Scheduled downloads run only inside them; with
+    /// `full_speed` the configured `speed_limit` is lifted inside them too.
+    pub fn set_off_peak(&self, full_speed: bool, start_min: u16, end_min: u16, days: u8) {
         self.shared
-            .off_peak_enabled
-            .store(enabled, Ordering::Relaxed);
+            .off_peak_full_speed
+            .store(full_speed, Ordering::Relaxed);
         self.shared
             .off_peak_start_min
             .store(start_min, Ordering::Relaxed);
         self.shared
             .off_peak_end_min
             .store(end_min, Ordering::Relaxed);
+        self.shared
+            .off_peak_days
+            .store(days & EVERY_DAY, Ordering::Relaxed);
         apply_effective_limit(&self.shared);
+        hold_scheduled(&self.shared);
+        schedule(&self.shared);
+    }
+
+    /// Run a download only during off-peak hours, or (`on == false`) as soon as
+    /// a slot is free. Scheduling a stopped download queues it for the next
+    /// off-peak hours; one running outside them goes back to waiting.
+    pub fn set_scheduled(&self, id: &str, on: bool) {
+        {
+            let mut inner = self.shared.inner.write().unwrap();
+            let Some(it) = inner.items.get_mut(id) else {
+                return;
+            };
+            if matches!(it.status, DownloadStatus::Completed) {
+                return;
+            }
+            it.scheduled = on;
+            if on && matches!(it.status, DownloadStatus::Paused | DownloadStatus::Error) {
+                it.status = DownloadStatus::Queued;
+                it.error = None;
+            }
+        }
+        hold_scheduled(&self.shared);
+        schedule(&self.shared);
+        emit_item(&self.shared, id);
+        schedule_persist(&self.shared);
     }
 
     pub fn set_categorize(&self, on: bool) {
@@ -575,10 +615,11 @@ async fn aggregator(shared: Arc<Shared>) {
 
         schedule(&shared);
 
-        // re-evaluate the off-peak window (~1×/s) so crossing its boundary flips
-        // the effective rate without any user action.
+        // re-evaluate off-peak hours (~1×/s) so crossing an edge flips the
+        // effective rate, and starts or stops scheduled downloads, on its own
         if ticks.is_multiple_of(4) {
             apply_effective_limit(&shared);
+            hold_scheduled(&shared);
         }
 
         for p in emits {
@@ -593,8 +634,10 @@ async fn aggregator(shared: Arc<Shared>) {
 }
 
 /// Promote queued → running up to the simultaneous cap (oldest first).
+/// Scheduled downloads wait while off-peak hours are closed.
 fn schedule(shared: &Arc<Shared>) {
     let max = shared.max_simultaneous.load(Ordering::Relaxed) as usize;
+    let off_peak = in_off_peak(shared);
     let to_start: Vec<String> = {
         let inner = shared.inner.read().unwrap();
         let running = inner
@@ -610,7 +653,7 @@ fn schedule(shared: &Arc<Shared>) {
                     break;
                 }
                 if let Some(it) = inner.items.get(id) {
-                    if matches!(it.status, DownloadStatus::Queued) {
+                    if matches!(it.status, DownloadStatus::Queued) && (off_peak || !it.scheduled) {
                         ids.push(id.clone());
                         slots -= 1;
                     }
@@ -624,10 +667,47 @@ fn schedule(shared: &Arc<Shared>) {
     }
 }
 
-/// Push the effective limiter rate: unthrottled while inside the off-peak
-/// window, otherwise the user's configured `speed_limit`.
+/// Send scheduled downloads that are running outside off-peak hours back to
+/// waiting. They stay queued, so the next off-peak hours start them again.
+fn hold_scheduled(shared: &Arc<Shared>) {
+    if in_off_peak(shared) {
+        return;
+    }
+    let held: Vec<String> = {
+        let mut inner = shared.inner.write().unwrap();
+        inner
+            .items
+            .values_mut()
+            .filter(|it| it.scheduled && matches!(it.status, DownloadStatus::Downloading))
+            .map(|it| {
+                // queued before the cancel, so the run's exit leaves it waiting
+                it.status = DownloadStatus::Queued;
+                it.speed_bps = 0;
+                it.id.clone()
+            })
+            .collect()
+    };
+    if held.is_empty() {
+        return;
+    }
+    {
+        let active = shared.active.lock().unwrap();
+        for id in &held {
+            if let Some(a) = active.get(id) {
+                a.cancel.cancel();
+            }
+        }
+    }
+    for id in &held {
+        emit_item(shared, id);
+    }
+    schedule_persist(shared);
+}
+
+/// Push the effective limiter rate: unthrottled during off-peak hours when
+/// they run at full speed, otherwise the user's configured `speed_limit`.
 fn apply_effective_limit(shared: &Shared) {
-    let eff = if shared.off_peak_enabled.load(Ordering::Relaxed) && in_off_peak(shared) {
+    let eff = if shared.off_peak_full_speed.load(Ordering::Relaxed) && in_off_peak(shared) {
         0
     } else {
         shared.speed_limit.load(Ordering::Relaxed)
@@ -635,26 +715,33 @@ fn apply_effective_limit(shared: &Shared) {
     shared.limiter.set_rate(eff);
 }
 
-/// Whether the current local wall-clock time falls in the off-peak window.
+/// Whether the current local wall-clock time falls in off-peak hours.
 fn in_off_peak(shared: &Shared) -> bool {
     let now = chrono::Local::now();
-    let mins = now.hour() as u16 * 60 + now.minute() as u16;
-    minute_in_window(
-        mins,
+    window_open(
+        now.weekday().num_days_from_monday(),
+        now.hour() as u16 * 60 + now.minute() as u16,
         shared.off_peak_start_min.load(Ordering::Relaxed),
         shared.off_peak_end_min.load(Ordering::Relaxed),
+        shared.off_peak_days.load(Ordering::Relaxed),
     )
 }
 
-/// Minute-of-day membership in `[start, end)`. `start > end` wraps past midnight
-/// (e.g. 23:00–07:00); `start == end` is an empty window.
-fn minute_in_window(mins: u16, start: u16, end: u16) -> bool {
+/// Whether hours `[start, end)` are open at minute `mins` of `day` (0 = Monday).
+/// `start > end` wraps past midnight (e.g. 23:00–07:00); `start == end` never
+/// opens. `days` (bit 0 = Monday) picks the days the hours begin on, so with
+/// only Friday set, 23:00–07:00 runs from Friday night into Saturday morning.
+fn window_open(day: u32, mins: u16, start: u16, end: u16, days: u8) -> bool {
+    let begins_on = |d: u32| days & (1 << (d % 7)) != 0;
     if start == end {
         false
     } else if start < end {
-        mins >= start && mins < end
+        mins >= start && mins < end && begins_on(day)
+    } else if mins >= start {
+        begins_on(day)
     } else {
-        mins >= start || mins < end
+        // after midnight: these hours began the day before
+        mins < end && begins_on(day + 6)
     }
 }
 
@@ -1419,8 +1506,9 @@ fn collect_for_persist(inner: &Inner) -> Vec<DownloadItem> {
 }
 
 /// Load persisted items, normalising transient state: interrupted downloads
-/// (`Downloading`) become `Paused` so the user resumes them deliberately, and
-/// live speed is cleared. Display order follows the persisted sequence.
+/// (`Downloading`) become `Paused` so the user resumes them deliberately, or
+/// `Queued` when scheduled, since those run unattended. Live speed is cleared.
+/// Display order follows the persisted sequence.
 fn load_items(path: &Path) -> Inner {
     let mut items = HashMap::new();
     let mut order = Vec::new();
@@ -1430,7 +1518,11 @@ fn load_items(path: &Path) -> Inner {
         }
         it.speed_bps = 0;
         if matches!(it.status, DownloadStatus::Downloading) {
-            it.status = DownloadStatus::Paused;
+            it.status = if it.scheduled {
+                DownloadStatus::Queued
+            } else {
+                DownloadStatus::Paused
+            };
         }
         order.push(it.id.clone());
         items.insert(it.id.clone(), it);
@@ -1588,34 +1680,73 @@ fn join_path(dir: &str, name: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::minute_in_window;
+    use super::{window_open, EVERY_DAY};
 
     const fn hm(h: u16, m: u16) -> u16 {
         h * 60 + m
     }
 
+    const MON: u32 = 0;
+    const FRI: u32 = 4;
+    const SAT: u32 = 5;
+    const SUN: u32 = 6;
+
+    /// Open on every day of the week, with every day picked.
+    fn open(mins: u16, start: u16, end: u16) -> bool {
+        (0..7).all(|d| window_open(d, mins, start, end, EVERY_DAY))
+    }
+
     #[test]
     fn window_wrapping_midnight() {
         let (start, end) = (hm(23, 0), hm(7, 0));
-        assert!(minute_in_window(hm(0, 0), start, end));
-        assert!(minute_in_window(hm(6, 59), start, end));
-        assert!(minute_in_window(hm(23, 0), start, end));
-        assert!(!minute_in_window(hm(7, 0), start, end)); // end is exclusive
-        assert!(!minute_in_window(hm(12, 0), start, end));
-        assert!(!minute_in_window(hm(22, 59), start, end));
+        assert!(open(hm(0, 0), start, end));
+        assert!(open(hm(6, 59), start, end));
+        assert!(open(hm(23, 0), start, end));
+        assert!(!open(hm(7, 0), start, end)); // end is exclusive
+        assert!(!open(hm(12, 0), start, end));
+        assert!(!open(hm(22, 59), start, end));
     }
 
     #[test]
     fn window_same_day() {
         let (start, end) = (hm(1, 0), hm(5, 0));
-        assert!(minute_in_window(hm(2, 0), start, end));
-        assert!(minute_in_window(hm(1, 0), start, end));
-        assert!(!minute_in_window(hm(0, 0), start, end));
-        assert!(!minute_in_window(hm(5, 0), start, end)); // end is exclusive
+        assert!(open(hm(2, 0), start, end));
+        assert!(open(hm(1, 0), start, end));
+        assert!(!open(hm(0, 0), start, end));
+        assert!(!open(hm(5, 0), start, end)); // end is exclusive
     }
 
     #[test]
     fn empty_window_is_never_active() {
-        assert!(!minute_in_window(hm(3, 0), hm(5, 0), hm(5, 0)));
+        assert!(!open(hm(3, 0), hm(5, 0), hm(5, 0)));
+    }
+
+    #[test]
+    fn days_pick_when_the_hours_begin() {
+        let fri = 1 << FRI;
+        let (start, end) = (hm(23, 0), hm(7, 0));
+        assert!(window_open(FRI, hm(23, 30), start, end, fri));
+        // Friday night carries on into Saturday morning
+        assert!(window_open(SAT, hm(6, 0), start, end, fri));
+        assert!(!window_open(SAT, hm(23, 30), start, end, fri));
+        // Friday's early hours belong to Thursday night
+        assert!(!window_open(FRI, hm(6, 0), start, end, fri));
+    }
+
+    #[test]
+    fn sunday_night_runs_into_monday() {
+        let sun = 1 << SUN;
+        let (start, end) = (hm(22, 0), hm(2, 0));
+        assert!(window_open(MON, hm(1, 0), start, end, sun));
+        assert!(!window_open(SUN, hm(1, 0), start, end, sun));
+    }
+
+    #[test]
+    fn same_day_hours_follow_the_days() {
+        let weekend = (1 << SAT) | (1 << SUN);
+        let (start, end) = (hm(9, 0), hm(17, 0));
+        assert!(window_open(SAT, hm(12, 0), start, end, weekend));
+        assert!(!window_open(MON, hm(12, 0), start, end, weekend));
+        assert!(!window_open(SAT, hm(12, 0), start, end, 0));
     }
 }

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/download_item.dart';
 import '../../../models/format.dart';
+import '../../../models/off_peak.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../rust/api.dart' as rust;
 import '../../../rust/engine/download.dart' as rd;
 import '../../../theme/colors.dart';
@@ -50,11 +52,17 @@ class AddDownloadModal extends ConsumerStatefulWidget {
     required int connections,
     required List<(String, String)> headers,
     String? expectedChecksum,
+    required bool scheduled,
   })
   onStart;
 
   /// Routed instead of [onStart] when the link is an HLS (M3U8) stream.
-  final void Function({required String url, required List<(String, String)> headers, String? title})
+  final void Function({
+    required String url,
+    required List<(String, String)> headers,
+    String? title,
+    required bool scheduled,
+  })
   onStartStream;
   final bool fromClipboard;
 
@@ -504,6 +512,16 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                       SToggle(value: _scheduled, onChanged: (v) => setState(() => _scheduled = v)),
                     ],
                   ),
+                  if (_scheduled) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      scheduleHint(
+                        ref.watch(settingsProvider.select((s) => s.offPeakHours)),
+                        DateTime.now(),
+                      ),
+                      style: SText.monoSm(color: SColors.low).copyWith(fontSize: 11),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   _advancedDisclosure(),
                   if (_advanced) _advancedSection(),
@@ -533,6 +551,7 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                                       url: url,
                                       headers: _collectHeaders(),
                                       title: null,
+                                      scheduled: _scheduled,
                                     );
                                   } else {
                                     final cs = _checksumCtrl.text.trim();
@@ -541,6 +560,7 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                                       connections: _conns.round(),
                                       headers: _collectHeaders(),
                                       expectedChecksum: cs.isEmpty ? null : cs,
+                                      scheduled: _scheduled,
                                     );
                                   }
                                   Navigator.pop(context);

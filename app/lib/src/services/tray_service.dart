@@ -1,11 +1,15 @@
+import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// System-tray icon + minimise-to-tray. Minimise → [hideToTray]; tray click /
-/// "Show" → [showFromTray]; "Quit" exits.
+/// "Show", or opening the app again while it runs → [showFromTray]; "Quit" exits.
 class TrayService with TrayListener {
   TrayService._();
   static final TrayService instance = TrayService._();
+
+  /// The Windows runner calls `show` on this when the app is opened again.
+  static const _instance = MethodChannel('shinsoku/instance');
 
   // Windows tray icon = .ico (declared in pubspec)
   static const _iconPath = 'assets/icon/tray.ico';
@@ -16,6 +20,9 @@ class TrayService with TrayListener {
     if (_initialized) return;
     _initialized = true;
     trayManager.addListener(this);
+    _instance.setMethodCallHandler((call) async {
+      if (call.method == 'show') await showFromTray();
+    });
     await trayManager.setIcon(_iconPath);
     await trayManager.setToolTip('Shinsoku');
     await trayManager.setContextMenu(

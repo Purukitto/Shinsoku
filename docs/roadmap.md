@@ -26,10 +26,10 @@ beyond that.
 | Pause and resume, across restarts | Done | |
 | Automatic retry that never corrupts the file | Done | |
 | Refresh an expired link | Done | Paste a new link, or catch it from the browser |
-| Resume on its own after the app is killed | Partial | Interrupted downloads come back paused |
+| Resume on its own after the app is killed | Partial | Interrupted downloads come back paused; scheduled ones wait for off-peak hours again |
 | Simultaneous downloads (10; 30 in 1DM+) | Partial | 1–8 in Settings; the engine takes 16 |
 | Speed limiter | Done | One global limit |
-| Scheduler: start and stop at set times (1DM+) | Partial | Only the off-peak speed window; the Add dialog's off-peak toggle does nothing yet |
+| Scheduler: start and stop at set times (1DM+) | Done | Scheduled downloads run during off-peak hours, on the days you pick |
 | Daily download or data limit | Not started | |
 | Wi-Fi only, pause on mobile data | Not started | *Android* |
 | Large files | Done | |
@@ -97,6 +97,7 @@ beyond that.
 | Other languages | Not started | English only |
 | Backup and restore of the list and settings | Not started | |
 | Lock the app with a PIN or fingerprint | Not started | |
+| Start with the system | Partial | Windows at sign-in, hidden in the tray; Linux writes an XDG autostart entry. *Android*: starting on boot needs only the install-time `RECEIVE_BOOT_COMPLETED` permission, and arrives with the background service it would start |
 
 ## Not needed for parity
 

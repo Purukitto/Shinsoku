@@ -36,9 +36,15 @@ the entry is marked **Breaking** under **Changed**.
   corrupt file.
 - **Queue** with a limit on how many downloads run at once (3 by default); the rest
   wait and start in turn.
-- **Global speed limit**, and an **off-peak window** that lifts it between two times
-  you choose (23:00–07:00 by default, wrapping past midnight). The window is
-  re-checked every second, so crossing its edge changes the speed with no action.
+- **Global speed limit**, and **Full speed off-peak**, which lifts it during off-peak
+  hours (23:00–07:00 every day by default, wrapping past midnight). The hours are
+  re-checked every second, so crossing their edge changes the speed with no action.
+- **Scheduled downloads.** Turn on **Schedule for off-peak** in the Add dialog, or press
+  **Schedule** on a download's detail screen, and it waits for off-peak hours, starts
+  when they begin and stops when they end, carrying on from the bytes it has the next
+  time. Pick the days in **Settings → Scheduling**. **Start now** runs a waiting
+  download at once, and one cut off by quitting waits for the next off-peak hours
+  instead of coming back paused.
 - **Checksums.** Every finished file is hashed in the background. Give an expected
   MD5 or SHA-256 digest in the Add dialog and the detail screen shows **VERIFIED** or
   **MISMATCH**.
@@ -61,6 +67,11 @@ the entry is marked **Breaking** under **Changed**.
   `file (2).ext` rather than overwriting.
 - **History.** The download list and the 500 most recent finished downloads survive
   restarts, along with every setting.
+- **Start with Windows.** Turn it on in **Settings → Startup** and Shinsoku opens in the
+  tray when you sign in, so scheduled downloads run without you opening it. Turning it
+  off in Task Manager shows in Settings too.
+- **One copy at a time.** Opening Shinsoku while it is already running, in the tray or
+  behind other windows, brings that window forward instead of starting a second copy.
 - **Update notice.** At launch the app checks for a newer release and the sidebar's
   version line becomes **Update available**, linking to the release page.
 - **Desktop app** for Windows: active, completed, detail and settings screens, live

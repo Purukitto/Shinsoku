@@ -44,16 +44,23 @@ scope unless added later.
 - **App settings persistence** — app-side JSON
   (`app/lib/src/services/settings_service.dart`, `settings.json` beside the download
   store), surfaced through `settingsProvider`. Values the engine applies (connections,
-  simultaneous downloads, download limit, categorize, off-peak) are pushed into the
+  simultaneous downloads, download limit, categorize, off-peak hours) are pushed into the
   core on load and on change; disk writes are debounced so slider drags do not thrash
   the file.
-- **Off-peak acceleration** — an engine feature, not UI-only. The limiter's effective
-  rate is unthrottled inside the configured window and the user's download limit
-  outside it. The aggregator re-evaluates the window about once a second, so crossing
-  its edge flips the rate on its own (`core/src/queue/manager.rs`). The window wraps
-  past midnight; `start == end` is inert. **Cap upload / seeding** has no engine
-  counterpart — there is no upload path — so the setting persists but does nothing
-  until torrent support lands.
+- **Off-peak hours and the scheduler** — one window in the engine, with two uses. A
+  scheduled download (`DownloadItem.scheduled`) waits in the queue until off-peak hours
+  open, and when they close it goes back to waiting, keeping its bytes, rather than
+  pausing; with **Full speed off-peak** on, the limiter also runs unthrottled inside
+  them. One window rather than a scheduler with its own times, because both answer the
+  same question — when the connection is free or cheap — and a second pair of times
+  would only have to be kept in step with the first. The hours are minutes since local
+  midnight plus a day mask (bit 0 = Monday); hours that wrap past midnight belong to
+  the day they begin on, and `start == end` never opens. The aggregator re-evaluates
+  them about once a second (`core/src/queue/manager.rs`), so crossing an edge starts or
+  stops scheduled downloads and flips the rate on its own. A scheduled download cut off
+  by quitting comes back waiting, not paused, since it runs unattended.
+  **Cap upload / seeding** has no engine counterpart — there is no upload path — so the
+  setting persists but does nothing until torrent support lands.
 - **HLS stream capture (M3U8)** — an engine path, not a separate manager.
   `DownloadItem.kind` discriminates `Http` and `Hls`; `run_hls` in
   `core/src/queue/manager.rs` parses the playlist (`core/src/protocols/hls.rs`), picks
@@ -105,6 +112,21 @@ scope unless added later.
   extension leaves the browser's own download alone. Each item records the folder it
   was added to (`dest_dir`), so a second plan puts the file under that folder rather
   than inside the first plan's category subfolder.
+- **Starting at sign-in, and one copy at a time** — app-side, with the operating system
+  as the source of truth: `app/lib/src/services/autostart_service.dart` writes the
+  per-user `Run` key on Windows (an XDG autostart entry on Linux) and reads it back,
+  rather than keeping a flag in `settings.json` that Task Manager could contradict;
+  Task Manager's **Disable** mark in `StartupApproved\Run` counts as off. The entry
+  launches with `--autostart`, which the Windows runner reads to skip showing the
+  window, so the app starts in the tray. Starting with the system makes a second copy
+  likely — opened from the Start menu while the first sits in the tray — and two copies
+  would run two engines over the same download files, so the runner holds a per-session
+  mutex (`windows/runner/main.cpp`): a second launch finds the first copy's window by a
+  window property and posts it a message, which reaches Dart over the
+  `shinsoku/instance` channel and shows the window, then exits. `launch_at_startup`
+  was not used: it pins an older `win32` than `package_info_plus` needs. Android
+  waits for its background service: starting on boot would only need the normal
+  `RECEIVE_BOOT_COMPLETED` permission, but there is nothing for it to start yet.
 - **CI/CD** — GitHub Actions. `ci.yml`: version check (Ubuntu), Rust fmt, clippy and
   tests (Ubuntu), Flutter format check, analyze and tests (Windows). `release.yml`: a
   `v*` tag or a manual dispatch builds Windows, packages the extensions and checksums,
