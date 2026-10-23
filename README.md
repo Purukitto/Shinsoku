@@ -21,7 +21,7 @@
 </p>
 
 <!-- SEO: free open source download manager, fast multi-threaded download accelerator for
-     Windows, IDM alternative, m3u8 / HLS video downloader, Flutter Rust desktop app -->
+     Windows, m3u8 / HLS video downloader, Flutter Rust desktop app -->
 
 ---
 
@@ -325,7 +325,7 @@ progress reuses the byte fields — are recorded in [docs/decisions.md](docs/dec
 
 ## Not built yet
 
-The goal for 1.0 is every feature of 1DM, on Android and on desktop;
+The goal for 1.0 is a complete download manager on Android and on desktop;
 [docs/roadmap.md](docs/roadmap.md) tracks it feature by feature. Among what is missing:
 
 - Android and Linux builds. The Flutter targets exist; the native engine build is wired
