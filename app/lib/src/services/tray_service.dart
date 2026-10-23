@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -11,8 +13,8 @@ class TrayService with TrayListener {
   /// The Windows runner calls `show` on this when the app is opened again.
   static const _instance = MethodChannel('shinsoku/instance');
 
-  // Windows tray icon = .ico (declared in pubspec)
-  static const _iconPath = 'assets/icon/tray.ico';
+  // Windows tray icon = .ico; Linux tray hosts want a .png (declared in pubspec)
+  static final _iconPath = Platform.isLinux ? 'assets/icon/tray_64.png' : 'assets/icon/tray.ico';
 
   bool _initialized = false;
 
@@ -24,7 +26,8 @@ class TrayService with TrayListener {
       if (call.method == 'show') await showFromTray();
     });
     await trayManager.setIcon(_iconPath);
-    await trayManager.setToolTip('Shinsoku');
+    // the Linux tray has no tooltip; tray_manager throws there
+    if (!Platform.isLinux) await trayManager.setToolTip('Shinsoku');
     await trayManager.setContextMenu(
       Menu(
         items: [

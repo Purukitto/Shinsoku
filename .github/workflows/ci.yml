@@ -135,7 +135,8 @@ jobs:
           xvfb-run -a env LD_DEBUG=libs LD_DEBUG_OUTPUT="$RUNNER_TEMP/ld" \
             timeout 20 "$bundle/shinsoku" > app.log 2>&1 || status=$?
           cat app.log
-          grep -h "libshinsoku_core" "$RUNNER_TEMP"/ld.* | sort -u
+          # the search path line names the RUNPATH the engine was found through
+          grep -h -A3 "find library=libshinsoku_core.so" "$RUNNER_TEMP"/ld.* || true
           # 124 = still running when timeout stopped it
           test "$status" -eq 124
           grep -q "calling init: $bundle/lib/libshinsoku_core.so" "$RUNNER_TEMP"/ld.*
