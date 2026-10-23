@@ -1,12 +1,11 @@
 # Roadmap to 1.0
 
-Shinsoku 1.0 ships with every feature of [1DM](https://play.google.com/store/apps/details?id=idm.internet.download.manager),
-including the paid 1DM+ extras, on **both Android and desktop** (Windows, then Linux).
-This page tracks how far along that is. It describes the code as it stands; when a row
-changes, change it in the same pull request.
+Everything on this page ships in Shinsoku 1.0, on **both Android and desktop** (Windows,
+then Linux). The page tracks how far along that is. It describes the code as it stands;
+when a row changes, change it in the same pull request.
 
-**Done** works on Windows today. **Partial** exists but falls short of 1DM. **Not
-started** is not built yet. Everything in the engine (`core/`) is shared, so it reaches
+**Done** works on Windows today. **Partial** exists but falls short of what the row
+describes. **Not started** is not built yet. Everything in the engine (`core/`) is shared, so it reaches
 Android once the Android build is wired. Rows marked *Android* need Android-specific work
 beyond that.
 
@@ -22,14 +21,14 @@ beyond that.
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Multi-part downloads (16 parts; 32 in 1DM+) | Partial | The engine takes up to 32; the UI stops at 16 |
+| Multi-part downloads, up to 32 parts | Partial | The engine takes up to 32; the UI stops at 16 |
 | Pause and resume, across restarts | Done | |
 | Automatic retry that never corrupts the file | Done | |
 | Refresh an expired link | Done | Paste a new link, or catch it from the browser |
 | Resume on its own after the app is killed | Partial | Interrupted downloads come back paused; scheduled ones wait for off-peak hours again |
-| Simultaneous downloads (10; 30 in 1DM+) | Partial | 1–8 in Settings; the engine takes 16 |
+| Simultaneous downloads, up to 30 | Partial | 1–8 in Settings; the engine takes 16 |
 | Speed limiter | Done | One global limit |
-| Scheduler: start and stop at set times (1DM+) | Done | Scheduled downloads run during off-peak hours, on the days you pick |
+| Scheduler: start and stop at set times | Done | Scheduled downloads run during off-peak hours, on the days you pick |
 | Daily download or data limit | Not started | |
 | Wi-Fi only, pause on mobile data | Not started | *Android* |
 | Large files | Done | |
@@ -78,7 +77,7 @@ beyond that.
 
 ## Built-in browser
 
-1DM's browser is how Android users find and catch downloads.
+On Android, a built-in browser is how people find and catch downloads.
 
 | Feature | Status | Notes |
 | --- | --- | --- |
@@ -99,13 +98,13 @@ beyond that.
 | Lock the app with a PIN or fingerprint | Not started | |
 | Start with the system | Partial | Windows at sign-in, hidden in the tray; Linux writes an XDG autostart entry. *Android*: starting on boot needs only the install-time `RECEIVE_BOOT_COMPLETED` permission, and arrives with the background service it would start |
 
-## Not needed for parity
+## Out of scope
 
-- **YouTube.** 1DM doesn't download from it.
+- **YouTube.** Downloading from it is not planned.
 
 ## Open questions
 
 - **A built-in browser on desktop.** On Windows and Linux the extension already catches
-  downloads in the browser people use. Building 1DM's browser there as well is a choice
-  still to make.
+  downloads in the browser people use. Bringing the built-in browser there as well is a
+  choice still to make.
 - **Torrent engine.** Which library, or whether to write one, is not decided.

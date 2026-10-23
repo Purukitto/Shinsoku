@@ -21,9 +21,9 @@ Considered and rejected:
 Platform priority: Windows first, then Android, then Linux. macOS and iOS are out of
 scope unless added later.
 
-## Scope of 1.0 — feature parity with 1DM
+## Scope of 1.0
 
-1.0 has every feature of 1DM, including the paid 1DM+ extras, on Android and on desktop.
+1.0 is a complete download manager with the same features on Android and on desktop.
 [roadmap.md](roadmap.md) lists them and tracks what is built.
 
 ## Resolved
