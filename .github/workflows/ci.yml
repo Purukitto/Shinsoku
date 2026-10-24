@@ -88,3 +88,56 @@ jobs:
 
       - name: Test
         run: flutter test
+
+  linux:
+    name: Linux app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+
+      # Flutter's Linux toolchain and GTK, the tray plugin's appindicator, and
+      # Xvfb for the launch check.
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libayatana-appindicator3-dev xvfb
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build
+        run: flutter build linux --release
+
+      # Launch from outside app/ so the loader cannot pick up
+      # core/target/release, then check the engine came from the bundle's lib/.
+      - name: Engine loads from the bundle
+        working-directory: ${{ runner.temp }}
+        run: |
+          bundle="$GITHUB_WORKSPACE/app/build/linux/x64/release/bundle"
+          ls -l "$bundle/lib"
+          status=0
+          xvfb-run -a env LD_DEBUG=libs LD_DEBUG_OUTPUT="$RUNNER_TEMP/ld" \
+            timeout 20 "$bundle/shinsoku" > app.log 2>&1 || status=$?
+          cat app.log
+          # the search path line names the RUNPATH the engine was found through
+          grep -h -A3 "find library=libshinsoku_core.so" "$RUNNER_TEMP"/ld.* || true
+          # 124 = still running when timeout stopped it
+          test "$status" -eq 124
+          grep -q "calling init: $bundle/lib/libshinsoku_core.so" "$RUNNER_TEMP"/ld.*
+          ! grep -q "Unhandled Exception" app.log

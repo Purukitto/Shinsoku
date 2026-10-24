@@ -15,7 +15,7 @@ beyond that.
 | --- | --- | --- |
 | Windows app | Done | Portable zip, no installer yet |
 | Android app | Not started | Flutter target exists; the native engine build and a mobile shell do not |
-| Linux app | Not started | Flutter target exists; the native engine build does not |
+| Linux app | Partial | Builds with the engine bundled, and CI launches it on every pull request; no package or release job yet |
 
 ## Downloading
 

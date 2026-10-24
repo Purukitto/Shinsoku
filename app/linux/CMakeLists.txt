@@ -74,6 +74,24 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# Build the Rust engine (shinsoku_core) and bundle the .so in lib/. The Dart
+# side opens it by bare name; libflutter_linux_gtk.so, which makes that dlopen
+# call, carries RUNPATH $ORIGIN, so lib/ is searched.
+get_filename_component(SHINSOKU_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../core" ABSOLUTE)
+set(SHINSOKU_RUST_LIB "${SHINSOKU_CORE_DIR}/target/release/libshinsoku_core.so")
+find_program(CARGO_EXECUTABLE cargo
+  HINTS "$ENV{HOME}/.cargo/bin"
+  PATHS ENV PATH)
+if(NOT CARGO_EXECUTABLE)
+  message(FATAL_ERROR "cargo not found — install the Rust toolchain to build shinsoku_core")
+endif()
+add_custom_target(shinsoku_core_build ALL
+  COMMAND "${CARGO_EXECUTABLE}" build --release --manifest-path "${SHINSOKU_CORE_DIR}/Cargo.toml"
+  BYPRODUCTS "${SHINSOKU_RUST_LIB}"
+  COMMENT "Building shinsoku_core (Rust, release)"
+  VERBATIM)
+add_dependencies(${BINARY_NAME} shinsoku_core_build)
+
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
@@ -98,6 +116,10 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
   COMPONENT Runtime)
 
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  COMPONENT Runtime)
+
+# Rust engine, loaded at runtime from lib/.
+install(FILES "${SHINSOKU_RUST_LIB}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
 foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
