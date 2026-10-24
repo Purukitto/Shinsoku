@@ -73,13 +73,14 @@ the entry is marked **Breaking** under **Changed**.
 - **One copy at a time.** Opening Shinsoku while it is already running, in the tray or
   behind other windows, brings that window forward instead of starting a second copy.
 - **Update notice.** At launch the app checks for a newer release and the sidebar's
-  version line becomes **Update available**, linking to the release page.
+  version line, or on a phone a chip beside the logo, becomes **Update available**,
+  linking to the release page. The Google Play build leaves updates to Play.
 - **Light and dark themes.** Shinsoku follows the system's light or dark mode, or keeps
   the one you pick in **Settings → Appearance**. Dark mode can use true black for OLED
   screens.
-- **Desktop app** for Windows: active, completed, detail and settings screens, live
-  throughput graph and per-segment progress, minimise to tray, custom frameless
-  window, bundled fonts.
+- **Desktop app** for Windows and Linux: active, completed, detail and settings
+  screens, live throughput graph and per-segment progress, minimise to tray, custom
+  frameless window, bundled fonts. Linux ships as a tarball for x64.
 - **Android app** for Android 11 and later, as an APK on each release: one for
   almost every phone, one for older 32-bit phones and one for emulators and
   Chromebooks. It keeps downloading in the background, with progress in a
@@ -87,9 +88,9 @@ the entry is marked **Breaking** under **Changed**.
 
 ### Known limitations
 
-- No Linux release yet; it builds from source.
-- Portable zip only, no installer. The binaries are unsigned, so SmartScreen warns on
-  first launch.
+- Portable zip only on Windows, no installer. The binaries are unsigned, so
+  SmartScreen warns on first launch.
+- A tarball only on Linux, no distribution package.
 - No queue priorities and no per-download speed limit.
 - HLS is video on demand only: live streams, DASH and `SAMPLE-AES` are refused, and
   nothing is remuxed.

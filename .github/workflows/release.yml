@@ -1,9 +1,9 @@
 name: Release
 
 # A vX.Y.Z tag (made by tool/bump-version.ps1) builds the Windows app and both
-# extensions and opens a draft GitHub Release, then adds the Android APKs to it and
-# keeps the Google Play bundle as a workflow artifact. Publishing the draft is what
-# makes the in-app update check see it.
+# extensions and opens a draft GitHub Release, then adds the Android APKs and the
+# Linux tarball to it and keeps the Google Play bundle as a workflow artifact.
+# Publishing the draft is what makes the in-app update check see it.
 on:
   push:
     tags: ['v*']
@@ -121,6 +121,7 @@ jobs:
           | ``Shinsoku-$v-android-arm64-v8a.apk`` | The Android app, for almost every phone. |
           | ``Shinsoku-$v-android-armeabi-v7a.apk`` | The Android app, for older 32-bit phones. |
           | ``Shinsoku-$v-android-x86_64.apk`` | The Android app, for emulators and Chromebooks. |
+          | ``Shinsoku-$v-linux-x64.tar.gz`` | The Linux app. Unpack anywhere and run ``shinsoku``. |
           | ``Shinsoku-Capture-$v-chromium.zip`` | Browser extension for Chrome, Edge and Brave. |
           | ``Shinsoku-Capture-$v-firefox.zip`` | Browser extension for Firefox. |
           | ``SHA256SUMS.txt`` | Checksums for the files above. |
@@ -130,6 +131,11 @@ jobs:
           downloads and settings live in ``%APPDATA%`` and carry over.
 
           Android 11 or later. Open the APK to install it, or to update an earlier one.
+
+          Linux x64 with glibc 2.39 or later (Ubuntu 24.04, Debian 13, Fedora 40 and
+          newer), GTK 3, and libayatana-appindicator3 for the tray icon. Updating: quit
+          Shinsoku and replace its folder; downloads and settings live in
+          ``~/.local/share/io.shinsoku.shinsoku`` and carry over.
 
           Full history: [CHANGELOG.md](https://github.com/Purukitto/Shinsoku/blob/$tag/CHANGELOG.md)
           "@
@@ -261,5 +267,85 @@ jobs:
           gh release upload "$TAG" Shinsoku-*-android-*.apk --clobber --repo "$GITHUB_REPOSITORY"
           gh release download "$TAG" --pattern SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
           sha256sum Shinsoku-*-android-*.apk | sed 's/$/\r/' >> SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "$TAG" SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+
+  # After Android rather than beside it: both rewrite the draft's SHA256SUMS.txt, and
+  # two jobs doing that at once would drop one's lines.
+  linux:
+    name: Linux x64
+    needs: [windows, android]
+    # Pinned, not ubuntu-latest: the runner's glibc is the oldest one the build runs
+    # on, which the release notes state.
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.windows.outputs.version }}
+      TAG: ${{ needs.windows.outputs.tag }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev libayatana-appindicator3-dev
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+          key: release
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # CMake runs `cargo build --release` on core/ and installs libshinsoku_core.so
+      # in the bundle's lib/.
+      - name: Build
+        run: |
+          flutter pub get
+          flutter build linux --release
+
+      # As on Windows: a bundle without the engine would fail on every machine.
+      - name: Verify build output
+        working-directory: app/build/linux/x64/release/bundle
+        run: |
+          for f in shinsoku lib/libshinsoku_core.so lib/libflutter_linux_gtk.so lib/libapp.so data/icudtl.dat; do
+            if [ ! -e "$f" ]; then
+              echo "::error::Release bundle is missing $f"
+              exit 1
+            fi
+          done
+          ls -l . lib
+
+      - name: Package
+        run: |
+          name="Shinsoku-$VERSION-linux-x64"
+          mkdir -p "../artifacts/$name"
+          cp -r build/linux/x64/release/bundle/. "../artifacts/$name/"
+          cp ../README.md ../LICENSE ../CHANGELOG.md "../artifacts/$name/"
+          tar -C ../artifacts -czf "../artifacts/$name.tar.gz" "$name"
+          rm -r "../artifacts/$name"
+          ls -l ../artifacts
+
+      - name: Add to the draft release
+        working-directory: artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" Shinsoku-*-linux-x64.tar.gz --clobber --repo "$GITHUB_REPOSITORY"
+          gh release download "$TAG" --pattern SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          sha256sum Shinsoku-*-linux-x64.tar.gz | sed 's/$/\r/' >> SHA256SUMS.txt
           cat SHA256SUMS.txt
           gh release upload "$TAG" SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"

@@ -36,8 +36,8 @@ over it, bridged with [`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter
 A companion browser extension hands downloads over with the cookies, referrer and
 User-Agent the browser would have used, so links behind a login still work.
 
-> Windows is the shipping target. Android and Linux build from source and run
-> downloads, but have no release yet — see [Not built yet](#not-built-yet).
+> Each release has Windows, Android and Linux builds. Shinsoku is not at 1.0 yet; what
+> is still missing is under [Not built yet](#not-built-yet).
 
 ## Screenshots
 
@@ -93,6 +93,7 @@ Grab the build from the [latest release](https://github.com/Purukitto/Shinsoku/r
 | --- | --- |
 | `Shinsoku-x.y.z-windows-x64.zip` | The app. Unzip anywhere and run `shinsoku.exe` — there is no installer yet. |
 | `Shinsoku-x.y.z-android-arm64-v8a.apk` | The Android app, for almost every phone. `armeabi-v7a` is for older 32-bit phones and `x86_64` for emulators and Chromebooks. |
+| `Shinsoku-x.y.z-linux-x64.tar.gz` | The Linux app. Unpack anywhere and run `shinsoku`. |
 | `Shinsoku-Capture-x.y.z-chromium.zip` | Browser extension for Chrome, Edge and Brave. |
 | `Shinsoku-Capture-x.y.z-firefox.zip` | Browser extension for Firefox. |
 | `SHA256SUMS.txt` | Checksums for all of the above. |
@@ -112,18 +113,25 @@ Get-FileHash .\Shinsoku-x.y.z-windows-x64.zip -Algorithm SHA256
 Android 11 or later. Open the APK on the phone to install it, or to update an earlier
 one; Android asks once to allow installs from your browser or file manager.
 
+Linux x64 with glibc 2.39 or later (Ubuntu 24.04, Debian 13, Fedora 40 and newer). It
+needs GTK 3, which every desktop has, and `libayatana-appindicator3` for the tray icon
+(`sudo apt install libayatana-appindicator3-1` on Ubuntu and Debian).
+
 ### Updating
 
 Once per launch Shinsoku asks GitHub for this repository's latest published release.
 If it is newer than what is running, the version line at the foot of the sidebar turns
-into **Update available vX.Y.Z**; clicking it opens the release page. Nothing downloads
-or installs itself.
+into **Update available vX.Y.Z**, and on a phone an **Update** chip appears beside the
+logo; either opens the release page. Nothing downloads or installs itself. The Google
+Play build skips the check, since Play keeps it up to date.
 
-To update, quit Shinsoku, unzip the new release over the old folder or next to it, and
-run the new `shinsoku.exe`. The download list, history and settings live
-in `%APPDATA%\io.shinsoku\shinsoku`, not beside the exe, so they carry over.
-Unfinished downloads come back paused and resume from where they stopped; scheduled
-ones go back to waiting for off-peak hours.
+To update on Windows, quit Shinsoku, unzip the new release over the old folder or next
+to it, and run the new `shinsoku.exe`. The download list, history and settings live
+in `%APPDATA%\io.shinsoku\shinsoku`, not beside the exe, so they carry over. On Linux
+they live in `~/.local/share/io.shinsoku.shinsoku`, so unpacking the new tarball in
+place of the old one keeps them too. On Android, open the new APK and it installs over
+the old one. Unfinished downloads come back paused and resume from where they stopped;
+scheduled ones go back to waiting for off-peak hours.
 
 What changed in each version is in [CHANGELOG.md](CHANGELOG.md) — the release notes
 are that file's section for the version, word for word. If the check fails because you
@@ -346,8 +354,8 @@ progress reuses the byte fields — are recorded in [docs/decisions.md](docs/dec
 The goal for 1.0 is a complete download manager on Android and on desktop;
 [docs/roadmap.md](docs/roadmap.md) tracks it feature by feature. Among what is missing:
 
-- Android and Linux releases.
-- An installer, and code signing so SmartScreen stops warning.
+- An installer, and code signing so SmartScreen stops warning. On Linux, a
+  distribution package (AppImage, Flatpak or `.deb`).
 - Store listings for the extension. Chromium loads it unpacked in developer mode;
   Firefox loads it as a temporary add-on, which it forgets on restart.
 - Queue priorities and per-download speed limits. Every download shares one global

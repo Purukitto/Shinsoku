@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/download_item.dart';
 import '../../providers/downloads_provider.dart';
+import '../../providers/version_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
 import '../desktop/modals/add_modal.dart';
@@ -125,11 +127,66 @@ class _Header extends StatelessWidget {
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: c.line)),
       ),
-      child: ShinsokuLogo(size: 28),
+      child: Row(
+        children: [
+          ShinsokuLogo(size: 28),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Align(alignment: Alignment.centerRight, child: _UpdateChip()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The phone's counterpart of the sidebar's "Update available" line: nothing until a
+/// newer GitHub release is found, then a chip that opens the release page. Its own
+/// ConsumerWidget so the check doesn't rebuild the header.
+class _UpdateChip extends ConsumerWidget {
+  const _UpdateChip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final update = ref.watch(updateProvider).value;
+    if (update == null) return const SizedBox.shrink();
+    return Semantics(
+      button: true,
+      label: 'Update available, version ${update.latest}',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () => launchUrl(Uri.parse(update.url), mode: LaunchMode.externalApplication),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            gradient: c.accentSoftGradient,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: c.accent.withValues(alpha: 0.28)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.arrow_circle_up_rounded, size: 16, color: c.accent),
+              const SizedBox(width: 7),
+              // gives way first on a narrow screen or with large text
+              Flexible(
+                child: Text(
+                  'Update',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: c.text.uiSm().copyWith(fontWeight: FontWeight.w500),
+                ),
+              ),
+              const SizedBox(width: 7),
+              Text('v${update.latest}', style: c.text.monoXs(color: c.accent)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
