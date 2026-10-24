@@ -161,12 +161,12 @@ scope unless added later.
   (Android 14 and later) have no such cap and are the way past it if that proves too
   tight. Asking for the notification permission waits for the first download.
 - **CI/CD** — GitHub Actions. `ci.yml`: version check (Ubuntu), Rust fmt, clippy and
-  tests (Ubuntu), Flutter format check, analyze and tests (Windows), a debug Android
-  APK (Ubuntu). `release.yml`: a
-  `v*` tag or a manual dispatch builds Windows, packages the extensions and checksums,
-  and opens a draft GitHub Release. An Android release job waits for a signing key,
-  since release APKs are still signed with the debug key; Linux's arrives with its
-  native build wiring.
+  tests (Ubuntu), Flutter format check, analyze and tests (Windows), a Linux build
+  that launches under Xvfb (Ubuntu), and a debug Android APK (Ubuntu). `release.yml`:
+  a `v*` tag or a manual dispatch builds Windows, packages the extensions and
+  checksums, and opens a draft GitHub Release. An Android release job waits for a
+  signing key, since release APKs are still signed with the debug key; Linux's waits
+  for packaging.
 
 ## Open
 

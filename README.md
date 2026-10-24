@@ -36,9 +36,8 @@ over it, bridged with [`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter
 A companion browser extension hands downloads over with the cookies, referrer and
 User-Agent the browser would have used, so links behind a login still work.
 
-> Windows is the shipping target. Android builds from source and runs downloads, but
-> has no release yet; Linux's native engine build is not wired — see
-> [Not built yet](#not-built-yet).
+> Windows is the shipping target. Android and Linux build from source and run
+> downloads, but have no release yet — see [Not built yet](#not-built-yet).
 
 ## Screenshots
 
@@ -336,8 +335,7 @@ progress reuses the byte fields — are recorded in [docs/decisions.md](docs/dec
 The goal for 1.0 is a complete download manager on Android and on desktop;
 [docs/roadmap.md](docs/roadmap.md) tracks it feature by feature. Among what is missing:
 
-- An Android release.
-- A Linux build. The Flutter target exists; the native engine build is not wired.
+- Android and Linux releases.
 - An installer, and code signing so SmartScreen stops warning.
 - Store listings for the extension. Chromium loads it unpacked in developer mode;
   Firefox loads it as a temporary add-on, which it forgets on restart.
