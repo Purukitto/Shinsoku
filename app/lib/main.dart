@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:window_manager/window_manager.dart';
+import 'src/platform.dart';
 import 'src/providers/capture_provider.dart';
 import 'src/providers/downloads_provider.dart';
 import 'src/providers/settings_provider.dart';
@@ -11,6 +12,7 @@ import 'src/services/autostart_service.dart';
 import 'src/services/tray_service.dart';
 import 'src/theme/app_theme.dart';
 import 'src/ui/desktop/desktop_shell.dart';
+import 'src/ui/mobile/mobile_shell.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +23,16 @@ void main(List<String> args) async {
   final supportDir = await getApplicationSupportDirectory();
   final engine = rust.createEngine(dbPath: '${supportDir.path}/downloads.json');
 
+  if (isDesktop) await _initWindow(args);
+  runApp(
+    ProviderScope(
+      overrides: [engineProvider.overrideWithValue(engine)],
+      child: const ShinsokuApp(),
+    ),
+  );
+}
+
+Future<void> _initWindow(List<String> args) async {
   await windowManager.ensureInitialized();
   await TrayService.instance.init();
   windowManager.waitUntilReadyToShow(
@@ -42,12 +54,6 @@ void main(List<String> args) async {
       }
     },
   );
-  runApp(
-    ProviderScope(
-      overrides: [engineProvider.overrideWithValue(engine)],
-      child: const ShinsokuApp(),
-    ),
-  );
 }
 
 class ShinsokuApp extends ConsumerStatefulWidget {
@@ -63,8 +69,8 @@ class _ShinsokuAppState extends ConsumerState<ShinsokuApp> with WidgetsBindingOb
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // Instantiate the capture provider so the loopback server starts on launch
-    // if browser integration was left enabled.
-    ref.read(captureProvider);
+    // if browser integration was left enabled. The extension is desktop only.
+    if (isDesktop) ref.read(captureProvider);
     // Load persisted settings and push them into the engine on launch.
     ref.read(settingsProvider);
   }
@@ -90,7 +96,7 @@ class _ShinsokuAppState extends ConsumerState<ShinsokuApp> with WidgetsBindingOb
       title: 'Shinsoku',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      home: const DesktopShell(),
+      home: isDesktop ? const DesktopShell() : const MobileShell(),
     );
   }
 }

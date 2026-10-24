@@ -19,7 +19,8 @@ flutter run -d windows --release
 ```
 
 The Windows build compiles the engine in `core/` and bundles its DLL, so there is no
-separate Rust step. For UI work that needs realistic data without real downloads,
+separate Rust step. The Android build does the same through `cargo-ndk` (see the
+README for the Rust targets it needs), and runs on Android 11 or later. For UI work that needs realistic data without real downloads,
 `./tool/screenshots.ps1` runs the real app on deterministic mock data.
 
 ## Before you open a pull request

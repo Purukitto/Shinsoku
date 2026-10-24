@@ -11,6 +11,9 @@ Outputs (under app/assets/icon and app/assets/logo):
   - tray.ico                 small tray icon (16/24/32)
   - tray_32.png / tray_64.png
   - ../logo/shinsoku_mark.png  512px tile for in-app use
+  - ../android/app/src/main/res  Android launcher icon: an adaptive icon
+    (gradient background, bolt foreground, bolt-only monochrome for themed
+    icons) plus the plain mark for each density
 
 Run:  python tool/gen_icons.py
 """
@@ -39,6 +42,13 @@ BOLT = [
 ROOT = Path(__file__).resolve().parent.parent  # app/
 ICON_DIR = ROOT / "assets" / "icon"
 LOGO_DIR = ROOT / "assets" / "logo"
+ANDROID_RES = ROOT / "android" / "app" / "src" / "main" / "res"
+
+# Android density buckets (scale over mdpi)
+DENSITIES = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
+# Adaptive icon layers are 108dp, and launchers show roughly the middle 72dp,
+# so the bolt keeps the same share of the visible tile as on the plain mark.
+ADAPTIVE_BOLT_H = BOLT_H * 72 / 108
 
 
 def _lerp(a, b, t):
@@ -56,12 +66,13 @@ def _grad_color(t):
     return STOPS[-1][1]
 
 
-def gradient(size):
-    """118deg linear volt gradient as an (size,size,3) uint8 array."""
+def gradient(size, span=1.0):
+    """118deg linear volt gradient as an (size,size,3) uint8 array. With a
+    `span` over 1 the full ramp fits in the middle 1/span of the square."""
     th = np.deg2rad(ANGLE_DEG)
     dx, dy = np.cos(th), np.sin(th)
-    xs = (np.arange(size) + 0.5) / size - 0.5
-    ys = (np.arange(size) + 0.5) / size - 0.5
+    xs = ((np.arange(size) + 0.5) / size - 0.5) * span
+    ys = ((np.arange(size) + 0.5) / size - 0.5) * span
     gx, gy = np.meshgrid(xs, ys)
     t = np.clip(0.5 + gx * dx + gy * dy, 0.0, 1.0)
     # build a 256-entry LUT then index — cheap and exact for the 3-stop ramp
@@ -79,11 +90,11 @@ def rounded_mask(size, radius_frac):
     return m.resize((size, size), Image.LANCZOS)
 
 
-def bolt_mask(size):
+def bolt_mask(size, height=BOLT_H):
     big = size * SS
     m = Image.new("L", (big, big), 0)
     d = ImageDraw.Draw(m)
-    s = BOLT_H * big
+    s = height * big
     c = big / 2
     pts = [(c + (u - 0.5) * s, c + (v - 0.5) * s) for (u, v) in BOLT]
     d.polygon(pts, fill=255)
@@ -103,6 +114,39 @@ def render(size):
     return img
 
 
+def solid_bolt(size, color, height):
+    """A bolt of one colour on a transparent square."""
+    img = Image.new("RGBA", (size, size), color + (255,))
+    img.putalpha(bolt_mask(size, height))
+    return img
+
+
+ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_launcher_background"/>
+    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>
+</adaptive-icon>
+"""
+
+
+def android_icons():
+    for name, scale in DENSITIES.items():
+        out = ANDROID_RES / f"mipmap-{name}"
+        out.mkdir(parents=True, exist_ok=True)
+        render(round(48 * scale)).save(out / "ic_launcher.png")
+        layer = round(108 * scale)
+        background = gradient(layer, span=108 / 72)
+        Image.fromarray(background, "RGB").save(out / "ic_launcher_background.png")
+        solid_bolt(layer, GLYPH_DARK, ADAPTIVE_BOLT_H).save(out / "ic_launcher_foreground.png")
+        solid_bolt(layer, (255, 255, 255), ADAPTIVE_BOLT_H).save(out / "ic_launcher_monochrome.png")
+
+    anydpi = ANDROID_RES / "mipmap-anydpi-v26"
+    anydpi.mkdir(parents=True, exist_ok=True)
+    (anydpi / "ic_launcher.xml").write_bytes(ADAPTIVE_XML.encode())
+
+
+
 def main():
     ICON_DIR.mkdir(parents=True, exist_ok=True)
     LOGO_DIR.mkdir(parents=True, exist_ok=True)
@@ -119,6 +163,8 @@ def main():
     master.resize((32, 32), Image.LANCZOS).save(ICON_DIR / "tray_32.png")
     master.resize((64, 64), Image.LANCZOS).save(ICON_DIR / "tray_64.png")
     master.save(ICON_DIR / "tray.ico", sizes=[(16, 16), (24, 24), (32, 32)])
+
+    android_icons()
 
     print("wrote:")
     for p in sorted(ICON_DIR.glob("*")) + sorted(LOGO_DIR.glob("*")):

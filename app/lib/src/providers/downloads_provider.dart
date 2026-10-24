@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart' show AnyhowException;
 import 'package:path_provider/path_provider.dart';
@@ -10,8 +12,21 @@ import '../rust/engine/download.dart' as rd;
 /// `main()` with the persistent store path; this fallback runs in-memory.
 final engineProvider = Provider<rust.ShinsokuEngine>((ref) => rust.createEngine(dbPath: ''));
 
-/// Default dest: OS Downloads dir, else app documents.
+/// Android side of storage (see `MainActivity.kt`).
+const _storage = MethodChannel('shinsoku/storage');
+
+/// Default dest: a Shinsoku folder in the shared Download folder on Android, the
+/// OS Downloads dir on desktop, else app documents.
 final downloadDirProvider = FutureProvider<String>((ref) async {
+  if (Platform.isAndroid) {
+    try {
+      final root = await _storage.invokeMethod<String>('downloadsDir');
+      final dir = await Directory('$root/Shinsoku').create(recursive: true);
+      return dir.path;
+    } catch (_) {
+      /* shared storage unavailable: fall back to the app's own folder below */
+    }
+  }
   try {
     final dir = await getDownloadsDirectory();
     if (dir != null) return dir.path;

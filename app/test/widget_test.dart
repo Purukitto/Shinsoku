@@ -14,6 +14,8 @@ import 'package:shinsoku/src/services/settings_service.dart';
 import 'package:shinsoku/src/ui/desktop/screens/detail_screen.dart';
 import 'package:shinsoku/src/ui/desktop/screens/settings_screen.dart';
 import 'package:shinsoku/src/ui/desktop/widgets/download_row.dart';
+import 'package:shinsoku/src/ui/mobile/mobile_download_row.dart';
+import 'package:shinsoku/src/ui/mobile/mobile_shell.dart';
 import 'package:shinsoku/src/ui/widgets/s_toggle.dart';
 
 /// In-memory list; records calls instead of making them on the engine.
@@ -22,6 +24,7 @@ class _FakeDownloads extends DownloadsNotifier {
 
   final List<DownloadItem> items;
   final List<String> resumed = [];
+  final List<String> paused = [];
   final List<(String, String)> refreshed = [];
   final List<String?> awaited = [];
   final List<(String, bool)> scheduled = [];
@@ -33,6 +36,9 @@ class _FakeDownloads extends DownloadsNotifier {
 
   @override
   void resume(String id) => resumed.add(id);
+
+  @override
+  void pause(String id) => paused.add(id);
 
   @override
   Future<String?> refreshLink(String id, String url) async {
@@ -123,6 +129,15 @@ final _failed = DownloadItem(
 final _waiting = _failed.copyWith(status: DownloadStatus.queued, scheduled: true);
 
 final _paused = _failed.copyWith(status: DownloadStatus.paused);
+
+final _running = _failed.copyWith(status: DownloadStatus.downloading, speedBps: 2048);
+
+/// A phone screen: 360 by 800 logical pixels.
+void _phone(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1080, 2400);
+  tester.view.devicePixelRatio = 3;
+  addTearDown(tester.view.reset);
+}
 
 Future<void> _pumpDetail(WidgetTester tester, _FakeDownloads downloads, DownloadItem item) async {
   tester.view.physicalSize = const Size(1400, 2400);
@@ -308,5 +323,129 @@ void main() {
     await tester.pump();
     expect(autostart.set, [true, false]);
     expect(tester.widget<SToggle>(toggle).value, isFalse);
+  });
+
+  testWidgets('a phone row shows progress and pauses', (tester) async {
+    _phone(tester);
+    final downloads = _FakeDownloads([_running]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [downloadsProvider.overrideWith(() => downloads)],
+        child: MaterialApp(
+          home: Scaffold(
+            body: MobileDownloadRow(id: 'a', onOpen: () {}),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('ubuntu.iso'), findsOneWidget);
+    expect(find.textContaining('40.0%'), findsOneWidget);
+    await tester.tap(find.byTooltip('Pause'));
+    expect(downloads.paused, ['a']);
+  });
+
+  testWidgets('a download page fits a phone', (tester) async {
+    _phone(tester);
+    final downloads = _FakeDownloads([_failed]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          downloadsProvider.overrideWith(() => downloads),
+          downloadDirProvider.overrideWith((ref) async => '/storage/emulated/0/Download/Shinsoku'),
+          liveDownloadProvider.overrideWith((ref, id) => Stream.value(_failed)),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: DetailScreen(itemId: 'a', onBack: () {}),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // a row that overflowed would have failed the test already
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Refresh link'), findsOneWidget);
+    expect(find.text('/storage/emulated/0/Download/Shinsoku'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    expect(downloads.resumed, ['a']);
+  });
+
+  testWidgets('Settings fits a phone', (tester) async {
+    _phone(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          settingsProvider.overrideWith(_FakeSettings.new),
+          captureProvider.overrideWith(() => _FakeCapture(running: false)),
+          autostartServiceProvider.overrideWithValue(_FakeAutostart()),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(padding: EdgeInsets.all(16), child: SettingsScreen()),
+          ),
+        ),
+      ),
+    );
+
+    // sliders drop below their titles; toggles stay beside them
+    final title = tester.getRect(find.text('Connections per download'));
+    final slider = tester.getRect(find.text('8×'));
+    expect(slider.top, greaterThan(title.bottom));
+    final sortTitle = tester.getRect(find.text('Sort into category folders'));
+    final sortDesc = tester.getRect(find.textContaining('subfolders of your download folder'));
+    final sortToggle = tester.getRect(
+      find
+          .descendant(
+            of: find
+                .ancestor(of: find.text('Sort into category folders'), matching: find.byType(Row))
+                .first,
+            matching: find.byType(SToggle),
+          )
+          .first,
+    );
+    expect(sortToggle.left, greaterThan(sortTitle.left));
+    expect(sortToggle.top, lessThan(sortDesc.bottom));
+  });
+
+  testWidgets('the phone shell moves between tabs and opens a download', (tester) async {
+    _phone(tester);
+    final downloads = _FakeDownloads([_running]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          downloadsProvider.overrideWith(() => downloads),
+          settingsProvider.overrideWith(_FakeSettings.new),
+          captureProvider.overrideWith(() => _FakeCapture(running: false)),
+          autostartServiceProvider.overrideWithValue(_FakeAutostart()),
+          downloadDirProvider.overrideWith((ref) async => '/downloads'),
+          liveDownloadProvider.overrideWith((ref, id) => Stream.value(_running)),
+        ],
+        child: const MaterialApp(home: MobileShell()),
+      ),
+    );
+
+    expect(find.text('TOTAL THROUGHPUT'), findsOneWidget);
+    expect(find.text('Downloading  1'), findsOneWidget);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('ACCELERATION'), findsOneWidget);
+    expect(find.bySemanticsLabel('Add a download'), findsNothing);
+
+    await tester.tap(find.text('Downloading  1'));
+    await tester.pump();
+    await tester.tap(find.text('ubuntu.iso'));
+    await tester.pumpAndSettle();
+    expect(find.text('All downloads'), findsOneWidget);
+    expect(find.text('Pause'), findsOneWidget);
+
+    await tester.tap(find.text('All downloads'));
+    await tester.pumpAndSettle();
+    expect(find.text('TOTAL THROUGHPUT'), findsOneWidget);
   });
 }

@@ -1,0 +1,273 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/download_item.dart';
+import '../../providers/downloads_provider.dart';
+import '../../theme/colors.dart';
+import '../../theme/text_styles.dart';
+import '../desktop/modals/add_modal.dart';
+import '../desktop/screens/completed_screen.dart';
+import '../desktop/screens/detail_screen.dart';
+import '../desktop/screens/empty_screen.dart';
+import '../desktop/screens/settings_screen.dart';
+import '../desktop/widgets/speed_hero.dart';
+import '../widgets/logo.dart';
+import 'mobile_download_row.dart';
+
+enum _Tab { downloading, completed, settings }
+
+/// The phone layout: one screen at a time, tabs along the bottom, and each
+/// download's page pushed on top so the system back gesture returns.
+class MobileShell extends ConsumerStatefulWidget {
+  const MobileShell({super.key});
+
+  @override
+  ConsumerState<MobileShell> createState() => _MobileShellState();
+}
+
+class _MobileShellState extends ConsumerState<MobileShell> {
+  _Tab _tab = _Tab.downloading;
+
+  void _openDetail(String id) =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => _DetailPage(id: id)));
+
+  void _showAdd() {
+    final downloads = ref.read(downloadsProvider.notifier);
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.66),
+      builder: (_) => AddDownloadModal(
+        onStart:
+            ({
+              required url,
+              required connections,
+              required headers,
+              expectedChecksum,
+              required scheduled,
+            }) {
+              downloads.add(
+                url: url,
+                connections: connections,
+                headers: headers,
+                expectedChecksum: expectedChecksum,
+                scheduled: scheduled,
+              );
+              setState(() => _tab = _Tab.downloading);
+            },
+        onStartStream: ({required url, required headers, title, required scheduled}) {
+          downloads.addStream(url: url, headers: headers, title: title, scheduled: scheduled);
+          setState(() => _tab = _Tab.downloading);
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Only the count, so the shell doesn't rebuild on every progress tick.
+    final activeCount = ref.watch(
+      downloadsProvider.select((l) => l.where((i) => i.status != DownloadStatus.completed).length),
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: SColors.bg0,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              const _Header(),
+              Expanded(
+                child: switch (_tab) {
+                  _Tab.downloading =>
+                    activeCount == 0
+                        ? SingleChildScrollView(
+                            padding: const EdgeInsets.all(16),
+                            child: EmptyScreen(onAdd: _showAdd),
+                          )
+                        : _DownloadingList(onOpen: _openDetail),
+                  _Tab.completed => const CompletedScreen(),
+                  _Tab.settings => const SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 32),
+                    child: SettingsScreen(),
+                  ),
+                },
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: _tab == _Tab.downloading && activeCount > 0
+            ? _AddButton(onTap: _showAdd)
+            : null,
+        bottomNavigationBar: _BottomNav(
+          tab: _tab,
+          activeCount: activeCount,
+          completedCount: completedDownloads.length,
+          onSelect: (t) => setState(() => _tab = t),
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: SColors.line)),
+      ),
+      child: ShinsokuLogo(size: 28),
+    );
+  }
+}
+
+class _DownloadingList extends ConsumerWidget {
+  const _DownloadingList({required this.onOpen});
+
+  final ValueChanged<String> onOpen;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Structural changes only; each row watches its own item.
+    final ids = ref.watch(visibleDownloadIdsProvider);
+    return ListView.builder(
+      // bottom room for the add button
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      itemCount: ids.length + 1,
+      itemBuilder: (context, i) {
+        if (i == 0) return const RepaintBoundary(child: SpeedHero());
+        final id = ids[i - 1];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: RepaintBoundary(
+            child: MobileDownloadRow(key: ValueKey(id), id: id, onOpen: () => onOpen(id)),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DetailPage extends StatelessWidget {
+  const _DetailPage({required this.id});
+
+  final String id;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: SColors.bg0,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          child: DetailScreen(itemId: id, onBack: () => Navigator.of(context).pop()),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddButton extends StatelessWidget {
+  const _AddButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Add a download',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: SColors.voltGradient,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: const [
+              BoxShadow(color: Color(0x59A25CFF), blurRadius: 18, offset: Offset(0, 6)),
+            ],
+          ),
+          child: const Icon(Icons.add_rounded, size: 26, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNav extends StatelessWidget {
+  const _BottomNav({
+    required this.tab,
+    required this.activeCount,
+    required this.completedCount,
+    required this.onSelect,
+  });
+
+  final _Tab tab;
+  final int activeCount;
+  final int completedCount;
+  final ValueChanged<_Tab> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: SColors.bg1,
+        border: Border(top: BorderSide(color: SColors.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            children: [
+              _item(_Tab.downloading, Icons.bolt_rounded, 'Downloading', activeCount),
+              _item(
+                _Tab.completed,
+                Icons.check_circle_outline_rounded,
+                'Completed',
+                completedCount,
+              ),
+              _item(_Tab.settings, Icons.settings_outlined, 'Settings', null),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _item(_Tab t, IconData icon, String label, int? count) {
+    final on = tab == t;
+    return Expanded(
+      child: Semantics(
+        selected: on,
+        button: true,
+        child: GestureDetector(
+          onTap: () => onSelect(t),
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 22, color: on ? SColors.voltPink : SColors.low),
+              const SizedBox(height: 4),
+              Text(
+                count == null || count == 0 ? label : '$label  $count',
+                style: SText.uiSm(
+                  color: on ? SColors.hi : SColors.mid,
+                ).copyWith(fontWeight: on ? FontWeight.w500 : FontWeight.w400),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

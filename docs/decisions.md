@@ -127,10 +127,27 @@ scope unless added later.
   was not used: it pins an older `win32` than `package_info_plus` needs. Android
   waits for its background service: starting on boot would only need the normal
   `RECEIVE_BOOT_COMPLETED` permission, but there is nothing for it to start yet.
+- **The Android build** — a Gradle task, `buildRustEngine` in
+  `app/android/app/build.gradle.kts`, runs `cargo ndk` before every build and packages
+  `libshinsoku_core.so` for each ABI, the way the Windows CMake target bundles the DLL;
+  not cargokit, so both platforms build the engine the same plain way. It builds only
+  the ABIs Flutter asks for, so `flutter run` on a phone compiles one. The minimum is
+  Android 11 (API 30): from there an app can create files in the shared Download folder
+  by path without a storage permission, which the engine needs because it writes by
+  path. `MainActivity` hands Dart that folder's path over `shinsoku/storage`, and
+  downloads go to `Download/Shinsoku`, where people's file managers show them.
+  Supporting Android 10 and older would mean the system file picker or MediaStore
+  copies instead. Phones get their own shell (`app/lib/src/ui/mobile/`): tabs along the
+  bottom, a compact download row, and each download's page pushed as a route so the
+  back gesture works. The detail, add, settings and completed screens are shared with
+  desktop and stack into one column below 600 logical pixels (`isCompact`). Window,
+  tray, autostart and the extension's capture server stay desktop only (`isDesktop`).
 - **CI/CD** — GitHub Actions. `ci.yml`: version check (Ubuntu), Rust fmt, clippy and
-  tests (Ubuntu), Flutter format check, analyze and tests (Windows). `release.yml`: a
+  tests (Ubuntu), Flutter format check, analyze and tests (Windows), a debug Android
+  APK (Ubuntu). `release.yml`: a
   `v*` tag or a manual dispatch builds Windows, packages the extensions and checksums,
-  and opens a draft GitHub Release. Android and Linux release jobs arrive with their
+  and opens a draft GitHub Release. An Android release job waits for a signing key,
+  since release APKs are still signed with the debug key; Linux's arrives with its
   native build wiring.
 
 ## Open

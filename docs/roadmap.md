@@ -14,7 +14,7 @@ beyond that.
 | Feature | Status | Notes |
 | --- | --- | --- |
 | Windows app | Done | Portable zip, no installer yet |
-| Android app | Not started | Flutter target exists; the native engine build and a mobile shell do not |
+| Android app | Partial | Android 11 and later, in a phone layout, saving to `Download/Shinsoku`. Downloads freeze while the app is in the background and carry on once it is back, and there is no release build yet |
 | Linux app | Not started | Flutter target exists; the native engine build does not |
 
 ## Downloading

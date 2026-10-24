@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../models/format.dart';
+import '../../../platform.dart';
 import '../../../providers/capture_provider.dart';
 import '../../../providers/downloads_provider.dart';
 import '../../../theme/colors.dart';
@@ -41,7 +42,7 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
   void initState() {
     super.initState();
     _ctrl.addListener(() => setState(() => _error = null));
-    if (ref.read(captureProvider).running) {
+    if (isDesktop && ref.read(captureProvider).running) {
       _waiting = true;
       _downloads.awaitLink(widget.id);
       _poll = Timer.periodic(const Duration(milliseconds: 600), (_) => _checkCapture());
@@ -178,7 +179,7 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
                   const SizedBox(height: 16),
                   if (_waiting)
                     _browserPanel(referrer)
-                  else
+                  else if (isDesktop)
                     Text(
                       'Turn on Browser integration in Settings to catch the new link '
                       'from your browser instead.',
