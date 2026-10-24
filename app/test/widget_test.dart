@@ -8,9 +8,11 @@ import 'package:shinsoku/src/providers/autostart_provider.dart';
 import 'package:shinsoku/src/providers/capture_provider.dart';
 import 'package:shinsoku/src/providers/downloads_provider.dart';
 import 'package:shinsoku/src/providers/settings_provider.dart';
+import 'package:shinsoku/src/providers/version_provider.dart';
 import 'package:shinsoku/src/rust/api.dart' as rust;
 import 'package:shinsoku/src/services/autostart_service.dart';
 import 'package:shinsoku/src/services/settings_service.dart';
+import 'package:shinsoku/src/services/version_service.dart';
 import 'package:shinsoku/src/ui/desktop/screens/detail_screen.dart';
 import 'package:shinsoku/src/ui/desktop/screens/settings_screen.dart';
 import 'package:shinsoku/src/ui/desktop/widgets/download_row.dart';
@@ -488,5 +490,29 @@ void main() {
     await tester.tap(find.text('All downloads'));
     await tester.pumpAndSettle();
     expect(find.text('TOTAL THROUGHPUT'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Update available')), findsNothing);
+  });
+
+  testWidgets('the phone header offers a newer release', (tester) async {
+    _phone(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          downloadsProvider.overrideWith(() => _FakeDownloads([])),
+          updateProvider.overrideWith(
+            (ref) async => const UpdateInfo(
+              current: '0.1.0',
+              latest: '0.2.0',
+              url: 'https://github.com/Purukitto/Shinsoku/releases/tag/v0.2.0',
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: MobileShell()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.bySemanticsLabel('Update available, version 0.2.0'), findsOneWidget);
+    expect(find.text('v0.2.0'), findsOneWidget);
   });
 }

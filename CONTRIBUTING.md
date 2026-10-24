@@ -235,7 +235,7 @@ to build when it disagrees with the manifests or the changelog.
    `SHA256SUMS.txt`, and open a **draft** release whose notes are the changelog
    section. The Android job then adds the signed foss APKs and their checksums to the
    draft, and keeps the Google Play bundle as the run's `shinsoku-play-bundle`
-   artifact.
+   artifact. Last, the Linux job adds the x64 tarball and its checksum.
 4. **Publish the draft** from the Releases tab after reading it over. Until then the
    in-app update check cannot see it; from then on every running copy shows **Update
    available** at its next launch.

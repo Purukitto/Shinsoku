@@ -91,7 +91,8 @@ jobs:
 
   linux:
     name: Linux app
-    runs-on: ubuntu-latest
+    # The image the release builds on, so this checks what ships.
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: app

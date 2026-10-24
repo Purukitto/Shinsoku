@@ -167,7 +167,10 @@ scope unless added later.
   dispatch builds Windows, packages the extensions and checksums, and opens a draft
   GitHub Release; then it builds the foss APKs, signed with the release key from the
   repository secrets, adds them to the draft, and keeps the Play bundle as an
-  artifact. Linux's release job waits for packaging.
+  artifact; then it adds a Linux x64 tarball. The Linux build, in CI and in the
+  release, runs on a pinned Ubuntu 24.04 image rather than `ubuntu-latest`: the
+  image's glibc is the oldest one the build runs on, and the release notes name it.
+  A distribution package (AppImage, Flatpak or `.deb`) is still to choose.
 - **Store builds** — two Android flavors from one codebase. `foss` is what GitHub
   releases, F-Droid and source builds ship: no Google code at all, which F-Droid
   requires, and CI checks the APK for it. `play` is the Google Play build. It skips
