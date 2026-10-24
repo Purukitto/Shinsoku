@@ -77,10 +77,14 @@ the entry is marked **Breaking** under **Changed**.
 - **Desktop app** for Windows: active, completed, detail and settings screens, live
   throughput graph and per-segment progress, minimise to tray, custom frameless
   window, bundled fonts.
+- **Android app** for Android 11 and later, as an APK on each release: one for
+  almost every phone, one for older 32-bit phones and one for emulators and
+  Chromebooks. It keeps downloading in the background, with progress in a
+  notification.
 
 ### Known limitations
 
-- Windows only. Android and Linux builds are not wired yet.
+- No Linux release yet; it builds from source.
 - Portable zip only, no installer. The binaries are unsigned, so SmartScreen warns on
   first launch.
 - No queue priorities and no per-download speed limit.

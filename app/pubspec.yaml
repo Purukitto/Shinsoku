@@ -32,6 +32,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Android builds without --flavor are the foss build, with no Google code. See
+  # android/app/build.gradle.kts.
+  default-flavor: foss
+
   assets:
     - assets/icon/
     - assets/logo/

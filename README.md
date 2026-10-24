@@ -92,6 +92,7 @@ Grab the build from the [latest release](https://github.com/Purukitto/Shinsoku/r
 | File | What it is |
 | --- | --- |
 | `Shinsoku-x.y.z-windows-x64.zip` | The app. Unzip anywhere and run `shinsoku.exe` — there is no installer yet. |
+| `Shinsoku-x.y.z-android-arm64-v8a.apk` | The Android app, for almost every phone. `armeabi-v7a` is for older 32-bit phones and `x86_64` for emulators and Chromebooks. |
 | `Shinsoku-Capture-x.y.z-chromium.zip` | Browser extension for Chrome, Edge and Brave. |
 | `Shinsoku-Capture-x.y.z-firefox.zip` | Browser extension for Firefox. |
 | `SHA256SUMS.txt` | Checksums for all of the above. |
@@ -107,6 +108,9 @@ anyway**. To check what you downloaded against the release:
 ```powershell
 Get-FileHash .\Shinsoku-x.y.z-windows-x64.zip -Algorithm SHA256
 ```
+
+Android 11 or later. Open the APK on the phone to install it, or to update an earlier
+one; Android asks once to allow installs from your browser or file manager.
 
 ### Updating
 
@@ -244,6 +248,13 @@ On Android (11 or later), `flutter run --release` with a phone plugged in does t
 Gradle runs `cargo ndk` on `core/` for the phone's ABI and packages
 `libshinsoku_core.so` into the APK.
 
+Android builds come in two flavors. `foss`, the default, is what GitHub releases ship,
+with no Google code. `play` is the Google Play build; add `--flavor play` to build
+it. Release builds are signed with the key in `app/android/key.properties` if there
+is one
+([format](https://docs.flutter.dev/deployment/android#reference-the-keystore-from-the-app)),
+and with the debug key otherwise.
+
 <details>
 <summary><strong>Judge speed in release, not debug</strong></summary>
 
@@ -259,7 +270,8 @@ rendering or responsiveness has to be checked with `--profile` or `--release`.
 | Where | Command | Does |
 | --- | --- | --- |
 | `app/` | `flutter run -d windows --release` | Run the app |
-| `app/` | `flutter build apk --release` | An Android APK for every ABI, signed with the debug key for now |
+| `app/` | `flutter build apk --release` | The foss Android APK for every ABI |
+| `app/` | `flutter build appbundle --release --flavor play` | The bundle Google Play takes |
 | `app/` | `dart format .` · `flutter analyze` · `flutter test` | Format, lints and widget tests |
 | `app/` | `flutter_rust_bridge_codegen generate` | Regenerate the bindings after changing `core/src/api.rs` |
 | `core/` | `cargo test` | Engine unit tests and integration tests against a local range server |
@@ -355,7 +367,15 @@ the changelog and how a release is cut. Security issues go through
 
 ## Licence
 
-[GPL-3.0](LICENSE) © Pulkit Sambhavi Singh
+[GPL-3.0](LICENSE) © Pulkit Sambhavi Singh, with this additional permission, so the
+Google Play build can take payments through Google Play:
+
+> Additional permission under GNU GPL version 3 section 7
+>
+> If you modify this Program, or any covered work, by linking or combining it with
+> the Google Play Billing Library (or a modified version of that library), containing
+> parts covered by the terms of that library's license, the licensors of this Program
+> grant you additional permission to convey the resulting work.
 
 Fonts: [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) and
 [JetBrains Mono](https://www.jetbrains.com/lp/mono/), both under the SIL Open Font

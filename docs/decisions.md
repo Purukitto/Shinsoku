@@ -162,11 +162,27 @@ scope unless added later.
   tight. Asking for the notification permission waits for the first download.
 - **CI/CD** — GitHub Actions. `ci.yml`: version check (Ubuntu), Rust fmt, clippy and
   tests (Ubuntu), Flutter format check, analyze and tests (Windows), a Linux build
-  that launches under Xvfb (Ubuntu), and a debug Android APK (Ubuntu). `release.yml`:
-  a `v*` tag or a manual dispatch builds Windows, packages the extensions and
-  checksums, and opens a draft GitHub Release. An Android release job waits for a
-  signing key, since release APKs are still signed with the debug key; Linux's waits
-  for packaging.
+  that launches under Xvfb (Ubuntu), and debug APKs of both Android flavors, checking
+  the foss one carries no Google code (Ubuntu). `release.yml`: a `v*` tag or a manual
+  dispatch builds Windows, packages the extensions and checksums, and opens a draft
+  GitHub Release; then it builds the foss APKs, signed with the release key from the
+  repository secrets, adds them to the draft, and keeps the Play bundle as an
+  artifact. Linux's release job waits for packaging.
+- **Store builds** — two Android flavors from one codebase. `foss` is what GitHub
+  releases, F-Droid and source builds ship: no Google code at all, which F-Droid
+  requires, and CI checks the APK for it. `play` is the Google Play build. It skips
+  the GitHub update check, since Play updates the app and its rules forbid pointing
+  anywhere else for updates, and it is the only place Play Billing will go. Play
+  rejects donation links unless they go to a validated tax-exempt organisation, so
+  supporting the project from the Play build has to go through Play Billing. Its code
+  will be our own Kotlin in `src/play/`, not the `in_app_purchase` plugin: a Flutter
+  plugin can't be limited to one flavor, so the plugin would put the billing library
+  in the foss build too. The Dart side reads the flavor through `appFlavor`
+  (`app/lib/src/store.dart`). Desktop builds have no flavor and count as foss.
+  `default-flavor: foss` in `pubspec.yaml` keeps plain `flutter run` and
+  `flutter build apk` working. The play code stays in this repository, and the
+  README's licence section adds a GPLv3 section 7 permission to link with the Play
+  Billing Library.
 
 ## Open
 

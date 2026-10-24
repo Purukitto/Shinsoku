@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -6,6 +8,18 @@ plugins {
 
 // Where buildRustEngine (below) puts libshinsoku_core.so for each ABI.
 val rustJniLibs: File = layout.buildDirectory.dir("rustJniLibs").get().asFile
+
+// The release key: android/key.properties when building by hand, or the SHINSOKU_*
+// variables in the release workflow. Without either, release builds are signed with
+// the debug key, so `flutter run --release` still works.
+val keyProperties =
+    Properties().apply {
+        rootProject.file("key.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+    }
+
+fun signingValue(property: String, env: String): String? = keyProperties.getProperty(property) ?: System.getenv(env)
+
+val releaseKeystore: String? = signingValue("storeFile", "SHINSOKU_KEYSTORE")
 
 android {
     namespace = "xyz.purukitto.shinsoku"
@@ -27,11 +41,30 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = signingValue("storePassword", "SHINSOKU_KEYSTORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "SHINSOKU_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "SHINSOKU_KEY_PASSWORD")
+            }
+        }
+    }
+
+    // Where a build is published; docs/decisions.md, "Store builds", has why.
+    //   foss: GitHub releases, F-Droid and builds from source, with no Google code.
+    //         The default (pubspec.yaml's default-flavor).
+    //   play: Google Play, which updates the app itself. Play Billing goes only here.
+    flavorDimensions += "store"
+    productFlavors {
+        create("foss") { dimension = "store" }
+        create("play") { dimension = "store" }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 
