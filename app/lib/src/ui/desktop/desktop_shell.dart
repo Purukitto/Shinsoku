@@ -119,6 +119,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     // Watch only the derived count (not the whole list) so the shell doesn't
     // rebuild every tick — that's what keeps the per-row provider scoping
     // effective. The selected item's name is watched only while a detail view is
@@ -139,7 +140,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     };
 
     return Scaffold(
-      backgroundColor: SColors.bg0,
+      backgroundColor: c.bg0,
       body: Column(
         children: [
           // custom title bar
@@ -202,11 +203,12 @@ class _TitleBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: SColors.bg1,
-        border: Border(bottom: BorderSide(color: SColors.line)),
+        color: c.bg1,
+        border: Border(bottom: BorderSide(color: c.line)),
       ),
       child: Row(
         children: [
@@ -218,7 +220,7 @@ class _TitleBar extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 18),
                 child: Text(
                   'Shinsoku — Download Manager',
-                  style: SText.uiBase(color: SColors.low).copyWith(fontSize: 12.5),
+                  style: c.text.uiBase(color: c.low).copyWith(fontSize: 12.5),
                 ),
               ),
             ),
@@ -303,7 +305,8 @@ class _WinBtnState extends State<_WinBtn> {
 
   @override
   Widget build(BuildContext context) {
-    final hoverBg = widget.danger ? const Color(0xFFE13050) : SColors.bg3;
+    final c = context.colors;
+    final hoverBg = widget.danger ? const Color(0xFFE13050) : c.bg3;
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
@@ -317,7 +320,7 @@ class _WinBtnState extends State<_WinBtn> {
           child: Icon(
             widget.icon,
             size: widget.iconSize,
-            color: _hover ? (widget.danger ? Colors.white : SColors.hi) : SColors.low,
+            color: _hover ? (widget.danger ? Colors.white : c.hi) : c.low,
           ),
         ),
       ),
@@ -350,14 +353,15 @@ class _Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final isActive =
         view == _DesktopView.active || view == _DesktopView.detail || view == _DesktopView.empty;
 
     return Container(
       width: 232,
       decoration: BoxDecoration(
-        color: SColors.bg1,
-        border: Border(right: BorderSide(color: SColors.line)),
+        color: c.bg1,
+        border: Border(right: BorderSide(color: c.line)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       child: Column(
@@ -369,7 +373,7 @@ class _Sidebar extends StatelessWidget {
             label: 'Downloading',
             count: activeCount,
             active: isActive,
-            accent: SColors.voltPink,
+            accent: c.accent,
             onTap: () => onNavigate(_DesktopView.active),
           ),
           _NavItem(
@@ -383,7 +387,7 @@ class _Sidebar extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(8, 20, 8, 8),
             child: Text(
               'LIBRARY',
-              style: SText.monoXs().copyWith(fontSize: 10, letterSpacing: 0.14 * 10),
+              style: c.text.monoXs().copyWith(fontSize: 10, letterSpacing: 0.14 * 10),
             ),
           ),
           _NavItem(
@@ -420,9 +424,9 @@ class _Sidebar extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: SColors.bg0,
+              color: c.bg0,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: SColors.line),
+              border: Border.all(color: c.line),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,8 +434,8 @@ class _Sidebar extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('STORAGE', style: SText.monoXs().copyWith(fontSize: 10.5)),
-                    Text('248 GB free', style: SText.monoXs().copyWith(fontSize: 10.5)),
+                    Text('STORAGE', style: c.text.monoXs().copyWith(fontSize: 10.5)),
+                    Text('248 GB free', style: c.text.monoXs().copyWith(fontSize: 10.5)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -440,8 +444,8 @@ class _Sidebar extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: 0.62,
                     minHeight: 5,
-                    backgroundColor: SColors.bg3,
-                    valueColor: AlwaysStoppedAnimation(SColors.lineHi),
+                    backgroundColor: c.bg3,
+                    valueColor: AlwaysStoppedAnimation(c.lineHi),
                   ),
                 ),
               ],
@@ -468,6 +472,7 @@ class _VersionFooter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final update = ref.watch(updateProvider).value;
     if (update != null) {
       return Padding(
@@ -477,21 +482,21 @@ class _VersionFooter extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
             decoration: BoxDecoration(
-              gradient: SColors.voltSoftGradient,
+              gradient: c.accentSoftGradient,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0x47FF63B6)),
+              border: Border.all(color: c.accent.withValues(alpha: 0.28)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.arrow_circle_up_rounded, size: 16, color: SColors.voltPink),
+                Icon(Icons.arrow_circle_up_rounded, size: 16, color: c.accent),
                 const SizedBox(width: 9),
                 Expanded(
                   child: Text(
                     'Update available',
-                    style: SText.uiBase().copyWith(fontSize: 12.5, fontWeight: FontWeight.w500),
+                    style: c.text.uiBase().copyWith(fontSize: 12.5, fontWeight: FontWeight.w500),
                   ),
                 ),
-                Text('v${update.latest}', style: SText.monoXs(color: SColors.voltPink)),
+                Text('v${update.latest}', style: c.text.monoXs(color: c.accent)),
               ],
             ),
           ),
@@ -502,7 +507,7 @@ class _VersionFooter extends ConsumerWidget {
     if (version == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 10, left: 9),
-      child: Text('v$version', style: SText.monoXs()),
+      child: Text('v$version', style: c.text.monoXs()),
     );
   }
 }
@@ -533,6 +538,7 @@ class _NavItemState extends State<_NavItem> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -544,7 +550,7 @@ class _NavItemState extends State<_NavItem> {
           margin: const EdgeInsets.symmetric(vertical: 1),
           padding: const EdgeInsets.only(left: 9, right: 12),
           decoration: BoxDecoration(
-            color: widget.active ? SColors.bg3 : (_hovered ? SColors.bg2 : Colors.transparent),
+            color: widget.active ? c.bg3 : (_hovered ? c.bg2 : Colors.transparent),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -554,31 +560,27 @@ class _NavItemState extends State<_NavItem> {
                 width: 3,
                 height: 18,
                 decoration: BoxDecoration(
-                  gradient: widget.active ? SColors.voltGradient : null,
+                  gradient: widget.active ? c.accentGradient : null,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(width: 10),
-              Icon(
-                widget.icon,
-                size: 17,
-                color: widget.active ? (widget.accent ?? SColors.hi) : SColors.low,
-              ),
+              Icon(widget.icon, size: 17, color: widget.active ? (widget.accent ?? c.hi) : c.low),
               const SizedBox(width: 11),
               Expanded(
                 child: Text(
                   widget.label,
-                  style: SText.uiBase(
-                    color: widget.active ? SColors.hi : SColors.mid,
-                  ).copyWith(fontWeight: widget.active ? FontWeight.w500 : FontWeight.w400),
+                  style: c.text
+                      .uiBase(color: widget.active ? c.hi : c.mid)
+                      .copyWith(fontWeight: widget.active ? FontWeight.w500 : FontWeight.w400),
                 ),
               ),
               if (widget.count != null)
                 Text(
                   '${widget.count}',
-                  style: SText.monoSm(
-                    color: widget.active ? SColors.mid : SColors.faint,
-                  ).copyWith(fontSize: 11),
+                  style: c.text
+                      .monoSm(color: widget.active ? c.mid : c.faint)
+                      .copyWith(fontSize: 11),
                 ),
             ],
           ),
@@ -603,16 +605,17 @@ class _Toolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: SColors.line)),
+        border: Border(bottom: BorderSide(color: c.line)),
       ),
       child: Row(
         children: [
           Expanded(
-            child: Text(title, style: SText.uiLg(), overflow: TextOverflow.ellipsis),
+            child: Text(title, style: c.text.uiLg(), overflow: TextOverflow.ellipsis),
           ),
           if (showClipBanner) ...[
             GestureDetector(
@@ -621,15 +624,18 @@ class _Toolbar extends StatelessWidget {
                 height: 38,
                 padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 0),
                 decoration: BoxDecoration(
-                  gradient: SColors.voltSoftGradient,
+                  gradient: c.accentSoftGradient,
                   borderRadius: BorderRadius.circular(9),
-                  border: Border.all(color: const Color(0x47FF63B6)),
+                  border: Border.all(color: c.accent.withValues(alpha: 0.28)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.content_paste_rounded, size: 15, color: SColors.voltPink),
+                    Icon(Icons.content_paste_rounded, size: 15, color: c.accent),
                     const SizedBox(width: 9),
-                    Text('Link copied — download?', style: SText.uiBase().copyWith(fontSize: 12.5)),
+                    Text(
+                      'Link copied — download?',
+                      style: c.text.uiBase().copyWith(fontSize: 12.5),
+                    ),
                   ],
                 ),
               ),

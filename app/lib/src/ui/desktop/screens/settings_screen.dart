@@ -13,6 +13,7 @@ import '../../../services/settings_service.dart';
 import '../../../theme/colors.dart';
 import '../../../theme/text_styles.dart';
 import '../../widgets/s_toggle.dart';
+import '../../widgets/segmented_control.dart';
 import '../../widgets/volt_slider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -173,22 +174,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 if (cap.enabled) _captureDetails(cap, capStatus),
               ],
             ),
+          _card(
+            icon: Icons.palette_outlined,
+            title: 'Appearance',
+            children: [
+              _row(
+                'Theme',
+                desc: 'System follows your device’s light or dark mode.',
+                // shrinks rather than overflows on a narrow phone or with large text
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: SSegmented<ThemeMode>(
+                    options: const [
+                      SOption(value: ThemeMode.system, label: 'System'),
+                      SOption(value: ThemeMode.light, label: 'Light'),
+                      SOption(value: ThemeMode.dark, label: 'Dark'),
+                    ],
+                    value: s.themeMode,
+                    onChanged: set.setThemeMode,
+                  ),
+                ),
+              ),
+              if (s.themeMode != ThemeMode.light)
+                _row(
+                  'Pure black',
+                  desc: 'Use true black in dark mode, which saves power on OLED screens.',
+                  last: true,
+                  child: SToggle(value: s.pureBlack, onChanged: set.setPureBlack),
+                ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  static Widget _card({
-    required IconData icon,
-    required String title,
-    required List<Widget> children,
-  }) {
+  Widget _card({required IconData icon, required String title, required List<Widget> children}) {
+    final c = context.colors;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: SColors.bg1,
+        color: c.bg1,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SColors.line),
+        border: Border.all(color: c.line),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Column(
@@ -198,13 +226,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             padding: const EdgeInsets.symmetric(vertical: 18),
             child: Row(
               children: [
-                Icon(icon, size: 17, color: SColors.voltPink),
+                Icon(icon, size: 17, color: c.accent),
                 const SizedBox(width: 10),
                 Text(
                   title.toUpperCase(),
-                  style: SText.uiBase(
-                    color: SColors.mid,
-                  ).copyWith(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 0.04 * 13),
+                  style: c.text
+                      .uiBase(color: c.mid)
+                      .copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.04 * 13,
+                      ),
                 ),
               ],
             ),
@@ -216,13 +248,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _row(String title, {String? desc, required Widget child, bool last = false}) {
+    final c = context.colors;
     final text = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: SText.uiMd().copyWith(fontWeight: FontWeight.w500, fontSize: 14)),
+        Text(title, style: c.text.uiMd().copyWith(fontWeight: FontWeight.w500, fontSize: 14)),
         if (desc != null) ...[
           const SizedBox(height: 3),
-          Text(desc, style: SText.uiBase(color: SColors.low).copyWith(fontSize: 12.5)),
+          Text(desc, style: c.text.uiBase(color: c.low).copyWith(fontSize: 12.5)),
         ],
       ],
     );
@@ -233,7 +266,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       decoration: last
           ? null
           : BoxDecoration(
-              border: Border(top: BorderSide(color: SColors.line)),
+              border: Border(top: BorderSide(color: c.line)),
             ),
       child: compact && child is! SToggle
           ? Column(
@@ -259,6 +292,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   /// What the extension needs to connect. Primary path is one pairing code;
   /// host/port/token sit under a Manual disclosure. Shown only when enabled.
   Widget _captureDetails(CaptureState cap, rust.CaptureStatus? status) {
+    final c = context.colors;
     final endpoint = 'http://127.0.0.1:${cap.port}';
     final running = (status?.running ?? cap.running) && cap.port != 0;
     final lastSeen = status?.lastSeenMs;
@@ -266,15 +300,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final captures = status?.captures ?? 0;
 
     final (statusLabel, statusColor) = !running
-        ? ('Server not running', SColors.danger)
+        ? ('Server not running', c.danger)
         : connected
-        ? ('Browser connected${captures > 0 ? ' · $captures captured' : ''}', SColors.mint)
-        : ('Listening — waiting for your browser', SColors.amber);
+        ? ('Browser connected${captures > 0 ? ' · $captures captured' : ''}', c.mint)
+        : ('Listening — waiting for your browser', c.amber);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: SColors.line)),
+        border: Border(top: BorderSide(color: c.line)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +321,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 decoration: BoxDecoration(shape: BoxShape.circle, color: statusColor),
               ),
               const SizedBox(width: 8),
-              Text(statusLabel, style: SText.uiBase(color: statusColor).copyWith(fontSize: 12.5)),
+              Text(statusLabel, style: c.text.uiBase(color: statusColor).copyWith(fontSize: 12.5)),
             ],
           ),
           const SizedBox(height: 12),
@@ -295,7 +329,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 9),
           Text(
             'Open the Shinsoku extension’s options and paste this once — it fills everything.',
-            style: SText.uiBase(color: SColors.low).copyWith(fontSize: 12),
+            style: c.text.uiBase(color: c.low).copyWith(fontSize: 12),
           ),
           const SizedBox(height: 12),
           InkWell(
@@ -309,13 +343,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Icon(
                     _showManual ? Icons.expand_more_rounded : Icons.chevron_right_rounded,
                     size: 16,
-                    color: SColors.mid,
+                    color: c.mid,
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    'Manual setup',
-                    style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 12.5),
-                  ),
+                  Text('Manual setup', style: c.text.uiBase(color: c.mid).copyWith(fontSize: 12.5)),
                 ],
               ),
             ),
@@ -331,12 +362,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  static Widget _detailField(String label, String value, {bool mono = false}) {
+  Widget _detailField(String label, String value, {bool mono = false}) {
+    final c = context.colors;
     return Container(
       decoration: BoxDecoration(
-        color: SColors.bg0,
+        color: c.bg0,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: SColors.line),
+        border: Border.all(color: c.line),
       ),
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
       child: Row(
@@ -345,15 +377,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             width: 72,
             child: Text(
               label.toUpperCase(),
-              style: SText.monoXs(
-                color: SColors.low,
-              ).copyWith(fontSize: 10, letterSpacing: 0.08 * 10),
+              style: c.text.monoXs(color: c.low).copyWith(fontSize: 10, letterSpacing: 0.08 * 10),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: (mono ? SText.monoSm() : SText.uiMd()).copyWith(fontSize: 12.5),
+              style: (mono ? c.text.monoSm() : c.text.uiMd()).copyWith(fontSize: 12.5),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -364,6 +394,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _scheduleTimeline(AppSettings s, SettingsNotifier set) {
+    final c = context.colors;
     final label = 'OFF-PEAK ${fmtClock(s.offPeakStartMin)}–${fmtClock(s.offPeakEndMin)}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -392,9 +423,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Container(
             height: 52,
             decoration: BoxDecoration(
-              color: SColors.bg0,
+              color: c.bg0,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: SColors.line),
+              border: Border.all(color: c.line),
             ),
             clipBehavior: Clip.hardEdge,
             child: Stack(
@@ -404,15 +435,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Row(children: _windowBands(s.offPeakStartMin, s.offPeakEndMin)),
                 ),
                 // hour ticks — one cheap paint instead of 24 widgets
-                const Positioned.fill(child: CustomPaint(painter: _ScheduleTicks())),
+                Positioned.fill(child: CustomPaint(painter: _ScheduleTicks(c.lineHi))),
                 // label
                 Positioned(
                   left: 10,
                   top: 8,
-                  child: Text(
-                    label,
-                    style: SText.monoXs(color: SColors.voltPink).copyWith(fontSize: 10),
-                  ),
+                  child: Text(label, style: c.text.monoXs(color: c.accent).copyWith(fontSize: 10)),
                 ),
               ],
             ),
@@ -422,7 +450,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               for (final t in ['00:00', '06:00', '12:00', '18:00', '24:00'])
-                Text(t, style: SText.monoXs().copyWith(fontSize: 10)),
+                Text(t, style: c.text.monoXs().copyWith(fontSize: 10)),
             ],
           ),
         ],
@@ -432,10 +460,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// Flex-weighted day strip (1440 min wide): full-speed window shaded, rest
   /// empty. A wrapping window (start > end) shades both ends.
-  static List<Widget> _windowBands(int start, int end) {
+  List<Widget> _windowBands(int start, int end) {
+    final c = context.colors;
     Widget band(int mins) => Expanded(
       flex: mins,
-      child: Container(decoration: BoxDecoration(gradient: SColors.voltSoftGradient)),
+      child: Container(decoration: BoxDecoration(gradient: c.accentSoftGradient)),
     );
     Widget gap(int mins) => Expanded(flex: mins, child: const SizedBox());
     final out = <Widget>[];
@@ -474,11 +503,12 @@ class _TimeStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       decoration: BoxDecoration(
-        color: SColors.bg0,
+        color: c.bg0,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: SColors.line),
+        border: Border.all(color: c.line),
       ),
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       child: Row(
@@ -489,14 +519,14 @@ class _TimeStepper extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: SText.monoXs(
-                    color: SColors.low,
-                  ).copyWith(fontSize: 10, letterSpacing: 0.08 * 10),
+                  style: c.text
+                      .monoXs(color: c.low)
+                      .copyWith(fontSize: 10, letterSpacing: 0.08 * 10),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   fmtClock(minutes),
-                  style: const TextStyle(fontFamily: kFontMono, fontSize: 15, color: SColors.hi),
+                  style: TextStyle(fontFamily: kFontMono, fontSize: 15, color: c.hi),
                 ),
               ],
             ),
@@ -528,18 +558,19 @@ class _DayPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (var i = 0; i < 7; i++) ...[
           if (i > 0) const SizedBox(width: 4),
-          _day(i, on: days & (1 << i) != 0),
+          _day(c, i, on: days & (1 << i) != 0),
         ],
       ],
     );
   }
 
-  Widget _day(int i, {required bool on}) => Tooltip(
+  Widget _day(SColors c, int i, {required bool on}) => Tooltip(
     message: _names[i],
     child: Semantics(
       label: _names[i],
@@ -553,16 +584,16 @@ class _DayPicker extends StatelessWidget {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            gradient: on ? SColors.voltSoftGradient : null,
-            color: on ? null : SColors.bg0,
+            gradient: on ? c.accentSoftGradient : null,
+            color: on ? null : c.bg0,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: on ? const Color(0x40FF63B6) : SColors.line),
+            border: Border.all(color: on ? c.accent.withValues(alpha: 0.25) : c.line),
           ),
           child: Text(
             _names[i][0],
-            style: SText.monoSm(
-              color: on ? SColors.voltPink : SColors.low,
-            ).copyWith(fontSize: 11.5, fontWeight: FontWeight.w600),
+            style: c.text
+                .monoSm(color: on ? c.accent : c.low)
+                .copyWith(fontSize: 11.5, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -577,6 +608,7 @@ class _StepBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -584,11 +616,11 @@ class _StepBtn extends StatelessWidget {
         width: 28,
         height: 28,
         decoration: BoxDecoration(
-          color: SColors.bg2,
+          color: c.bg2,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: SColors.line),
+          border: Border.all(color: c.line),
         ),
-        child: Icon(icon, size: 15, color: SColors.mid),
+        child: Icon(icon, size: 15, color: c.mid),
       ),
     );
   }
@@ -597,12 +629,14 @@ class _StepBtn extends StatelessWidget {
 /// Faint hour ticks across the schedule timeline, drawn in a single paint pass
 /// (taller marks every 6 hours).
 class _ScheduleTicks extends CustomPainter {
-  const _ScheduleTicks();
+  const _ScheduleTicks(this.color);
+
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = SColors.lineHi
+      ..color = color
       ..strokeWidth = 1;
     for (int h = 1; h < 24; h++) {
       final x = size.width * h / 24;
@@ -612,7 +646,7 @@ class _ScheduleTicks extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ScheduleTicks oldDelegate) => false;
+  bool shouldRepaint(_ScheduleTicks oldDelegate) => oldDelegate.color != color;
 }
 
 /// Copy-to-clipboard button with a brief check-mark confirmation.
@@ -645,16 +679,14 @@ class _CopyChipState extends State<_CopyChip> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return IconButton(
       onPressed: _copy,
       iconSize: 15,
       visualDensity: VisualDensity.compact,
       splashRadius: 16,
       tooltip: 'Copy',
-      icon: Icon(
-        _done ? Icons.check_rounded : Icons.copy_rounded,
-        color: _done ? SColors.mint : SColors.low,
-      ),
+      icon: Icon(_done ? Icons.check_rounded : Icons.copy_rounded, color: _done ? c.mint : c.low),
     );
   }
 }

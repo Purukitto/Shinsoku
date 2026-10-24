@@ -26,6 +26,7 @@ class DetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final notifier = ref.read(downloadsProvider.notifier);
     // live full item; fall back to the list item before the first poll
     final it =
@@ -38,11 +39,8 @@ class DetailScreen extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.chevron_left_rounded, size: 16, color: SColors.mid),
-              Text(
-                'All downloads',
-                style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13.5),
-              ),
+              Icon(Icons.chevron_left_rounded, size: 16, color: c.mid),
+              Text('All downloads', style: c.text.uiBase(color: c.mid).copyWith(fontSize: 13.5)),
             ],
           ),
         ),
@@ -133,7 +131,7 @@ class DetailScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(it.name, style: SText.uiXl(), overflow: TextOverflow.ellipsis),
+              Text(it.name, style: c.text.uiXl(), overflow: TextOverflow.ellipsis),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -142,7 +140,7 @@ class DetailScreen extends ConsumerWidget {
                   Flexible(
                     child: Text(
                       '${_kindOf(it.fileType)} · ${fmtBytes(it.totalBytes)}',
-                      style: SText.monoSm(),
+                      style: c.text.monoSm(),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -155,6 +153,7 @@ class DetailScreen extends ConsumerWidget {
     );
 
     final segmentsCard = _card(
+      c,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -164,12 +163,13 @@ class DetailScreen extends ConsumerWidget {
               Flexible(
                 child: Text(
                   it.isHls ? 'Stream segments' : 'Parallel acceleration',
-                  style: SText.uiBase().copyWith(fontWeight: FontWeight.w500),
+                  style: c.text.uiBase().copyWith(fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 10),
               _pill(
+                c,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -192,9 +192,7 @@ class DetailScreen extends ConsumerWidget {
                   children: [
                     Text(
                       '${it.segmentDone} / ${it.segmentTotal} segments',
-                      style: SText.monoLg(
-                        color: active ? SColors.voltPink : SColors.mid,
-                      ).copyWith(fontSize: 20),
+                      style: c.text.monoLg(color: active ? c.accent : c.mid).copyWith(fontSize: 20),
                     ),
                     const SizedBox(height: 12),
                     VoltBar(
@@ -210,10 +208,10 @@ class DetailScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('HLS · ${it.connections} parallel', style: SText.monoXs()),
+                Text('HLS · ${it.connections} parallel', style: c.text.monoXs()),
                 Text(
                   fmtPct(it.segmentTotal > 0 ? it.segmentDone / it.segmentTotal : 0.0),
-                  style: SText.monoXs(),
+                  style: c.text.monoXs(),
                 ),
               ],
             ),
@@ -226,8 +224,8 @@ class DetailScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('connection 1', style: SText.monoXs()),
-                Text('connection ${it.connections}', style: SText.monoXs()),
+                Text('connection 1', style: c.text.monoXs()),
+                Text('connection ${it.connections}', style: c.text.monoXs()),
               ],
             ),
           ],
@@ -236,16 +234,15 @@ class DetailScreen extends ConsumerWidget {
     );
 
     final speedCard = _card(
+      c,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Transfer rate', style: SText.uiBase().copyWith(fontWeight: FontWeight.w500)),
+          Text('Transfer rate', style: c.text.uiBase().copyWith(fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
           Text(
             fmtSpeed(it.speedBps),
-            style: SText.monoLg(
-              color: active ? SColors.voltPink : SColors.mid,
-            ).copyWith(fontSize: 22),
+            style: c.text.monoLg(color: active ? c.accent : c.mid).copyWith(fontSize: 22),
           ),
           const SizedBox(height: 12),
           Expanded(child: SpeedChart(data: it.speedHistory, strokeWidth: 2)),
@@ -254,23 +251,25 @@ class DetailScreen extends ConsumerWidget {
     );
 
     final stats = [
-      _statCell('DOWNLOADED', fmtBytes(it.downloadedBytes), sub: fmtPct(p)),
+      _statCell(c, 'DOWNLOADED', fmtBytes(it.downloadedBytes), sub: fmtPct(p)),
       _statCell(
+        c,
         'AVG SPEED',
         it.speedHistory.isEmpty
             ? '—'
             : fmtSpeed((it.speedHistory.reduce((a, b) => a + b) / it.speedHistory.length).round()),
         sub: 'per second',
       ),
-      _statCell('PEAK SPEED', fmtSpeed(it.peakBps), sub: 'per second'),
+      _statCell(c, 'PEAK SPEED', fmtSpeed(it.peakBps), sub: 'per second'),
       _statCell(
+        c,
         'ETA',
         active && eta != null ? fmtEta(eta) : '—',
         sub: active ? 'remaining' : it.status.name,
       ),
     ];
     Widget statRow(List<Widget> cells) =>
-        Row(spacing: 12, children: [for (final c in cells) Expanded(child: c)]);
+        Row(spacing: 12, children: [for (final cell in cells) Expanded(child: cell)]);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,11 +280,8 @@ class DetailScreen extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.chevron_left_rounded, size: 16, color: SColors.mid),
-              Text(
-                'All downloads',
-                style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13.5),
-              ),
+              Icon(Icons.chevron_left_rounded, size: 16, color: c.mid),
+              Text('All downloads', style: c.text.uiBase(color: c.mid).copyWith(fontSize: 13.5)),
             ],
           ),
         ),
@@ -304,10 +300,11 @@ class DetailScreen extends ConsumerWidget {
             ],
           ),
         const SizedBox(height: 24),
-        if (failed && it.error != null) ...[_errorCard(it.error!), const SizedBox(height: 16)],
+        if (failed && it.error != null) ...[_errorCard(c, it.error!), const SizedBox(height: 16)],
 
         // big progress card
         _card(
+          c,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -316,13 +313,13 @@ class DetailScreen extends ConsumerWidget {
                 textBaseline: TextBaseline.alphabetic,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(fmtPct(p), style: SText.monoHero()),
+                  Text(fmtPct(p), style: c.text.monoHero()),
                   const SizedBox(width: 12),
                   Flexible(
                     child: Text(
                       '${fmtBytes(it.downloadedBytes)} of ${fmtBytes(it.totalBytes)}'
                       '${active && eta != null ? "  ·  ${fmtEta(eta)} remaining" : ""}',
-                      style: SText.monoSm(color: SColors.mid),
+                      style: c.text.monoSm(color: c.mid),
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -365,19 +362,19 @@ class DetailScreen extends ConsumerWidget {
         // metadata table
         Container(
           decoration: BoxDecoration(
-            color: SColors.bg1,
+            color: c.bg1,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: SColors.line),
+            border: Border.all(color: c.line),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
               for (final (i, row) in meta.indexed)
-                _metaRow(row[0], row[1], last: i == meta.length - 1),
+                _metaRow(c, row[0], row[1], last: i == meta.length - 1),
             ],
           ),
         ),
-        if (it.checksum != null) ...[const SizedBox(height: 16), _checksumCard(it)],
+        if (it.checksum != null) ...[const SizedBox(height: 16), _checksumCard(c, it)],
       ],
     );
   }
@@ -389,32 +386,32 @@ class DetailScreen extends ConsumerWidget {
     return 'Off-peak hours, ${fmtClock(start)}–${fmtClock(end)}';
   }
 
-  static Widget _errorCard(String error) => Container(
+  static Widget _errorCard(SColors c, String error) => Container(
     padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
     decoration: BoxDecoration(
-      color: const Color(0x1FFF7A6B),
+      color: c.danger.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0x40FF7A6B)),
+      border: Border.all(color: c.danger.withValues(alpha: 0.25)),
     ),
     child: Row(
       children: [
-        const Icon(Icons.error_outline_rounded, size: 16, color: SColors.danger),
+        Icon(Icons.error_outline_rounded, size: 16, color: c.danger),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(error, style: SText.uiBase(color: SColors.danger).copyWith(fontSize: 13)),
+          child: Text(error, style: c.text.uiBase(color: c.danger).copyWith(fontSize: 13)),
         ),
       ],
     ),
   );
 
-  static Widget _checksumCard(DownloadItem it) {
+  static Widget _checksumCard(SColors c, DownloadItem it) {
     final algo = (it.checksumAlgo == 'md5' ? 'MD5' : 'SHA-256');
     final verified = it.checksumVerified;
     return Container(
       decoration: BoxDecoration(
-        color: SColors.bg1,
+        color: c.bg1,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SColors.line),
+        border: Border.all(color: c.line),
       ),
       padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
       child: Row(
@@ -427,15 +424,15 @@ class DetailScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'CHECKSUM · $algo',
-                      style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
+                      style: c.text.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
                     ),
-                    if (verified != null) ...[const SizedBox(width: 10), _verifyBadge(verified)],
+                    if (verified != null) ...[const SizedBox(width: 10), _verifyBadge(c, verified)],
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
                   it.checksum!,
-                  style: SText.monoSm(color: SColors.mid).copyWith(fontSize: 11.5),
+                  style: c.text.monoSm(color: c.mid).copyWith(fontSize: 11.5),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -454,12 +451,14 @@ class DetailScreen extends ConsumerWidget {
     );
   }
 
-  static Widget _verifyBadge(bool ok) => Container(
+  static Widget _verifyBadge(SColors c, bool ok) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
     decoration: BoxDecoration(
-      color: ok ? const Color(0x1F7FE0B0) : const Color(0x1FFF7A6B),
+      color: ok ? c.mint.withValues(alpha: 0.12) : c.danger.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: ok ? const Color(0x407FE0B0) : const Color(0x40FF7A6B)),
+      border: Border.all(
+        color: ok ? c.mint.withValues(alpha: 0.25) : c.danger.withValues(alpha: 0.25),
+      ),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -467,78 +466,78 @@ class DetailScreen extends ConsumerWidget {
         Icon(
           ok ? Icons.verified_rounded : Icons.error_outline_rounded,
           size: 11,
-          color: ok ? SColors.mint : SColors.danger,
+          color: ok ? c.mint : c.danger,
         ),
         const SizedBox(width: 4),
         Text(
           ok ? 'VERIFIED' : 'MISMATCH',
-          style: SText.monoXs(color: ok ? SColors.mint : SColors.danger).copyWith(fontSize: 10),
+          style: c.text.monoXs(color: ok ? c.mint : c.danger).copyWith(fontSize: 10),
         ),
       ],
     ),
   );
 
-  static Widget _card({required Widget child}) => Container(
+  static Widget _card(SColors c, {required Widget child}) => Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: SColors.bg1,
+      color: c.bg1,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: SColors.line),
+      border: Border.all(color: c.line),
     ),
     child: child,
   );
 
-  static Widget _pill({required Widget child}) => Container(
+  static Widget _pill(SColors c, {required Widget child}) => Container(
     height: 22,
     padding: const EdgeInsets.symmetric(horizontal: 9),
     decoration: BoxDecoration(
-      color: const Color(0x1FFF63B6),
+      color: c.accent.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: const Color(0x40FF63B6)),
+      border: Border.all(color: c.accent.withValues(alpha: 0.25)),
     ),
     child: DefaultTextStyle(
-      style: SText.monoSm(color: SColors.voltPink).copyWith(fontSize: 11),
+      style: c.text.monoSm(color: c.accent).copyWith(fontSize: 11),
       child: Row(mainAxisSize: MainAxisSize.min, children: [child]),
     ),
   );
 
-  static Widget _statCell(String label, String value, {String? sub}) => Container(
+  static Widget _statCell(SColors c, String label, String value, {String? sub}) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: SColors.bg1,
+      color: c.bg1,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: SColors.line),
+      border: Border.all(color: c.line),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5)),
+        Text(label, style: c.text.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5)),
         const SizedBox(height: 8),
-        Text(value, style: SText.monoLg().copyWith(fontSize: 19)),
+        Text(value, style: c.text.monoLg().copyWith(fontSize: 19)),
         if (sub != null) ...[
           const SizedBox(height: 3),
-          Text(sub, style: SText.monoSm().copyWith(fontSize: 11)),
+          Text(sub, style: c.text.monoSm().copyWith(fontSize: 11)),
         ],
       ],
     ),
   );
 
-  static Widget _metaRow(String key, String value, {bool last = false}) => Container(
+  static Widget _metaRow(SColors c, String key, String value, {bool last = false}) => Container(
     padding: const EdgeInsets.symmetric(vertical: 13),
     decoration: last
         ? null
         : BoxDecoration(
-            border: Border(bottom: BorderSide(color: SColors.line)),
+            border: Border(bottom: BorderSide(color: c.line)),
           ),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(key, style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13)),
+        Text(key, style: c.text.uiBase(color: c.mid).copyWith(fontSize: 13)),
         const SizedBox(width: 16),
         Flexible(
           child: Text(
             value,
-            style: SText.monoBase().copyWith(fontSize: 12.5),
+            style: c.text.monoBase().copyWith(fontSize: 12.5),
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,
           ),

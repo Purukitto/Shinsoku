@@ -64,15 +64,20 @@ class _MobileShellState extends ConsumerState<MobileShell> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     // Only the count, so the shell doesn't rebuild on every progress tick.
     final activeCount = ref.watch(
       downloadsProvider.select((l) => l.where((i) => i.status != DownloadStatus.completed).length),
     );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+      value:
+          (Theme.of(context).brightness == Brightness.dark
+                  ? SystemUiOverlayStyle.light
+                  : SystemUiOverlayStyle.dark)
+              .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: SColors.bg0,
+        backgroundColor: c.bg0,
         body: SafeArea(
           bottom: false,
           child: Column(
@@ -116,12 +121,13 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: SColors.line)),
+        border: Border(bottom: BorderSide(color: c.line)),
       ),
       child: ShinsokuLogo(size: 28),
     );
@@ -162,8 +168,9 @@ class _DetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Scaffold(
-      backgroundColor: SColors.bg0,
+      backgroundColor: c.bg0,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -181,6 +188,7 @@ class _AddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Semantics(
       button: true,
       label: 'Add a download',
@@ -190,10 +198,14 @@ class _AddButton extends StatelessWidget {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            gradient: SColors.voltGradient,
+            gradient: c.accentGradient,
             borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(color: Color(0x59A25CFF), blurRadius: 18, offset: Offset(0, 6)),
+            boxShadow: [
+              BoxShadow(
+                color: c.accentFill[0].withValues(alpha: 0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
             ],
           ),
           child: const Icon(Icons.add_rounded, size: 26, color: Colors.white),
@@ -218,10 +230,11 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       decoration: BoxDecoration(
-        color: SColors.bg1,
-        border: Border(top: BorderSide(color: SColors.line)),
+        color: c.bg1,
+        border: Border(top: BorderSide(color: c.line)),
       ),
       child: SafeArea(
         top: false,
@@ -229,14 +242,15 @@ class _BottomNav extends StatelessWidget {
           height: 64,
           child: Row(
             children: [
-              _item(_Tab.downloading, Icons.bolt_rounded, 'Downloading', activeCount),
+              _item(c, _Tab.downloading, Icons.bolt_rounded, 'Downloading', activeCount),
               _item(
+                c,
                 _Tab.completed,
                 Icons.check_circle_outline_rounded,
                 'Completed',
                 completedCount,
               ),
-              _item(_Tab.settings, Icons.settings_outlined, 'Settings', null),
+              _item(c, _Tab.settings, Icons.settings_outlined, 'Settings', null),
             ],
           ),
         ),
@@ -244,7 +258,7 @@ class _BottomNav extends StatelessWidget {
     );
   }
 
-  Widget _item(_Tab t, IconData icon, String label, int? count) {
+  Widget _item(SColors c, _Tab t, IconData icon, String label, int? count) {
     final on = tab == t;
     return Expanded(
       child: Semantics(
@@ -256,13 +270,13 @@ class _BottomNav extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 22, color: on ? SColors.voltPink : SColors.low),
+              Icon(icon, size: 22, color: on ? c.accent : c.low),
               const SizedBox(height: 4),
               Text(
                 count == null || count == 0 ? label : '$label  $count',
-                style: SText.uiSm(
-                  color: on ? SColors.hi : SColors.mid,
-                ).copyWith(fontWeight: on ? FontWeight.w500 : FontWeight.w400),
+                style: c.text
+                    .uiSm(color: on ? c.hi : c.mid)
+                    .copyWith(fontWeight: on ? FontWeight.w500 : FontWeight.w400),
               ),
             ],
           ),

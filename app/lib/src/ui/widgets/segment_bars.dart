@@ -18,6 +18,7 @@ class SegmentBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: segments.asMap().entries.map((e) {
@@ -30,14 +31,14 @@ class SegmentBars extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.bottomCenter,
                 children: [
-                  Container(color: SColors.bg3),
+                  Container(color: c.bg3),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 500),
                     curve: Curves.easeInOut,
                     height: height * s.progress.clamp(0.0, 1.0),
                     decoration: BoxDecoration(
-                      gradient: paused ? null : SColors.voltGradient,
-                      color: paused ? SColors.bg4 : null,
+                      gradient: paused ? null : c.accentGradient,
+                      color: paused ? c.bg4 : null,
                     ),
                   ),
                 ],

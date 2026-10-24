@@ -10,6 +10,7 @@ class VoltBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final pct = value.clamp(0.0, 1.0);
     // FractionallySizedBox sizes the fill from the parent width directly — no
     // LayoutBuilder pass. TweenAnimationBuilder keeps the fill animating smoothly.
@@ -20,7 +21,7 @@ class VoltBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(height),
         child: Stack(
           children: [
-            const Positioned.fill(child: ColoredBox(color: SColors.bg3)),
+            Positioned.fill(child: ColoredBox(color: c.bg3)),
             TweenAnimationBuilder<double>(
               duration: const Duration(milliseconds: 450),
               curve: Curves.easeInOut,
@@ -32,8 +33,8 @@ class VoltBar extends StatelessWidget {
                   heightFactor: 1.0,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      gradient: dim ? null : SColors.voltGradient,
-                      color: dim ? SColors.bg4 : null,
+                      gradient: dim ? null : c.accentGradient,
+                      color: dim ? c.bg4 : null,
                     ),
                   ),
                 ),

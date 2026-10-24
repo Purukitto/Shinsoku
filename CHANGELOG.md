@@ -74,6 +74,9 @@ the entry is marked **Breaking** under **Changed**.
   behind other windows, brings that window forward instead of starting a second copy.
 - **Update notice.** At launch the app checks for a newer release and the sidebar's
   version line becomes **Update available**, linking to the release page.
+- **Light and dark themes.** Shinsoku follows the system's light or dark mode, or keeps
+  the one you pick in **Settings → Appearance**. Dark mode can use true black for OLED
+  screens.
 - **Desktop app** for Windows: active, completed, detail and settings screens, live
   throughput graph and per-segment progress, minimise to tray, custom frameless
   window, bundled fonts.

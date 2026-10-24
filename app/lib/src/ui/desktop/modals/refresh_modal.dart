@@ -95,6 +95,7 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final it = ref.watch(downloadItemProvider(widget.id));
     if (it == null) return const SizedBox.shrink();
     final ready = _isLink(_ctrl.text.trim()) && !_busy;
@@ -105,9 +106,9 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
       child: Container(
         width: 540,
         decoration: BoxDecoration(
-          color: SColors.bg2,
+          color: c.bg2,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: SColors.lineHi),
+          border: Border.all(color: c.lineHi),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.6),
@@ -123,9 +124,9 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
               padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
               child: Row(
                 children: [
-                  const Icon(Icons.link_rounded, size: 17, color: SColors.voltPink),
+                  Icon(Icons.link_rounded, size: 17, color: c.accent),
                   const SizedBox(width: 10),
-                  Text('Refresh link', style: SText.uiLg()),
+                  Text('Refresh link', style: c.text.uiLg()),
                   const Spacer(),
                   SIconBtn(icon: Icons.close_rounded, onPressed: () => Navigator.pop(context)),
                 ],
@@ -139,9 +140,9 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: SColors.bg1,
+                      color: c.bg1,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: SColors.line),
+                      border: Border.all(color: c.line),
                     ),
                     child: Row(
                       children: [
@@ -153,20 +154,20 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
                             children: [
                               Text(
                                 it.name,
-                                style: SText.uiMd().copyWith(fontWeight: FontWeight.w500),
+                                style: c.text.uiMd().copyWith(fontWeight: FontWeight.w500),
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 3),
                               Text(
                                 '${fmtBytes(it.downloadedBytes)} of ${fmtBytes(it.totalBytes)}'
                                 '  ·  ${fmtPct(it.progress)} kept',
-                                style: SText.monoSm(),
+                                style: c.text.monoSm(),
                               ),
                               if (it.error != null) ...[
                                 const SizedBox(height: 3),
                                 Text(
                                   it.error!,
-                                  style: SText.monoSm(color: SColors.danger),
+                                  style: c.text.monoSm(color: c.danger),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
@@ -183,43 +184,39 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
                     Text(
                       'Turn on Browser integration in Settings to catch the new link '
                       'from your browser instead.',
-                      style: SText.monoSm(color: SColors.low).copyWith(fontSize: 11),
+                      style: c.text.monoSm(color: c.low).copyWith(fontSize: 11),
                     ),
                   const SizedBox(height: 18),
                   Text(
                     'NEW LINK',
-                    style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
+                    style: c.text.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     height: 44,
                     decoration: BoxDecoration(
-                      color: SColors.bg0,
+                      color: c.bg0,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: _error != null
-                            ? SColors.danger.withValues(alpha: 0.5)
-                            : SColors.line,
+                        color: _error != null ? c.danger.withValues(alpha: 0.5) : c.line,
                       ),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       children: [
-                        const Icon(Icons.link_rounded, size: 16, color: SColors.low),
+                        Icon(Icons.link_rounded, size: 16, color: c.low),
                         const SizedBox(width: 10),
                         Expanded(
                           child: TextField(
                             controller: _ctrl,
                             autofocus: true,
-                            style: SText.monoBase().copyWith(fontSize: 12.5),
+                            style: c.text.monoBase().copyWith(fontSize: 12.5),
                             onSubmitted: (_) {
                               if (ready) _submit();
                             },
                             decoration: InputDecoration(
                               hintText: 'Paste a new link to the same file…',
-                              hintStyle: SText.monoBase(
-                                color: const Color(0xFF6A6672),
-                              ).copyWith(fontSize: 12.5),
+                              hintStyle: c.text.monoBase(color: c.low).copyWith(fontSize: 12.5),
                               border: InputBorder.none,
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
@@ -231,7 +228,7 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 8),
-                    Text(_error!, style: SText.monoSm(color: SColors.danger)),
+                    Text(_error!, style: c.text.monoSm(color: c.danger)),
                   ],
                   const SizedBox(height: 22),
                   Row(
@@ -265,55 +262,58 @@ class _RefreshLinkModalState extends ConsumerState<RefreshLinkModal> {
     );
   }
 
-  Widget _browserPanel(String? referrer) => Container(
-    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-    decoration: BoxDecoration(
-      gradient: SColors.voltSoftGradient,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: const Color(0x38FF63B6)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Start the download again on the page it came from. Shinsoku takes the '
-          'new link instead of adding a download.',
-          style: SText.uiBase().copyWith(fontSize: 13),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            if (referrer != null) ...[
-              SBtn(
-                kind: BtnKind.solid,
-                size: BtnSize.sm,
-                icon: Icons.open_in_new_rounded,
-                onPressed: () =>
-                    launchUrl(Uri.parse(referrer), mode: LaunchMode.externalApplication),
-                child: const Text('Open page'),
-              ),
-              const SizedBox(width: 12),
-            ],
-            if (_captureError == null) ...[
-              const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 2, color: SColors.voltPink),
-              ),
-              const SizedBox(width: 8),
-              Text('Waiting for your browser…', style: SText.monoSm(color: SColors.mid)),
-            ] else
-              Expanded(
-                child: Text(
-                  _captureError!,
-                  style: SText.monoSm(color: SColors.danger),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
+  Widget _browserPanel(String? referrer) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        gradient: c.accentSoftGradient,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: c.accent.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Start the download again on the page it came from. Shinsoku takes the '
+            'new link instead of adding a download.',
+            style: c.text.uiBase().copyWith(fontSize: 13),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              if (referrer != null) ...[
+                SBtn(
+                  kind: BtnKind.solid,
+                  size: BtnSize.sm,
+                  icon: Icons.open_in_new_rounded,
+                  onPressed: () =>
+                      launchUrl(Uri.parse(referrer), mode: LaunchMode.externalApplication),
+                  child: const Text('Open page'),
                 ),
-              ),
-          ],
-        ),
-      ],
-    ),
-  );
+                const SizedBox(width: 12),
+              ],
+              if (_captureError == null) ...[
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: c.accent),
+                ),
+                const SizedBox(width: 8),
+                Text('Waiting for your browser…', style: c.text.monoSm(color: c.mid)),
+              ] else
+                Expanded(
+                  child: Text(
+                    _captureError!,
+                    style: c.text.monoSm(color: c.danger),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

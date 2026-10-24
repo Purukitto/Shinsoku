@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../rust/api.dart' as rust;
@@ -12,11 +13,21 @@ const _bytesPerMb = 1024 * 1024;
 /// persists changes. Engine writes are immediate (cheap atomics); the disk write
 /// is debounced so dragging a slider doesn't thrash the file.
 class SettingsNotifier extends Notifier<AppSettings> {
+  /// [loaded] is what launch already read from disk, so the first frame has the
+  /// right theme; without it, settings load after the first frame.
+  SettingsNotifier([this._loaded]);
+
+  final AppSettings? _loaded;
   Timer? _saveDebounce;
 
   @override
   AppSettings build() {
     ref.onDispose(() => _saveDebounce?.cancel());
+    final loaded = _loaded;
+    if (loaded != null) {
+      _applyAll(loaded);
+      return loaded;
+    }
     Future.microtask(_init);
     return const AppSettings();
   }
@@ -91,6 +102,12 @@ class SettingsNotifier extends Notifier<AppSettings> {
       _setOffPeak(state.copyWith(offPeakStartMin: startMin, offPeakEndMin: endMin));
 
   void setOffPeakDays(int days) => _setOffPeak(state.copyWith(offPeakDays: days));
+
+  void setThemeMode(ThemeMode mode) => _set(state.copyWith(themeMode: mode));
+
+  void setPureBlack(bool on) => _set(state.copyWith(pureBlack: on));
+
+  void setAccent(String id) => _set(state.copyWith(accent: id));
 }
 
 final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(SettingsNotifier.new);

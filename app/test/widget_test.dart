@@ -325,6 +325,47 @@ void main() {
     expect(tester.widget<SToggle>(toggle).value, isFalse);
   });
 
+  testWidgets('Settings switches the theme', (tester) async {
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          settingsProvider.overrideWith(_FakeSettings.new),
+          captureProvider.overrideWith(() => _FakeCapture(running: false)),
+          autostartServiceProvider.overrideWithValue(_FakeAutostart()),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: SingleChildScrollView(child: SettingsScreen())),
+        ),
+      ),
+    );
+    final settings = ProviderScope.containerOf(tester.element(find.byType(SettingsScreen)));
+    Future<void> tapText(String text) async {
+      await tester.ensureVisible(find.text(text));
+      await tester.tap(find.text(text));
+      await tester.pump();
+    }
+
+    expect(settings.read(settingsProvider).themeMode, ThemeMode.system);
+    await tapText('Light');
+    expect(settings.read(settingsProvider).themeMode, ThemeMode.light);
+    expect(find.text('Pure black'), findsNothing); // dark mode only
+
+    await tapText('Dark');
+    expect(settings.read(settingsProvider).themeMode, ThemeMode.dark);
+    final pureBlack = find.descendant(
+      of: find.ancestor(of: find.text('Pure black'), matching: find.byType(Row)).first,
+      matching: find.byType(SToggle),
+    );
+    await tester.tap(pureBlack);
+    await tester.pump();
+    expect(settings.read(settingsProvider).pureBlack, isTrue);
+    // let the debounced save run out
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   testWidgets('a phone row shows progress and pauses', (tester) async {
     _phone(tester);
     final downloads = _FakeDownloads([_running]);

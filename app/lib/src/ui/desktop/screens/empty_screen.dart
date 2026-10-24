@@ -10,6 +10,7 @@ class EmptyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SizedBox(
       height: 460,
       child: Column(
@@ -19,9 +20,9 @@ class EmptyScreen extends StatelessWidget {
             width: 96,
             height: 96,
             decoration: BoxDecoration(
-              color: SColors.bg1,
+              color: c.bg1,
               borderRadius: BorderRadius.circular(26),
-              border: Border.all(color: SColors.line),
+              border: Border.all(color: c.line),
             ),
             child: Stack(
               alignment: Alignment.center,
@@ -29,7 +30,7 @@ class EmptyScreen extends StatelessWidget {
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: SColors.voltSoftGradient,
+                      gradient: c.accentSoftGradient,
                       borderRadius: BorderRadius.circular(26),
                     ),
                   ),
@@ -39,14 +40,14 @@ class EmptyScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Text('Nothing downloading', style: SText.uiXl()),
+          Text('Nothing downloading', style: c.text.uiXl()),
           const SizedBox(height: 8),
           SizedBox(
             width: 360,
             child: Text(
               'Paste a link, drop a torrent, or copy a URL anywhere — Shinsoku catches it and downloads at full speed.',
               textAlign: TextAlign.center,
-              style: SText.uiBase(color: SColors.low).copyWith(height: 1.5),
+              style: c.text.uiBase(color: c.low).copyWith(height: 1.5),
             ),
           ),
           const SizedBox(height: 24),

@@ -9,9 +9,10 @@ class BoltIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return ShaderMask(
       blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => SColors.voltGradient.createShader(bounds),
+      shaderCallback: (bounds) => c.accentGradient.createShader(bounds),
       child: Opacity(
         opacity: dim ? 0.5 : 1.0,
         child: CustomPaint(size: Size(size, size), painter: _BoltPainter()),

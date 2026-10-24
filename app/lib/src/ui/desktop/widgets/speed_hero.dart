@@ -13,6 +13,7 @@ class SpeedHero extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     final items = ref.watch(downloadsProvider);
     final globalHistory = ref.watch(globalSpeedHistoryProvider);
     final active = items.where((i) => i.status == DownloadStatus.downloading).toList();
@@ -27,15 +28,15 @@ class SpeedHero extends ConsumerWidget {
       height: 128,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: SColors.bg1,
+        color: c.bg1,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SColors.line),
+        border: Border.all(color: c.line),
       ),
       child: Stack(
         children: [
           // soft volt glow wash across the whole card
-          const Positioned.fill(
-            child: DecoratedBox(decoration: BoxDecoration(gradient: SColors.voltSoftGradient)),
+          Positioned.fill(
+            child: DecoratedBox(decoration: BoxDecoration(gradient: c.accentSoftGradient)),
           ),
           // full-bleed sparkline filling the right portion (clipped to the card radius)
           Positioned(
@@ -58,7 +59,7 @@ class SpeedHero extends ConsumerWidget {
                     const SizedBox(width: 7),
                     Text(
                       'TOTAL THROUGHPUT',
-                      style: SText.monoXs(color: SColors.mid).copyWith(letterSpacing: 0.12 * 11),
+                      style: c.text.monoXs(color: c.mid).copyWith(letterSpacing: 0.12 * 11),
                     ),
                   ],
                 ),
@@ -69,23 +70,23 @@ class SpeedHero extends ConsumerWidget {
                   children: [
                     Text(
                       num,
-                      style: SText.monoXl().copyWith(
+                      style: c.text.monoXl().copyWith(
                         fontSize: 38,
                         letterSpacing: -0.02 * 38,
                         height: 1,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text('$unit/s', style: SText.monoMd(color: SColors.mid).copyWith(fontSize: 16)),
+                    Text('$unit/s', style: c.text.monoMd(color: c.mid).copyWith(fontSize: 16)),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Text('● ', style: TextStyle(color: SColors.voltPink, fontSize: 11)),
-                    Text('${active.length} active', style: SText.monoSm()),
+                    Text('● ', style: TextStyle(color: c.accent, fontSize: 11)),
+                    Text('${active.length} active', style: c.text.monoSm()),
                     const SizedBox(width: 16),
-                    Text('◷ $queued queued', style: SText.monoSm()),
+                    Text('◷ $queued queued', style: c.text.monoSm()),
                   ],
                 ),
               ],

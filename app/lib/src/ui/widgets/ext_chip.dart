@@ -3,15 +3,15 @@ import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
 import '../../models/download_item.dart';
 
-Color _typeTint(FileType type) => switch (type) {
-  FileType.video => SColors.voltPink,
-  FileType.archive => SColors.voltAmber,
-  FileType.app => SColors.voltViolet,
-  FileType.audio => SColors.mint,
-  FileType.image => SColors.mid,
-  FileType.doc => SColors.mid,
-  FileType.iso => SColors.voltViolet,
-  _ => SColors.mid,
+Color _typeTint(SColors c, FileType type) => switch (type) {
+  FileType.video => c.accent,
+  FileType.archive => c.accentEnd,
+  FileType.app => c.accentStart,
+  FileType.audio => c.mint,
+  FileType.image => c.mid,
+  FileType.doc => c.mid,
+  FileType.iso => c.accentStart,
+  _ => c.mid,
 };
 
 String _ext(String name) {
@@ -38,16 +38,17 @@ class ExtChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tint = _typeTint(type);
+    final c = context.colors;
+    final tint = _typeTint(c, type);
     return SizedBox(
       width: size,
       height: size,
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: SColors.bg3,
+          color: c.bg3,
           borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: SColors.line),
+          border: Border.all(color: c.line),
         ),
         child: Stack(
           children: [
@@ -59,7 +60,7 @@ class ExtChip extends StatelessWidget {
               child: Container(
                 width: 3,
                 decoration: BoxDecoration(
-                  gradient: active ? SColors.voltGradient : null,
+                  gradient: active ? c.accentGradient : null,
                   color: active ? null : tint.withValues(alpha: 0.75),
                 ),
               ),
@@ -67,7 +68,7 @@ class ExtChip extends StatelessWidget {
             Center(
               child: Text(
                 _ext(name),
-                style: SText.monoBase().copyWith(
+                style: c.text.monoBase().copyWith(
                   fontSize: size * 0.23,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.01,

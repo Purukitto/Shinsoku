@@ -33,6 +33,7 @@ class _SBtnState extends State<SBtn> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final h = widget.size == BtnSize.sm ? 32.0 : 38.0;
     final fontSize = widget.size == BtnSize.sm ? 13.0 : 13.5;
     final iconSize = widget.size == BtnSize.sm ? 15.0 : 16.0;
@@ -46,7 +47,7 @@ class _SBtnState extends State<SBtn> {
       children: [
         if (widget.icon != null) ...[Icon(widget.icon, size: iconSize), const SizedBox(width: 7)],
         DefaultTextStyle(
-          style: SText.uiBase().copyWith(fontSize: fontSize),
+          style: c.text.uiBase().copyWith(fontSize: fontSize),
           child: widget.child,
         ),
       ],
@@ -64,22 +65,22 @@ class _SBtnState extends State<SBtn> {
               height: h,
               padding: pad,
               decoration: BoxDecoration(
-                gradient: SColors.voltGradient,
+                gradient: c.accentGradient,
                 borderRadius: BorderRadius.circular(9),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0x4CA25CFF),
+                    color: c.accentFill[0].withValues(alpha: 0.3),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: DefaultTextStyle(
-                style: SText.uiBase(
-                  color: const Color(0xFF1B1020),
-                ).copyWith(fontSize: fontSize, fontWeight: FontWeight.w600),
+                style: c.text
+                    .uiBase(color: c.accentInk)
+                    .copyWith(fontSize: fontSize, fontWeight: FontWeight.w600),
                 child: IconTheme(
-                  data: const IconThemeData(color: Color(0xFF1B1020)),
+                  data: IconThemeData(color: c.accentInk),
                   child: content,
                 ),
               ),
@@ -90,9 +91,9 @@ class _SBtnState extends State<SBtn> {
     }
 
     final (bg, fg, border) = switch (widget.kind) {
-      BtnKind.solid => (SColors.bg3, SColors.hi, SColors.lineHi),
-      BtnKind.danger => (Colors.transparent, SColors.danger, const Color(0x40FF7A6B)),
-      _ => (Colors.transparent, SColors.mid, SColors.line),
+      BtnKind.solid => (c.bg3, c.hi, c.lineHi),
+      BtnKind.danger => (Colors.transparent, c.danger, c.danger.withValues(alpha: 0.25)),
+      _ => (Colors.transparent, c.mid, c.line),
     };
 
     return MouseRegion(
@@ -112,9 +113,9 @@ class _SBtnState extends State<SBtn> {
               border: Border.all(color: border),
             ),
             child: DefaultTextStyle(
-              style: SText.uiBase(color: _hovered ? SColors.hi : fg).copyWith(fontSize: fontSize),
+              style: c.text.uiBase(color: _hovered ? c.hi : fg).copyWith(fontSize: fontSize),
               child: IconTheme(
-                data: IconThemeData(color: _hovered ? SColors.hi : fg),
+                data: IconThemeData(color: _hovered ? c.hi : fg),
                 child: content,
               ),
             ),
@@ -152,8 +153,9 @@ class _SIconBtnState extends State<SIconBtn> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final iconSize = widget.size > 30 ? 18.0 : 16.0;
-    final fg = _hovered || widget.active ? SColors.hi : (widget.color ?? SColors.mid);
+    final fg = _hovered || widget.active ? c.hi : (widget.color ?? c.mid);
 
     Widget btn = MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -165,12 +167,9 @@ class _SIconBtnState extends State<SIconBtn> {
           width: widget.size,
           height: widget.size,
           decoration: BoxDecoration(
-            color: _hovered || widget.active ? SColors.bg3 : Colors.transparent,
+            color: _hovered || widget.active ? c.bg3 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: widget.active ? SColors.lineHi : Colors.transparent,
-              width: 1,
-            ),
+            border: Border.all(color: widget.active ? c.lineHi : Colors.transparent, width: 1),
           ),
           child: Icon(widget.icon, size: iconSize, color: fg),
         ),

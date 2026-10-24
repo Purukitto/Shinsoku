@@ -12,11 +12,16 @@ class Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final (bg, fg, border) = switch (tone) {
-      PillTone.volt => (const Color(0x1FFF63B6), SColors.voltPink, const Color(0x40FF63B6)),
-      PillTone.amber => (const Color(0x1FFFC24D), SColors.amber, const Color(0x38FFC24D)),
-      PillTone.mint => (const Color(0x1F7FE0B0), SColors.mint, const Color(0x387FE0B0)),
-      _ => (SColors.bg3, SColors.mid, SColors.line),
+      PillTone.volt => (
+        c.accent.withValues(alpha: 0.12),
+        c.accent,
+        c.accent.withValues(alpha: 0.25),
+      ),
+      PillTone.amber => (c.amber.withValues(alpha: 0.12), c.amber, c.amber.withValues(alpha: 0.22)),
+      PillTone.mint => (c.mint.withValues(alpha: 0.12), c.mint, c.mint.withValues(alpha: 0.22)),
+      _ => (c.bg3, c.mid, c.line),
     };
     return Container(
       height: 22,
@@ -27,7 +32,7 @@ class Pill extends StatelessWidget {
         border: Border.all(color: border, width: 1),
       ),
       child: DefaultTextStyle(
-        style: SText.monoSm(color: fg).copyWith(fontSize: 11, letterSpacing: 0.02 * 11),
+        style: c.text.monoSm(color: fg).copyWith(fontSize: 11, letterSpacing: 0.02 * 11),
         child: Row(mainAxisSize: MainAxisSize.min, children: [child]),
       ),
     );

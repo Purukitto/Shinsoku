@@ -126,68 +126,71 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
 
   bool get _hasAdvanced => _collectHeaders().isNotEmpty || _checksumCtrl.text.trim().isNotEmpty;
 
-  Widget _advancedDisclosure() => InkWell(
-    onTap: () => setState(() => _advanced = !_advanced),
-    borderRadius: BorderRadius.circular(8),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            _advanced ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-            size: 18,
-            color: SColors.mid,
-          ),
-          const SizedBox(width: 6),
-          Text('Advanced', style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13)),
-          const Spacer(),
-          if (!_advanced && _hasAdvanced)
-            Text(
-              'configured',
-              style: SText.monoXs(color: SColors.voltPink).copyWith(fontSize: 10.5),
+  Widget _advancedDisclosure() {
+    final c = context.colors;
+    return InkWell(
+      onTap: () => setState(() => _advanced = !_advanced),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(
+              _advanced ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+              size: 18,
+              color: c.mid,
             ),
+            const SizedBox(width: 6),
+            Text('Advanced', style: c.text.uiBase(color: c.mid).copyWith(fontSize: 13)),
+            const Spacer(),
+            if (!_advanced && _hasAdvanced)
+              Text('configured', style: c.text.monoXs(color: c.accent).copyWith(fontSize: 10.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _advancedSection() {
+    final c = context.colors;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'REQUEST HEADERS',
+            style: c.text.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Sent with every request — e.g. Cookie, Referer, Authorization.',
+            style: c.text.monoSm(color: c.low).copyWith(fontSize: 11),
+          ),
+          const SizedBox(height: 10),
+          for (var i = 0; i < _headers.length; i++) _headerRow(i),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SBtn(
+              kind: BtnKind.ghost,
+              size: BtnSize.sm,
+              icon: Icons.add_rounded,
+              onPressed: () =>
+                  setState(() => _headers.add((TextEditingController(), TextEditingController()))),
+              child: const Text('Add header'),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'EXPECTED CHECKSUM',
+            style: c.text.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
+          ),
+          const SizedBox(height: 8),
+          _miniField(_checksumCtrl, 'SHA-256 or MD5 hex — verified after download'),
         ],
       ),
-    ),
-  );
-
-  Widget _advancedSection() => Padding(
-    padding: const EdgeInsets.only(top: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'REQUEST HEADERS',
-          style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Sent with every request — e.g. Cookie, Referer, Authorization.',
-          style: SText.monoSm(color: SColors.low).copyWith(fontSize: 11),
-        ),
-        const SizedBox(height: 10),
-        for (var i = 0; i < _headers.length; i++) _headerRow(i),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: SBtn(
-            kind: BtnKind.ghost,
-            size: BtnSize.sm,
-            icon: Icons.add_rounded,
-            onPressed: () =>
-                setState(() => _headers.add((TextEditingController(), TextEditingController()))),
-            child: const Text('Add header'),
-          ),
-        ),
-        const SizedBox(height: 18),
-        Text(
-          'EXPECTED CHECKSUM',
-          style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
-        ),
-        const SizedBox(height: 8),
-        _miniField(_checksumCtrl, 'SHA-256 or MD5 hex — verified after download'),
-      ],
-    ),
-  );
+    );
+  }
 
   Widget _headerRow(int i) {
     final h = _headers[i];
@@ -214,34 +217,38 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
     );
   }
 
-  Widget _miniField(TextEditingController c, String hint) => Container(
-    height: 40,
-    alignment: Alignment.center,
-    decoration: BoxDecoration(
-      color: SColors.bg0,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: SColors.line),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 12),
-    child: TextField(
-      controller: c,
-      style: SText.monoBase().copyWith(fontSize: 12),
-      onChanged: (_) => setState(() {}),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: SText.monoBase(color: const Color(0xFF6A6672)).copyWith(fontSize: 12),
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: EdgeInsets.zero,
+  Widget _miniField(TextEditingController ctrl, String hint) {
+    final c = context.colors;
+    return Container(
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: c.bg0,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: c.line),
       ),
-    ),
-  );
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: TextField(
+        controller: ctrl,
+        style: c.text.monoBase().copyWith(fontSize: 12),
+        onChanged: (_) => setState(() {}),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: c.text.monoBase(color: c.low).copyWith(fontSize: 12),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+    );
+  }
 
   /// The slider sits beside its label, or below it on a phone.
   Widget _connections(bool compact) {
+    final c = context.colors;
     final label = Text(
       'Parallel connections',
-      style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13),
+      style: c.text.uiBase(color: c.mid).copyWith(fontSize: 13),
     );
     final slider = VoltSlider(
       value: _conns,
@@ -317,6 +324,7 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final probe = _probe;
     final ready = probe != null && _probedUrl == _ctrl.text.trim();
 
@@ -328,9 +336,9 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
       child: Container(
         width: 560,
         decoration: BoxDecoration(
-          color: SColors.bg2,
+          color: c.bg2,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: SColors.lineHi),
+          border: Border.all(color: c.lineHi),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.6),
@@ -349,7 +357,7 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                 children: [
                   BoltIcon(size: 16),
                   const SizedBox(width: 10),
-                  Text('New download', style: SText.uiLg()),
+                  Text('New download', style: c.text.uiLg()),
                   const Spacer(),
                   SIconBtn(icon: Icons.close_rounded, onPressed: () => Navigator.pop(context)),
                 ],
@@ -366,50 +374,44 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                         margin: const EdgeInsets.only(bottom: 14),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          gradient: SColors.voltSoftGradient,
+                          gradient: c.accentSoftGradient,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0x38FF63B6)),
+                          border: Border.all(color: c.accent.withValues(alpha: 0.22)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.content_paste_rounded,
-                              size: 15,
-                              color: SColors.voltPink,
-                            ),
+                            Icon(Icons.content_paste_rounded, size: 15, color: c.accent),
                             const SizedBox(width: 10),
-                            Text('Link detected on your clipboard', style: SText.uiBase()),
+                            Text('Link detected on your clipboard', style: c.text.uiBase()),
                           ],
                         ),
                       ),
                     ],
                     Text(
                       'SOURCE URL',
-                      style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
+                      style: c.text.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: SColors.bg0,
+                        color: c.bg0,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: SColors.line),
+                        border: Border.all(color: c.line),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Row(
                         children: [
-                          const Icon(Icons.link_rounded, size: 16, color: SColors.low),
+                          Icon(Icons.link_rounded, size: 16, color: c.low),
                           const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: _ctrl,
                               autofocus: true,
-                              style: SText.monoBase().copyWith(fontSize: 12.5),
+                              style: c.text.monoBase().copyWith(fontSize: 12.5),
                               decoration: InputDecoration(
                                 hintText: 'Paste a URL (http/https)…',
-                                hintStyle: SText.monoBase(
-                                  color: const Color(0xFF6A6672),
-                                ).copyWith(fontSize: 12.5),
+                                hintStyle: c.text.monoBase(color: c.low).copyWith(fontSize: 12.5),
                                 border: InputBorder.none,
                                 isDense: true,
                                 contentPadding: EdgeInsets.zero,
@@ -417,13 +419,10 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                             ),
                           ),
                           if (_probing)
-                            const SizedBox(
+                            SizedBox(
                               width: 14,
                               height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: SColors.voltPink,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: c.accent),
                             ),
                         ],
                       ),
@@ -433,9 +432,9 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: SColors.bg1,
+                          color: c.bg1,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: SColors.line),
+                          border: Border.all(color: c.line),
                         ),
                         child: Row(
                           children: [
@@ -452,7 +451,7 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                                 children: [
                                   Text(
                                     probe.filename,
-                                    style: SText.uiMd().copyWith(fontWeight: FontWeight.w500),
+                                    style: c.text.uiMd().copyWith(fontWeight: FontWeight.w500),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 3),
@@ -461,7 +460,7 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                                         ? '${_kindLabel(_ftype(probe.fileType))} · HLS stream · highest quality'
                                         : '${_kindLabel(_ftype(probe.fileType))} · '
                                               '${probe.totalBytes > BigInt.zero ? fmtBytes(probe.totalBytes.toInt()) : "unknown size"}',
-                                    style: SText.monoSm(),
+                                    style: c.text.monoSm(),
                                   ),
                                 ],
                               ),
@@ -499,17 +498,13 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _error != null
-                                ? SColors.danger.withValues(alpha: 0.5)
-                                : SColors.line,
+                            color: _error != null ? c.danger.withValues(alpha: 0.5) : c.line,
                           ),
                         ),
                         child: Center(
                           child: Text(
                             _error ?? (_probing ? 'Reading link…' : 'Awaiting a valid link…'),
-                            style: SText.monoSm(
-                              color: _error != null ? SColors.danger : SColors.low,
-                            ),
+                            style: c.text.monoSm(color: _error != null ? c.danger : c.low),
                           ),
                         ),
                       ),
@@ -521,7 +516,7 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                       children: [
                         Text(
                           'Schedule for off-peak',
-                          style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13),
+                          style: c.text.uiBase(color: c.mid).copyWith(fontSize: 13),
                         ),
                         SToggle(
                           value: _scheduled,
@@ -536,7 +531,7 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                           ref.watch(settingsProvider.select((s) => s.offPeakHours)),
                           DateTime.now(),
                         ),
-                        style: SText.monoSm(color: SColors.low).copyWith(fontSize: 11),
+                        style: c.text.monoSm(color: c.low).copyWith(fontSize: 11),
                       ),
                     ],
                     const SizedBox(height: 10),
