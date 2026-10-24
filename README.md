@@ -244,14 +244,13 @@ The Windows CMake build runs `cargo build --release` on `core/` and bundles
 `flutter build windows --release` leaves a portable build in
 `app/build/windows/x64/runner/Release/`.
 
-On Android (11 or later), `flutter run --release` with a phone plugged in does the same:
-Gradle runs `cargo ndk` on `core/` for the phone's ABI and packages
+On Android (11 or later), `flutter run --release --flavor foss` with a phone plugged in
+does the same: Gradle runs `cargo ndk` on `core/` for the phone's ABI and packages
 `libshinsoku_core.so` into the APK.
 
-Android builds come in two flavors. `foss`, the default, is what GitHub releases ship,
-with no Google code. `play` is the Google Play build; add `--flavor play` to build
-it. Release builds are signed with the key in `app/android/key.properties` if there
-is one
+Android builds name one of two flavors. `foss` is what GitHub releases ship, with no
+Google code; `play` is the Google Play build. Desktop builds have none. Release
+builds are signed with the key in `app/android/key.properties` if there is one
 ([format](https://docs.flutter.dev/deployment/android#reference-the-keystore-from-the-app)),
 and with the debug key otherwise.
 
@@ -270,7 +269,7 @@ rendering or responsiveness has to be checked with `--profile` or `--release`.
 | Where | Command | Does |
 | --- | --- | --- |
 | `app/` | `flutter run -d windows --release` | Run the app |
-| `app/` | `flutter build apk --release` | The foss Android APK for every ABI |
+| `app/` | `flutter build apk --release --flavor foss` | The foss Android APK for every ABI |
 | `app/` | `flutter build appbundle --release --flavor play` | The bundle Google Play takes |
 | `app/` | `dart format .` · `flutter analyze` · `flutter test` | Format, lints and widget tests |
 | `app/` | `flutter_rust_bridge_codegen generate` | Regenerate the bindings after changing `core/src/api.rs` |

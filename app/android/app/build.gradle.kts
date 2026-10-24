@@ -53,8 +53,8 @@ android {
     }
 
     // Where a build is published; docs/decisions.md, "Store builds", has why.
+    // Android builds name one: --flavor foss or --flavor play.
     //   foss: GitHub releases, F-Droid and builds from source, with no Google code.
-    //         The default (pubspec.yaml's default-flavor).
     //   play: Google Play, which updates the app itself. Play Billing goes only here.
     flavorDimensions += "store"
     productFlavors {

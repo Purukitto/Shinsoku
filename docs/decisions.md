@@ -178,9 +178,10 @@ scope unless added later.
   will be our own Kotlin in `src/play/`, not the `in_app_purchase` plugin: a Flutter
   plugin can't be limited to one flavor, so the plugin would put the billing library
   in the foss build too. The Dart side reads the flavor through `appFlavor`
-  (`app/lib/src/store.dart`). Desktop builds have no flavor and count as foss.
-  `default-flavor: foss` in `pubspec.yaml` keeps plain `flutter run` and
-  `flutter build apk` working. The play code stays in this repository, and the
+  (`app/lib/src/store.dart`). Desktop builds have no flavor and count as foss. Android
+  builds always name the flavor. `default-flavor` in `pubspec.yaml` would spare that,
+  but it applies to desktop builds too, and newer Flutter versions then move their
+  output under a flavor directory. The play code stays in this repository, and the
   README's licence section adds a GPLv3 section 7 permission to link with the Play
   Billing Library.
 
