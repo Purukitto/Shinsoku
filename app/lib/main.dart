@@ -5,6 +5,7 @@ import 'package:window_manager/window_manager.dart';
 import 'src/platform.dart';
 import 'src/providers/capture_provider.dart';
 import 'src/providers/downloads_provider.dart';
+import 'src/providers/progress_provider.dart';
 import 'src/providers/settings_provider.dart';
 import 'src/rust/api.dart' as rust;
 import 'src/rust/frb_generated.dart';
@@ -73,6 +74,8 @@ class _ShinsokuAppState extends ConsumerState<ShinsokuApp> with WidgetsBindingOb
     if (isDesktop) ref.read(captureProvider);
     // Load persisted settings and push them into the engine on launch.
     ref.read(settingsProvider);
+    // Progress in the tray, or in the Android notification.
+    ref.read(progressReporterProvider);
   }
 
   @override

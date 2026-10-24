@@ -336,7 +336,7 @@ progress reuses the byte fields — are recorded in [docs/decisions.md](docs/dec
 The goal for 1.0 is a complete download manager on Android and on desktop;
 [docs/roadmap.md](docs/roadmap.md) tracks it feature by feature. Among what is missing:
 
-- An Android release, and downloads that keep going while the app is in the background.
+- An Android release.
 - A Linux build. The Flutter target exists; the native engine build is not wired.
 - An installer, and code signing so SmartScreen stops warning.
 - Store listings for the extension. Chromium loads it unpacked in developer mode;

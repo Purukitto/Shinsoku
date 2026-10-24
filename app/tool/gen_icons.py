@@ -13,7 +13,8 @@ Outputs (under app/assets/icon and app/assets/logo):
   - ../logo/shinsoku_mark.png  512px tile for in-app use
   - ../android/app/src/main/res  Android launcher icon: an adaptive icon
     (gradient background, bolt foreground, bolt-only monochrome for themed
-    icons) plus the plain mark for each density
+    icons) plus the plain mark for each density, and the notification's
+    status-bar icon
 
 Run:  python tool/gen_icons.py
 """
@@ -130,6 +131,19 @@ ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
 """
 
 
+NOTIFICATION_XML = """<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M{path} Z"/>
+</vector>
+"""
+
+
 def android_icons():
     for name, scale in DENSITIES.items():
         out = ANDROID_RES / f"mipmap-{name}"
@@ -145,6 +159,12 @@ def android_icons():
     anydpi.mkdir(parents=True, exist_ok=True)
     (anydpi / "ic_launcher.xml").write_bytes(ADAPTIVE_XML.encode())
 
+    # status-bar icon: the bolt alone in white, which Android tints; 24dp with
+    # the bolt 20dp tall, as a vector so every density stays sharp
+    path = " L".join(f"{2 + u * 20:.1f},{2 + v * 20:.1f}" for u, v in BOLT)
+    drawable = ANDROID_RES / "drawable"
+    drawable.mkdir(parents=True, exist_ok=True)
+    (drawable / "ic_notification.xml").write_bytes(NOTIFICATION_XML.format(path=path).encode())
 
 
 def main():
