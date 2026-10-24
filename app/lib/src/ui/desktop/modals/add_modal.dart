@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/download_item.dart';
 import '../../../models/format.dart';
 import '../../../models/off_peak.dart';
+import '../../../platform.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../rust/api.dart' as rust;
 import '../../../rust/engine/download.dart' as rd;
@@ -236,6 +237,34 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
     ),
   );
 
+  /// The slider sits beside its label, or below it on a phone.
+  Widget _connections(bool compact) {
+    final label = Text(
+      'Parallel connections',
+      style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13),
+    );
+    final slider = VoltSlider(
+      value: _conns,
+      min: 1,
+      max: 16,
+      onChanged: (v) => setState(() => _conns = v),
+      suffix: '×',
+    );
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [label, const SizedBox(height: 8), slider],
+      );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        label,
+        SizedBox(width: 230, child: slider),
+      ],
+    );
+  }
+
   bool get _isUrl {
     final t = _ctrl.text.trim();
     return t.startsWith('http://') || t.startsWith('https://');
@@ -291,8 +320,11 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
     final probe = _probe;
     final ready = probe != null && _probedUrl == _ctrl.text.trim();
 
+    final compact = isCompact(context);
+
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: compact ? const EdgeInsets.symmetric(horizontal: 12, vertical: 24) : null,
       child: Container(
         width: 560,
         decoration: BoxDecoration(
@@ -323,254 +355,240 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 0, 22, 22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.fromClipboard) ...[
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        gradient: SColors.voltSoftGradient,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0x38FF63B6)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.content_paste_rounded,
-                            size: 15,
-                            color: SColors.voltPink,
-                          ),
-                          const SizedBox(width: 10),
-                          Text('Link detected on your clipboard', style: SText.uiBase()),
-                        ],
-                      ),
-                    ),
-                  ],
-                  Text(
-                    'SOURCE URL',
-                    style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: SColors.bg0,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: SColors.line),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.link_rounded, size: 16, color: SColors.low),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            controller: _ctrl,
-                            autofocus: true,
-                            style: SText.monoBase().copyWith(fontSize: 12.5),
-                            decoration: InputDecoration(
-                              hintText: 'Paste a URL (http/https)…',
-                              hintStyle: SText.monoBase(
-                                color: const Color(0xFF6A6672),
-                              ).copyWith(fontSize: 12.5),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(22, 0, 22, 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.fromClipboard) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: SColors.voltSoftGradient,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0x38FF63B6)),
                         ),
-                        if (_probing)
-                          const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.content_paste_rounded,
+                              size: 15,
                               color: SColors.voltPink,
                             ),
-                          ),
-                      ],
+                            const SizedBox(width: 10),
+                            Text('Link detected on your clipboard', style: SText.uiBase()),
+                          ],
+                        ),
+                      ),
+                    ],
+                    Text(
+                      'SOURCE URL',
+                      style: SText.monoXs().copyWith(letterSpacing: 0.1 * 10.5, fontSize: 10.5),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (ready) ...[
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: SColors.bg1,
-                        borderRadius: BorderRadius.circular(12),
+                        color: SColors.bg0,
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: SColors.line),
                       ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Row(
                         children: [
-                          ExtChip(
-                            name: probe.filename,
-                            type: _ftype(probe.fileType),
-                            size: 46,
-                            active: true,
-                          ),
-                          const SizedBox(width: 13),
+                          const Icon(Icons.link_rounded, size: 16, color: SColors.low),
+                          const SizedBox(width: 10),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  probe.filename,
-                                  style: SText.uiMd().copyWith(fontWeight: FontWeight.w500),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  _isHls
-                                      ? '${_kindLabel(_ftype(probe.fileType))} · HLS stream · highest quality'
-                                      : '${_kindLabel(_ftype(probe.fileType))} · '
-                                            '${probe.totalBytes > BigInt.zero ? fmtBytes(probe.totalBytes.toInt()) : "unknown size"}',
-                                  style: SText.monoSm(),
-                                ),
-                              ],
+                            child: TextField(
+                              controller: _ctrl,
+                              autofocus: true,
+                              style: SText.monoBase().copyWith(fontSize: 12.5),
+                              decoration: InputDecoration(
+                                hintText: 'Paste a URL (http/https)…',
+                                hintStyle: SText.monoBase(
+                                  color: const Color(0xFF6A6672),
+                                ).copyWith(fontSize: 12.5),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
-                          if (_isHls)
-                            Pill(
-                              tone: PillTone.volt,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(Icons.playlist_play_rounded, size: 12),
-                                  SizedBox(width: 5),
-                                  Text('STREAM'),
-                                ],
-                              ),
-                            )
-                          else if (probe.resumable)
-                            Pill(
-                              tone: PillTone.mint,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(Icons.check_rounded, size: 11),
-                                  SizedBox(width: 5),
-                                  Text('RESUMABLE'),
-                                ],
+                          if (_probing)
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: SColors.voltPink,
                               ),
                             ),
                         ],
                       ),
                     ),
-                  ] else ...[
-                    Container(
-                      height: 78,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _error != null
-                              ? SColors.danger.withValues(alpha: 0.5)
-                              : SColors.line,
+                    const SizedBox(height: 16),
+                    if (ready) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: SColors.bg1,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: SColors.line),
+                        ),
+                        child: Row(
+                          children: [
+                            ExtChip(
+                              name: probe.filename,
+                              type: _ftype(probe.fileType),
+                              size: 46,
+                              active: true,
+                            ),
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    probe.filename,
+                                    style: SText.uiMd().copyWith(fontWeight: FontWeight.w500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _isHls
+                                        ? '${_kindLabel(_ftype(probe.fileType))} · HLS stream · highest quality'
+                                        : '${_kindLabel(_ftype(probe.fileType))} · '
+                                              '${probe.totalBytes > BigInt.zero ? fmtBytes(probe.totalBytes.toInt()) : "unknown size"}',
+                                    style: SText.monoSm(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (_isHls)
+                              Pill(
+                                tone: PillTone.volt,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.playlist_play_rounded, size: 12),
+                                    SizedBox(width: 5),
+                                    Text('STREAM'),
+                                  ],
+                                ),
+                              )
+                            else if (probe.resumable)
+                              Pill(
+                                tone: PillTone.mint,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.check_rounded, size: 11),
+                                    SizedBox(width: 5),
+                                    Text('RESUMABLE'),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      child: Center(
-                        child: Text(
-                          _error ?? (_probing ? 'Reading link…' : 'Awaiting a valid link…'),
-                          style: SText.monoSm(color: _error != null ? SColors.danger : SColors.low),
+                    ] else ...[
+                      Container(
+                        height: 78,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _error != null
+                                ? SColors.danger.withValues(alpha: 0.5)
+                                : SColors.line,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            _error ?? (_probing ? 'Reading link…' : 'Awaiting a valid link…'),
+                            style: SText.monoSm(
+                              color: _error != null ? SColors.danger : SColors.low,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  if (!_isHls) ...[
+                    ],
+                    const SizedBox(height: 16),
+                    if (!_isHls) ...[_connections(compact), const SizedBox(height: 10)],
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Parallel connections',
+                          'Schedule for off-peak',
                           style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13),
                         ),
-                        SizedBox(
-                          width: 230,
-                          child: VoltSlider(
-                            value: _conns,
-                            min: 1,
-                            max: 16,
-                            onChanged: (v) => setState(() => _conns = v),
-                            suffix: '×',
+                        SToggle(
+                          value: _scheduled,
+                          onChanged: (v) => setState(() => _scheduled = v),
+                        ),
+                      ],
+                    ),
+                    if (_scheduled) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        scheduleHint(
+                          ref.watch(settingsProvider.select((s) => s.offPeakHours)),
+                          DateTime.now(),
+                        ),
+                        style: SText.monoSm(color: SColors.low).copyWith(fontSize: 11),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    _advancedDisclosure(),
+                    if (_advanced) _advancedSection(),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SBtn(
+                            kind: BtnKind.ghost,
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: SBtn(
+                            kind: BtnKind.primary,
+                            icon: Icons.bolt_rounded,
+                            disabled: !ready,
+                            onPressed: !ready
+                                ? null
+                                : () {
+                                    final url = _ctrl.text.trim();
+                                    if (_isHls) {
+                                      widget.onStartStream(
+                                        url: url,
+                                        headers: _collectHeaders(),
+                                        title: null,
+                                        scheduled: _scheduled,
+                                      );
+                                    } else {
+                                      final cs = _checksumCtrl.text.trim();
+                                      widget.onStart(
+                                        url: url,
+                                        connections: _conns.round(),
+                                        headers: _collectHeaders(),
+                                        expectedChecksum: cs.isEmpty ? null : cs,
+                                        scheduled: _scheduled,
+                                      );
+                                    }
+                                    Navigator.pop(context);
+                                  },
+                            child: Text(_scheduled ? 'Schedule download' : 'Download now'),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
                   ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Schedule for off-peak',
-                        style: SText.uiBase(color: SColors.mid).copyWith(fontSize: 13),
-                      ),
-                      SToggle(value: _scheduled, onChanged: (v) => setState(() => _scheduled = v)),
-                    ],
-                  ),
-                  if (_scheduled) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      scheduleHint(
-                        ref.watch(settingsProvider.select((s) => s.offPeakHours)),
-                        DateTime.now(),
-                      ),
-                      style: SText.monoSm(color: SColors.low).copyWith(fontSize: 11),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-                  _advancedDisclosure(),
-                  if (_advanced) _advancedSection(),
-                  const SizedBox(height: 22),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SBtn(
-                          kind: BtnKind.ghost,
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 2,
-                        child: SBtn(
-                          kind: BtnKind.primary,
-                          icon: Icons.bolt_rounded,
-                          disabled: !ready,
-                          onPressed: !ready
-                              ? null
-                              : () {
-                                  final url = _ctrl.text.trim();
-                                  if (_isHls) {
-                                    widget.onStartStream(
-                                      url: url,
-                                      headers: _collectHeaders(),
-                                      title: null,
-                                      scheduled: _scheduled,
-                                    );
-                                  } else {
-                                    final cs = _checksumCtrl.text.trim();
-                                    widget.onStart(
-                                      url: url,
-                                      connections: _conns.round(),
-                                      headers: _collectHeaders(),
-                                      expectedChecksum: cs.isEmpty ? null : cs,
-                                      scheduled: _scheduled,
-                                    );
-                                  }
-                                  Navigator.pop(context);
-                                },
-                          child: Text(_scheduled ? 'Schedule download' : 'Download now'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
           ],

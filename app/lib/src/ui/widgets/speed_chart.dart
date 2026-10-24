@@ -10,7 +10,8 @@ class SpeedChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) return const SizedBox.shrink();
-    return CustomPaint(painter: _SpeedPainter(data, strokeWidth, showFill));
+    // Fill the space given; under loose constraints a bare CustomPaint is 0 wide.
+    return CustomPaint(size: Size.infinite, painter: _SpeedPainter(data, strokeWidth, showFill));
   }
 }
 

@@ -4,9 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../models/progress_summary.dart';
+import '../providers/progress_provider.dart';
+
 /// System-tray icon + minimise-to-tray. Minimise → [hideToTray]; tray click /
 /// "Show", or opening the app again while it runs → [showFromTray]; "Quit" exits.
-class TrayService with TrayListener {
+/// While downloads run, hovering the icon shows their progress; the Linux tray
+/// has no hover text, so there it heads the menu instead.
+class TrayService with TrayListener implements ProgressSink {
   TrayService._();
   static final TrayService instance = TrayService._();
 
@@ -17,6 +22,7 @@ class TrayService with TrayListener {
   static final _iconPath = Platform.isLinux ? 'assets/icon/tray_64.png' : 'assets/icon/tray.ico';
 
   bool _initialized = false;
+  String? _menuStatus;
 
   Future<void> init() async {
     if (_initialized) return;
@@ -28,16 +34,51 @@ class TrayService with TrayListener {
     await trayManager.setIcon(_iconPath);
     // the Linux tray has no tooltip; tray_manager throws there
     if (!Platform.isLinux) await trayManager.setToolTip('Shinsoku');
-    await trayManager.setContextMenu(
-      Menu(
-        items: [
-          MenuItem(key: 'show', label: 'Show Shinsoku'),
-          MenuItem.separator(),
-          MenuItem(key: 'quit', label: 'Quit'),
-        ],
-      ),
-    );
+    await trayManager.setContextMenu(_menu());
   }
+
+  Menu _menu() => Menu(
+    items: [
+      if (_menuStatus != null) ...[
+        MenuItem(label: _menuStatus, disabled: true),
+        MenuItem.separator(),
+      ],
+      MenuItem(key: 'show', label: 'Show Shinsoku'),
+      MenuItem.separator(),
+      MenuItem(key: 'quit', label: 'Quit'),
+    ],
+  );
+
+  @override
+  void show(ProgressSummary summary) {
+    if (!_initialized) return;
+    if (Platform.isLinux) {
+      // whole percents, so the menu isn't rebuilt every second
+      final p = summary.progress;
+      _setMenuStatus(p == null ? summary.title : '${summary.title} · ${(p * 100).floor()}%');
+    } else {
+      trayManager.setToolTip('Shinsoku — ${_clip(summary.title)}\n${summary.detail}');
+    }
+  }
+
+  @override
+  void clear() {
+    if (!_initialized) return;
+    if (Platform.isLinux) {
+      _setMenuStatus(null);
+    } else {
+      trayManager.setToolTip('Shinsoku');
+    }
+  }
+
+  void _setMenuStatus(String? status) {
+    if (status == _menuStatus) return;
+    _menuStatus = status;
+    trayManager.setContextMenu(_menu());
+  }
+
+  /// Windows cuts hover text off at 127 characters.
+  static String _clip(String name) => name.length <= 60 ? name : '${name.substring(0, 59)}…';
 
   Future<void> hideToTray() async {
     await windowManager.setSkipTaskbar(true);

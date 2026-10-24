@@ -36,8 +36,8 @@ over it, bridged with [`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter
 A companion browser extension hands downloads over with the cookies, referrer and
 User-Agent the browser would have used, so links behind a login still work.
 
-> Windows is the shipping target. Android and Linux share the Flutter UI but their
-> native engine build is not wired yet — see [Not built yet](#not-built-yet).
+> Windows is the shipping target. Android and Linux build from source and run
+> downloads, but have no release yet — see [Not built yet](#not-built-yet).
 
 ## Screenshots
 
@@ -219,6 +219,8 @@ Four things are worth stating plainly:
 | [Flutter SDK](https://docs.flutter.dev/get-started/install) | stable, Dart 3.12+ | `flutter config --enable-windows-desktop` |
 | [Rust](https://rustup.rs) | stable | `cargo` must be on `PATH` or in `~/.cargo/bin` |
 | Visual Studio 2022 | — | the **Desktop development with C++** workload |
+| Android SDK and NDK | — | Android only; Gradle installs the NDK version Flutter asks for |
+| [`cargo-ndk`](https://github.com/bbqsrc/cargo-ndk) | 4.x | Android only: `cargo install cargo-ndk`, plus `rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android` |
 | [`flutter_rust_bridge_codegen`](https://cjycode.com/flutter_rust_bridge/) | 2.9.0 | only to change the bridge API: `cargo install flutter_rust_bridge_codegen --version 2.9.0` |
 
 ```bash
@@ -238,6 +240,10 @@ The Windows CMake build runs `cargo build --release` on `core/` and bundles
 `flutter build windows --release` leaves a portable build in
 `app/build/windows/x64/runner/Release/`.
 
+On Android (11 or later), `flutter run --release` with a phone plugged in does the same:
+Gradle runs `cargo ndk` on `core/` for the phone's ABI and packages
+`libshinsoku_core.so` into the APK.
+
 <details>
 <summary><strong>Judge speed in release, not debug</strong></summary>
 
@@ -253,6 +259,7 @@ rendering or responsiveness has to be checked with `--profile` or `--release`.
 | Where | Command | Does |
 | --- | --- | --- |
 | `app/` | `flutter run -d windows --release` | Run the app |
+| `app/` | `flutter build apk --release` | An Android APK for every ABI, signed with the debug key for now |
 | `app/` | `dart format .` · `flutter analyze` · `flutter test` | Format, lints and widget tests |
 | `app/` | `flutter_rust_bridge_codegen generate` | Regenerate the bindings after changing `core/src/api.rs` |
 | `core/` | `cargo test` | Engine unit tests and integration tests against a local range server |
@@ -328,8 +335,7 @@ progress reuses the byte fields — are recorded in [docs/decisions.md](docs/dec
 The goal for 1.0 is a complete download manager on Android and on desktop;
 [docs/roadmap.md](docs/roadmap.md) tracks it feature by feature. Among what is missing:
 
-- Android and Linux builds. The Flutter targets exist; the native engine build is wired
-  for Windows only.
+- Android and Linux releases.
 - An installer, and code signing so SmartScreen stops warning.
 - Store listings for the extension. Chromium loads it unpacked in developer mode;
   Firefox loads it as a temporary add-on, which it forgets on restart.

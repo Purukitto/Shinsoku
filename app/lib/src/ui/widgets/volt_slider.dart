@@ -123,7 +123,8 @@ class VoltSlider extends StatelessWidget {
         ),
         const SizedBox(width: 14),
         SizedBox(
-          width: 64,
+          // fits "Unlimited" on one line
+          width: 80,
           child: Text(
             _label(value),
             textAlign: TextAlign.right,

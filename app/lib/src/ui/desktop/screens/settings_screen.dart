@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/off_peak.dart';
+import '../../../platform.dart';
 import '../../../providers/autostart_provider.dart';
 import '../../../providers/capture_provider.dart';
 import '../../../providers/settings_provider.dart';
@@ -28,7 +29,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final s = ref.watch(settingsProvider);
     final set = ref.read(settingsProvider.notifier);
-    final cap = ref.watch(captureProvider);
+    final cap = isDesktop ? ref.watch(captureProvider) : CaptureState.empty;
     final capStatus = cap.enabled ? ref.watch(captureStatusProvider).value : null;
     final autostart = ref.read(autostartServiceProvider).supported;
     return SizedBox(
@@ -147,29 +148,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ],
             ),
-          _card(
-            icon: Icons.content_paste_rounded,
-            title: 'Capture',
-            children: [
-              _row(
-                'Monitor clipboard',
-                desc: 'Catch links the moment you copy them and offer to download.',
-                child: SToggle(value: s.clipboardMonitor, onChanged: set.setClipboardMonitor),
-              ),
-              _row(
-                'Browser integration',
-                desc:
-                    'Capture downloads from Firefox & Chrome via the extension — '
-                    'cookies and referrer included.',
-                last: !cap.enabled,
-                child: SToggle(
-                  value: cap.enabled,
-                  onChanged: (v) => ref.read(captureProvider.notifier).setEnabled(v),
+          // the clipboard poll and the extension are desktop only for now
+          if (isDesktop)
+            _card(
+              icon: Icons.content_paste_rounded,
+              title: 'Capture',
+              children: [
+                _row(
+                  'Monitor clipboard',
+                  desc: 'Catch links the moment you copy them and offer to download.',
+                  child: SToggle(value: s.clipboardMonitor, onChanged: set.setClipboardMonitor),
                 ),
-              ),
-              if (cap.enabled) _captureDetails(cap, capStatus),
-            ],
-          ),
+                _row(
+                  'Browser integration',
+                  desc:
+                      'Capture downloads from Firefox & Chrome via the extension — '
+                      'cookies and referrer included.',
+                  last: !cap.enabled,
+                  child: SToggle(
+                    value: cap.enabled,
+                    onChanged: (v) => ref.read(captureProvider.notifier).setEnabled(v),
+                  ),
+                ),
+                if (cap.enabled) _captureDetails(cap, capStatus),
+              ],
+            ),
         ],
       ),
     );
@@ -212,7 +215,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  static Widget _row(String title, {String? desc, required Widget child, bool last = false}) {
+  Widget _row(String title, {String? desc, required Widget child, bool last = false}) {
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: SText.uiMd().copyWith(fontWeight: FontWeight.w500, fontSize: 14)),
+        if (desc != null) ...[
+          const SizedBox(height: 3),
+          Text(desc, style: SText.uiBase(color: SColors.low).copyWith(fontSize: 12.5)),
+        ],
+      ],
+    );
+    // On a phone a toggle stays beside its title; wider controls go below it.
+    final compact = isCompact(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18),
       decoration: last
@@ -220,30 +235,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           : BoxDecoration(
               border: Border(top: BorderSide(color: SColors.line)),
             ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
+      child: compact && child is! SToggle
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              children: [text, const SizedBox(height: 14), child],
+            )
+          : Row(
               children: [
-                Text(
-                  title,
-                  style: SText.uiMd().copyWith(fontWeight: FontWeight.w500, fontSize: 14),
-                ),
-                if (desc != null) ...[
-                  const SizedBox(height: 3),
-                  Text(desc, style: SText.uiBase(color: SColors.low).copyWith(fontSize: 12.5)),
-                ],
+                Expanded(child: text),
+                SizedBox(width: compact ? 16 : 24),
+                if (compact)
+                  child
+                else
+                  SizedBox(
+                    width: 230,
+                    child: Align(alignment: Alignment.centerRight, child: child),
+                  ),
               ],
             ),
-          ),
-          const SizedBox(width: 24),
-          SizedBox(
-            width: 230,
-            child: Align(alignment: Alignment.centerRight, child: child),
-          ),
-        ],
-      ),
     );
   }
 

@@ -14,7 +14,7 @@ beyond that.
 | Feature | Status | Notes |
 | --- | --- | --- |
 | Windows app | Done | Portable zip, no installer yet |
-| Android app | Not started | Flutter target exists; the native engine build and a mobile shell do not |
+| Android app | Partial | Android 11 and later, in a phone layout, saving to `Download/Shinsoku`. No release build yet |
 | Linux app | Partial | Builds with the engine bundled, and CI launches it on every pull request; no package or release job yet |
 
 ## Downloading
@@ -32,8 +32,8 @@ beyond that.
 | Daily download or data limit | Not started | |
 | Wi-Fi only, pause on mobile data | Not started | *Android* |
 | Large files | Done | |
-| Keep downloading in the background | Partial | Tray on Windows. *Android* needs a foreground service |
-| Progress and completion notifications | Not started | *Android* and desktop |
+| Keep downloading in the background | Done | The tray on desktop; a foreground service on Android, which Android 15 and later allow six hours a day |
+| Progress and completion notifications | Partial | Progress in a silent Android notification and in the tray (on hover on Windows, atop the menu on Linux). Nothing says when a download finishes yet |
 | After-download actions (move file, turn off Wi-Fi, exit) | Not started | |
 | Name and folder per download before it starts | Not started | |
 | When a name is taken: rename, overwrite or skip | Partial | Rename only |
@@ -96,7 +96,7 @@ On Android, a built-in browser is how people find and catch downloads.
 | Other languages | Not started | English only |
 | Backup and restore of the list and settings | Not started | |
 | Lock the app with a PIN or fingerprint | Not started | |
-| Start with the system | Partial | Windows at sign-in, hidden in the tray; Linux writes an XDG autostart entry. *Android*: starting on boot needs only the install-time `RECEIVE_BOOT_COMPLETED` permission, and arrives with the background service it would start |
+| Start with the system | Partial | Windows at sign-in, hidden in the tray; Linux writes an XDG autostart entry. *Android*: starting on boot needs only the install-time `RECEIVE_BOOT_COMPLETED` permission, but Android 15 won't let it start the download service directly |
 
 ## Out of scope
 
