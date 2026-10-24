@@ -26,6 +26,7 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     // Watch only this row's item — rebuilds when its instance changes, which the
     // tick only does for the actually-downloading item.
     final it = ref.watch(downloadItemProvider(widget.id));
@@ -46,9 +47,9 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
           duration: const Duration(milliseconds: 150),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: _hovered ? SColors.bg2 : SColors.bg1,
+            color: _hovered ? c.bg2 : c.bg1,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _hovered ? SColors.lineHi : SColors.line),
+            border: Border.all(color: _hovered ? c.lineHi : c.line),
           ),
           child: Stack(
             children: [
@@ -64,7 +65,7 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                         Expanded(
                           child: Text(
                             it.name,
-                            style: SText.uiMd(),
+                            style: c.text.uiMd(),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -131,13 +132,13 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                                 ? '${it.host}  ·  ${it.error ?? 'Failed'}'
                                 : '${it.host}  ·  ${fmtBytes(it.downloadedBytes)} / ${fmtBytes(it.totalBytes)}  ·  '
                                       '${it.waitingForOffPeak ? 'waiting for off-peak hours' : '${it.connections} connections'}',
-                            style: SText.monoSm(color: failed ? SColors.danger : null),
+                            style: c.text.monoSm(color: failed ? c.danger : null),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Text(
                           '${fmtPct(p)}${active && eta != null ? "  ·  ${fmtEta(eta)} left" : ""}',
-                          style: SText.monoSm(color: active ? SColors.mid : SColors.low),
+                          style: c.text.monoSm(color: active ? c.mid : c.low),
                         ),
                       ],
                     ),
@@ -152,7 +153,7 @@ class _DownloadRowState extends ConsumerState<DownloadRow> {
                 bottom: 0,
                 child: Container(
                   width: 3,
-                  decoration: BoxDecoration(gradient: active ? SColors.voltGradient : null),
+                  decoration: BoxDecoration(gradient: active ? c.accentGradient : null),
                 ),
               ),
             ],

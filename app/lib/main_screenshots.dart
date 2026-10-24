@@ -110,6 +110,7 @@ class _ScreenshotHarnessState extends State<_ScreenshotHarness> {
   }
 
   Future<void> _capture(String filename) async {
+    final c = context.colors;
     // Drop any lingering toast and wait for a clean paint so it can't leak into
     // the captured frame.
     _msgKey.currentState?.removeCurrentSnackBar();
@@ -137,8 +138,8 @@ class _ScreenshotHarnessState extends State<_ScreenshotHarness> {
           behavior: SnackBarBehavior.floating,
           width: 340,
           duration: const Duration(milliseconds: 1400),
-          backgroundColor: SColors.bg3,
-          content: Text('Saved  $filename   ·   $w×$h', style: SText.monoSm(color: SColors.hi)),
+          backgroundColor: c.bg3,
+          content: Text('Saved  $filename   ·   $w×$h', style: c.text.monoSm(color: c.hi)),
         ),
       );
   }
@@ -156,7 +157,7 @@ class _ScreenshotHarnessState extends State<_ScreenshotHarness> {
               child: MaterialApp(
                 title: 'Shinsoku',
                 debugShowCheckedModeBanner: false,
-                theme: AppTheme.dark,
+                theme: AppTheme.dark(SAccent.volt),
                 scaffoldMessengerKey: _msgKey,
                 home: const DesktopShell(),
               ),
@@ -176,16 +177,17 @@ class _HintBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xE61A191E),
+        color: c.bg1.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: SColors.lineHi),
+        border: Border.all(color: c.lineHi),
       ),
       child: Text(
         'F1 hero · F2 active · F3 detail · F4 add · F5 settings · F6 completed  →  docs/screenshots',
-        style: SText.monoXs(color: SColors.mid),
+        style: c.text.monoXs(color: c.mid),
       ),
     );
   }

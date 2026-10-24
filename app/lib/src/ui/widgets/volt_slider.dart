@@ -45,6 +45,7 @@ class VoltSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final pct = max > min ? ((value - min) / (max - min)).clamp(0.0, 1.0) : 0.0;
     final incV = _quantize(value + step);
     final decV = _quantize(value - step);
@@ -75,7 +76,7 @@ class VoltSlider extends StatelessWidget {
                         Container(
                           height: 6,
                           decoration: BoxDecoration(
-                            color: SColors.bg4,
+                            color: c.bg4,
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
@@ -87,7 +88,7 @@ class VoltSlider extends StatelessWidget {
                             child: Container(
                               height: 6,
                               decoration: BoxDecoration(
-                                gradient: SColors.voltGradient,
+                                gradient: c.accentGradient,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                             ),
@@ -100,9 +101,9 @@ class VoltSlider extends StatelessWidget {
                             width: 18,
                             height: 18,
                             decoration: BoxDecoration(
-                              color: SColors.hi,
+                              color: c.hi,
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFF1B1020), width: 3),
+                              border: Border.all(color: c.accentInk, width: 3),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black38,
@@ -128,7 +129,7 @@ class VoltSlider extends StatelessWidget {
           child: Text(
             _label(value),
             textAlign: TextAlign.right,
-            style: const TextStyle(fontFamily: kFontMono, fontSize: 13, color: SColors.hi),
+            style: TextStyle(fontFamily: kFontMono, fontSize: 13, color: c.hi),
           ),
         ),
       ],

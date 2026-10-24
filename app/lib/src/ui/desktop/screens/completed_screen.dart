@@ -22,6 +22,7 @@ class _CompletedScreenState extends State<CompletedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final data = completedDownloads;
     final totalBytes = data.fold(0, (a, d) => a + d.totalBytes);
     final compact = isCompact(context);
@@ -36,7 +37,7 @@ class _CompletedScreenState extends State<CompletedScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${data.length} files · ${fmtBytes(totalBytes)} total', style: SText.monoSm()),
+              Text('${data.length} files · ${fmtBytes(totalBytes)} total', style: c.text.monoSm()),
               SSegmented<String>(
                 value: _view,
                 onChanged: (v) => setState(() => _view = v),
@@ -58,6 +59,7 @@ class _CompletedScreenState extends State<CompletedScreen> {
   /// On a phone a row keeps the name and details; the speed and the buttons
   /// don't fit beside them.
   Widget _buildList(List<CompletedDownload> data, bool compact) {
+    final c = context.colors;
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 40),
       itemCount: data.length,
@@ -67,9 +69,9 @@ class _CompletedScreenState extends State<CompletedScreen> {
           padding: const EdgeInsets.only(bottom: 8),
           child: Container(
             decoration: BoxDecoration(
-              color: SColors.bg1,
+              color: c.bg1,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: SColors.line),
+              border: Border.all(color: c.line),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -82,13 +84,13 @@ class _CompletedScreenState extends State<CompletedScreen> {
                     children: [
                       Text(
                         d.name,
-                        style: SText.uiMd().copyWith(fontWeight: FontWeight.w500),
+                        style: c.text.uiMd().copyWith(fontWeight: FontWeight.w500),
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
                       Text(
                         '${d.host} · ${fmtBytes(d.totalBytes)} · ${timeAgo(d.completedAt)}',
-                        style: SText.monoSm(),
+                        style: c.text.monoSm(),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -120,6 +122,7 @@ class _CompletedScreenState extends State<CompletedScreen> {
   }
 
   Widget _buildGrid(List<CompletedDownload> data, bool compact) {
+    final c = context.colors;
     return GridView.builder(
       padding: const EdgeInsets.only(bottom: 40),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -133,9 +136,9 @@ class _CompletedScreenState extends State<CompletedScreen> {
         final d = data[i];
         return Container(
           decoration: BoxDecoration(
-            color: SColors.bg1,
+            color: c.bg1,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: SColors.line),
+            border: Border.all(color: c.line),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -151,11 +154,11 @@ class _CompletedScreenState extends State<CompletedScreen> {
               const SizedBox(height: 16),
               Text(
                 d.name,
-                style: SText.uiBase().copyWith(fontWeight: FontWeight.w500),
+                style: c.text.uiBase().copyWith(fontWeight: FontWeight.w500),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 5),
-              Text('${fmtBytes(d.totalBytes)} · ${timeAgo(d.completedAt)}', style: SText.monoSm()),
+              Text('${fmtBytes(d.totalBytes)} · ${timeAgo(d.completedAt)}', style: c.text.monoSm()),
             ],
           ),
         );

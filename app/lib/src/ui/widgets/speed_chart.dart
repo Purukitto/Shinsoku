@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/colors.dart';
 
 class SpeedChart extends StatelessWidget {
   const SpeedChart({super.key, required this.data, this.strokeWidth = 2.0, this.showFill = true});
@@ -9,23 +10,24 @@ class SpeedChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     if (data.isEmpty) return const SizedBox.shrink();
     // Fill the space given; under loose constraints a bare CustomPaint is 0 wide.
-    return CustomPaint(size: Size.infinite, painter: _SpeedPainter(data, strokeWidth, showFill));
+    return CustomPaint(
+      size: Size.infinite,
+      painter: _SpeedPainter(data, strokeWidth, showFill, c.accentFill, c.accent),
+    );
   }
 }
 
 class _SpeedPainter extends CustomPainter {
-  const _SpeedPainter(this.data, this.strokeWidth, this.showFill);
+  const _SpeedPainter(this.data, this.strokeWidth, this.showFill, this.lineColors, this.areaColor);
 
   final List<int> data;
   final double strokeWidth;
   final bool showFill;
-
-  static const _lineGrad = LinearGradient(
-    colors: [Color(0xFFA25CFF), Color(0xFFFF63B6), Color(0xFFFFCE4D)],
-    stops: [0.0, 0.5, 1.0],
-  );
+  final List<Color> lineColors;
+  final Color areaColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -53,16 +55,19 @@ class _SpeedPainter extends CustomPainter {
 
     if (showFill) {
       final fillPaint = Paint()
-        ..shader = const LinearGradient(
+        ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0x47FF63B6), Color(0x00FF63B6)],
+          colors: [areaColor.withValues(alpha: 0.28), areaColor.withValues(alpha: 0)],
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
       canvas.drawPath(areaPath, fillPaint);
     }
 
     final linePaint = Paint()
-      ..shader = _lineGrad.createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..shader = LinearGradient(
+        colors: lineColors,
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
@@ -71,5 +76,6 @@ class _SpeedPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SpeedPainter old) => old.data != data;
+  bool shouldRepaint(_SpeedPainter old) =>
+      old.data != data || old.areaColor != areaColor || old.lineColors != lineColors;
 }

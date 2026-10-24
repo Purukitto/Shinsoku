@@ -10,8 +10,10 @@ import 'src/providers/settings_provider.dart';
 import 'src/rust/api.dart' as rust;
 import 'src/rust/frb_generated.dart';
 import 'src/services/autostart_service.dart';
+import 'src/services/settings_service.dart';
 import 'src/services/tray_service.dart';
 import 'src/theme/app_theme.dart';
+import 'src/theme/colors.dart';
 import 'src/ui/desktop/desktop_shell.dart';
 import 'src/ui/mobile/mobile_shell.dart';
 
@@ -23,26 +25,40 @@ void main(List<String> args) async {
   // the queue and completed history survive restarts.
   final supportDir = await getApplicationSupportDirectory();
   final engine = rust.createEngine(dbPath: '${supportDir.path}/downloads.json');
+  // Read before the first frame, so it's drawn in the chosen theme.
+  final settings = await SettingsService.load();
 
-  if (isDesktop) await _initWindow(args);
+  if (isDesktop) await _initWindow(args, settings);
   runApp(
     ProviderScope(
-      overrides: [engineProvider.overrideWithValue(engine)],
+      overrides: [
+        engineProvider.overrideWithValue(engine),
+        settingsProvider.overrideWith(() => SettingsNotifier(settings)),
+      ],
       child: const ShinsokuApp(),
     ),
   );
 }
 
-Future<void> _initWindow(List<String> args) async {
+Future<void> _initWindow(List<String> args, AppSettings settings) async {
   await windowManager.ensureInitialized();
   await TrayService.instance.init();
+  final dark = switch (settings.themeMode) {
+    ThemeMode.dark => true,
+    ThemeMode.light => false,
+    ThemeMode.system =>
+      WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark,
+  };
+  final accent = SAccent.byId(settings.accent);
   windowManager.waitUntilReadyToShow(
-    const WindowOptions(
-      size: Size(1240, 800),
-      minimumSize: Size(900, 600),
+    WindowOptions(
+      size: const Size(1240, 800),
+      minimumSize: const Size(900, 600),
       center: true,
       title: 'Shinsoku',
-      backgroundColor: Color(0xFF141317),
+      // what shows before Flutter's first frame
+      backgroundColor:
+          (dark ? SColors.dark(accent, pureBlack: settings.pureBlack) : SColors.light(accent)).bg0,
       titleBarStyle: TitleBarStyle.hidden,
     ),
     () async {
@@ -95,10 +111,16 @@ class _ShinsokuAppState extends ConsumerState<ShinsokuApp> with WidgetsBindingOb
 
   @override
   Widget build(BuildContext context) {
+    final (mode, pureBlack, accentId) = ref.watch(
+      settingsProvider.select((s) => (s.themeMode, s.pureBlack, s.accent)),
+    );
+    final accent = SAccent.byId(accentId);
     return MaterialApp(
       title: 'Shinsoku',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.light(accent),
+      darkTheme: AppTheme.dark(accent, pureBlack: pureBlack),
+      themeMode: mode,
       home: isDesktop ? const DesktopShell() : const MobileShell(),
     );
   }

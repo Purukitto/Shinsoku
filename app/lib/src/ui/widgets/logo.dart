@@ -11,7 +11,8 @@ class ShinsokuLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wordColor = color ?? SColors.hi;
+    final c = context.colors;
+    final wordColor = color ?? c.hi;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -20,10 +21,14 @@ class ShinsokuLogo extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            gradient: SColors.voltGradient,
+            gradient: c.accentGradient,
             borderRadius: BorderRadius.circular(size * 0.28),
             boxShadow: [
-              BoxShadow(color: const Color(0x59A25CFF), blurRadius: 16, offset: const Offset(0, 4)),
+              BoxShadow(
+                color: c.accentFill[0].withValues(alpha: 0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           alignment: Alignment.center,
@@ -33,7 +38,7 @@ class ShinsokuLogo extends StatelessWidget {
               fontFamily: kFontUi,
               fontSize: size * 0.52,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF1B1020),
+              color: c.accentInk,
               height: 1,
             ),
           ),
@@ -58,9 +63,9 @@ class ShinsokuLogo extends StatelessWidget {
               SizedBox(height: 3),
               Text(
                 '神速 · GODSPEED',
-                style: SText.monoXs(
-                  color: SColors.low,
-                ).copyWith(fontSize: size * 0.235, letterSpacing: 0.18 * size * 0.235),
+                style: c.text
+                    .monoXs(color: c.low)
+                    .copyWith(fontSize: size * 0.235, letterSpacing: 0.18 * size * 0.235),
               ),
             ],
           ),

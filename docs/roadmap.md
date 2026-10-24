@@ -92,7 +92,7 @@ On Android, a built-in browser is how people find and catch downloads.
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Themes, following the system light or dark mode | Not started | Dark only |
+| Themes, following the system light or dark mode | Done | System, light or dark in Settings, with a true-black dark mode for OLED screens |
 | Other languages | Not started | English only |
 | Backup and restore of the list and settings | Not started | |
 | Lock the app with a PIN or fingerprint | Not started | |

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:path_provider/path_provider.dart';
 
 import '../models/off_peak.dart';
@@ -8,8 +9,8 @@ import '../models/off_peak.dart';
 /// User-tunable engine + app settings. Engine-applied values (connections,
 /// simultaneous, download limit, categorize, off-peak hours) are pushed into the Rust
 /// core on load and on change; the rest gate app-side behaviour (clipboard
-/// monitor) or are stored for a feature not yet active (upload cap — there is no
-/// seeding/upload path in the engine yet).
+/// monitor, appearance) or are stored for a feature not yet active (upload cap —
+/// there is no seeding/upload path in the engine yet).
 class AppSettings {
   const AppSettings({
     this.maxConnections = 8,
@@ -23,6 +24,9 @@ class AppSettings {
     this.offPeakStartMin = 23 * 60,
     this.offPeakEndMin = 7 * 60,
     this.offPeakDays = OffPeakHours.everyDay,
+    this.themeMode = ThemeMode.system,
+    this.pureBlack = false,
+    this.accent = 'volt',
   });
 
   final int maxConnections; // segments per download
@@ -41,6 +45,13 @@ class AppSettings {
   /// Days off-peak hours begin on: bit 0 = Monday … bit 6 = Sunday.
   final int offPeakDays;
 
+  final ThemeMode themeMode;
+
+  /// True black instead of near-black in dark mode, for OLED screens.
+  final bool pureBlack;
+
+  final String accent; // an SAccent id
+
   OffPeakHours get offPeakHours =>
       OffPeakHours(startMin: offPeakStartMin, endMin: offPeakEndMin, days: offPeakDays);
 
@@ -56,6 +67,9 @@ class AppSettings {
     int? offPeakStartMin,
     int? offPeakEndMin,
     int? offPeakDays,
+    ThemeMode? themeMode,
+    bool? pureBlack,
+    String? accent,
   }) => AppSettings(
     maxConnections: maxConnections ?? this.maxConnections,
     maxSimultaneous: maxSimultaneous ?? this.maxSimultaneous,
@@ -68,6 +82,9 @@ class AppSettings {
     offPeakStartMin: offPeakStartMin ?? this.offPeakStartMin,
     offPeakEndMin: offPeakEndMin ?? this.offPeakEndMin,
     offPeakDays: offPeakDays ?? this.offPeakDays,
+    themeMode: themeMode ?? this.themeMode,
+    pureBlack: pureBlack ?? this.pureBlack,
+    accent: accent ?? this.accent,
   );
 
   Map<String, dynamic> toJson() => {
@@ -83,6 +100,9 @@ class AppSettings {
     'offPeakStartMin': offPeakStartMin,
     'offPeakEndMin': offPeakEndMin,
     'offPeakDays': offPeakDays,
+    'themeMode': themeMode.name,
+    'pureBlack': pureBlack,
+    'accent': accent,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> m) {
@@ -99,6 +119,9 @@ class AppSettings {
       offPeakStartMin: m['offPeakStartMin'] as int? ?? d.offPeakStartMin,
       offPeakEndMin: m['offPeakEndMin'] as int? ?? d.offPeakEndMin,
       offPeakDays: m['offPeakDays'] as int? ?? d.offPeakDays,
+      themeMode: ThemeMode.values.asNameMap()[m['themeMode']] ?? d.themeMode,
+      pureBlack: m['pureBlack'] as bool? ?? d.pureBlack,
+      accent: m['accent'] as String? ?? d.accent,
     );
   }
 }

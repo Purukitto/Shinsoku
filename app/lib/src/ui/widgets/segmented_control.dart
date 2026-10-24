@@ -25,11 +25,12 @@ class SSegmented<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: SColors.bg1,
-        border: Border.all(color: SColors.line),
+        color: c.bg1,
+        border: Border.all(color: c.line),
         borderRadius: BorderRadius.circular(9),
       ),
       child: Row(
@@ -42,7 +43,7 @@ class SSegmented<T> extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
               decoration: BoxDecoration(
-                color: sel ? SColors.bg3 : Colors.transparent,
+                color: sel ? c.bg3 : Colors.transparent,
                 borderRadius: BorderRadius.circular(7),
                 boxShadow: sel
                     ? [BoxShadow(color: Colors.black26, blurRadius: 3, offset: const Offset(0, 1))]
@@ -52,15 +53,15 @@ class SSegmented<T> extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (o.icon != null) ...[
-                    Icon(o.icon!, size: 15, color: sel ? SColors.hi : SColors.mid),
+                    Icon(o.icon!, size: 15, color: sel ? c.hi : c.mid),
                     if (o.label != null) const SizedBox(width: 6),
                   ],
                   if (o.label != null)
                     Text(
                       o.label!,
-                      style: SText.uiBase(
-                        color: sel ? SColors.hi : SColors.mid,
-                      ).copyWith(fontWeight: FontWeight.w500, fontSize: 13),
+                      style: c.text
+                          .uiBase(color: sel ? c.hi : c.mid)
+                          .copyWith(fontWeight: FontWeight.w500, fontSize: 13),
                     ),
                 ],
               ),
@@ -81,27 +82,28 @@ class SSearchInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SizedBox(
       width: width,
       height: 36,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: SColors.bg1,
-          border: Border.all(color: SColors.line),
+          color: c.bg1,
+          border: Border.all(color: c.line),
           borderRadius: BorderRadius.circular(9),
         ),
         child: Row(
           children: [
-            Icon(Icons.search_rounded, size: 16, color: SColors.low),
+            Icon(Icons.search_rounded, size: 16, color: c.low),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: controller,
-                style: SText.uiBase().copyWith(fontSize: 13.5),
+                style: c.text.uiBase().copyWith(fontSize: 13.5),
                 decoration: InputDecoration(
                   hintText: placeholder,
-                  hintStyle: SText.uiBase(color: SColors.low).copyWith(fontSize: 13.5),
+                  hintStyle: c.text.uiBase(color: c.low).copyWith(fontSize: 13.5),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.zero,

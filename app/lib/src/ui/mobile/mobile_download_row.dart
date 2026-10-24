@@ -20,6 +20,7 @@ class MobileDownloadRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
     // Watch only this row's item, as the desktop row does.
     final it = ref.watch(downloadItemProvider(id));
     if (it == null) return const SizedBox.shrink();
@@ -49,9 +50,9 @@ class MobileDownloadRow extends ConsumerWidget {
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: SColors.bg1,
+          color: c.bg1,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: SColors.line),
+          border: Border.all(color: c.line),
         ),
         child: Stack(
           children: [
@@ -68,7 +69,7 @@ class MobileDownloadRow extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(it.name, style: SText.uiMd(), overflow: TextOverflow.ellipsis),
+                            Text(it.name, style: c.text.uiMd(), overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 5),
                             StatusLabel(item: it),
                           ],
@@ -99,14 +100,14 @@ class MobileDownloadRow extends ConsumerWidget {
                                 ? it.error ?? 'Failed'
                                 : '${fmtBytes(it.downloadedBytes)} / ${fmtBytes(it.totalBytes)}'
                                       '${it.waitingForOffPeak ? '  ·  waiting for off-peak' : ''}',
-                            style: SText.monoSm(color: failed ? SColors.danger : null),
+                            style: c.text.monoSm(color: failed ? c.danger : null),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 10),
                         Text(
                           '${fmtPct(p)}${active && eta != null ? "  ·  ${fmtEta(eta)}" : ""}',
-                          style: SText.monoSm(color: active ? SColors.mid : SColors.low),
+                          style: c.text.monoSm(color: active ? c.mid : c.low),
                         ),
                       ],
                     ),
@@ -121,7 +122,7 @@ class MobileDownloadRow extends ConsumerWidget {
               bottom: 0,
               child: Container(
                 width: 3,
-                decoration: BoxDecoration(gradient: active ? SColors.voltGradient : null),
+                decoration: BoxDecoration(gradient: active ? c.accentGradient : null),
               ),
             ),
           ],

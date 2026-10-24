@@ -12,75 +12,73 @@ const String _mono = 'JetBrainsMono';
 const String kFontUi = _ui;
 const String kFontMono = _mono;
 
-abstract final class SText {
-  static const TextStyle ui = TextStyle(fontFamily: _ui, color: SColors.hi);
-  static const TextStyle mono = TextStyle(fontFamily: _mono, color: SColors.hi);
+/// The type scale, coloured from a palette: `context.colors.text.uiBase()`.
+class SText {
+  const SText(this._c);
+
+  final SColors _c;
 
   // ui scale
-  static TextStyle uiSm({Color? color}) =>
-      TextStyle(fontFamily: _ui, fontSize: 12, color: color ?? SColors.mid);
-  static TextStyle uiBase({Color? color, FontWeight? weight}) =>
-      TextStyle(fontFamily: _ui, fontSize: 13.5, color: color ?? SColors.hi, fontWeight: weight);
-  static TextStyle uiMd({Color? color, FontWeight? weight}) => TextStyle(
+  TextStyle uiSm({Color? color}) =>
+      TextStyle(fontFamily: _ui, fontSize: 12, color: color ?? _c.mid);
+  TextStyle uiBase({Color? color, FontWeight? weight}) =>
+      TextStyle(fontFamily: _ui, fontSize: 13.5, color: color ?? _c.hi, fontWeight: weight);
+  TextStyle uiMd({Color? color, FontWeight? weight}) => TextStyle(
     fontFamily: _ui,
     fontSize: 14.5,
-    color: color ?? SColors.hi,
+    color: color ?? _c.hi,
     fontWeight: weight ?? FontWeight.w500,
   );
-  static TextStyle uiLg({Color? color, FontWeight? weight}) => TextStyle(
+  TextStyle uiLg({Color? color, FontWeight? weight}) => TextStyle(
     fontFamily: _ui,
     fontSize: 18,
-    color: color ?? SColors.hi,
+    color: color ?? _c.hi,
     fontWeight: weight ?? FontWeight.w600,
     letterSpacing: -0.01 * 18,
   );
-  static TextStyle uiXl({Color? color, FontWeight? weight}) => TextStyle(
+  TextStyle uiXl({Color? color, FontWeight? weight}) => TextStyle(
     fontFamily: _ui,
     fontSize: 21,
-    color: color ?? SColors.hi,
+    color: color ?? _c.hi,
     fontWeight: weight ?? FontWeight.w600,
     letterSpacing: -0.01 * 21,
   );
 
   // mono scale
-  static TextStyle monoXs({Color? color}) => TextStyle(
-    fontFamily: _mono,
-    fontSize: 10,
-    color: color ?? SColors.low,
-    letterSpacing: 0.12 * 10,
-  );
-  static TextStyle monoSm({Color? color}) =>
-      TextStyle(fontFamily: _mono, fontSize: 11.5, color: color ?? SColors.low);
-  static TextStyle monoBase({Color? color, FontWeight? weight}) =>
-      TextStyle(fontFamily: _mono, fontSize: 12.5, color: color ?? SColors.hi, fontWeight: weight);
-  static TextStyle monoMd({Color? color, FontWeight? weight}) =>
-      TextStyle(fontFamily: _mono, fontSize: 14, color: color ?? SColors.hi, fontWeight: weight);
-  static TextStyle monoLg({Color? color, FontWeight? weight}) => TextStyle(
+  TextStyle monoXs({Color? color}) =>
+      TextStyle(fontFamily: _mono, fontSize: 10, color: color ?? _c.low, letterSpacing: 0.12 * 10);
+  TextStyle monoSm({Color? color}) =>
+      TextStyle(fontFamily: _mono, fontSize: 11.5, color: color ?? _c.low);
+  TextStyle monoBase({Color? color, FontWeight? weight}) =>
+      TextStyle(fontFamily: _mono, fontSize: 12.5, color: color ?? _c.hi, fontWeight: weight);
+  TextStyle monoMd({Color? color, FontWeight? weight}) =>
+      TextStyle(fontFamily: _mono, fontSize: 14, color: color ?? _c.hi, fontWeight: weight);
+  TextStyle monoLg({Color? color, FontWeight? weight}) => TextStyle(
     fontFamily: _mono,
     fontSize: 19,
-    color: color ?? SColors.hi,
+    color: color ?? _c.hi,
     fontWeight: weight ?? FontWeight.w600,
     letterSpacing: -0.02 * 19,
   );
-  static TextStyle monoXl({Color? color, FontWeight? weight}) => TextStyle(
+  TextStyle monoXl({Color? color, FontWeight? weight}) => TextStyle(
     fontFamily: _mono,
     fontSize: 38,
-    color: color ?? SColors.hi,
+    color: color ?? _c.hi,
     fontWeight: weight ?? FontWeight.w600,
     letterSpacing: -0.02 * 38,
   );
-  static TextStyle monoHero({Color? color}) => TextStyle(
+  TextStyle monoHero({Color? color}) => TextStyle(
     fontFamily: _mono,
     fontSize: 44,
-    color: color ?? SColors.hi,
+    color: color ?? _c.hi,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.02 * 44,
   );
 
-  static TextStyle label({Color? color}) => TextStyle(
-    fontFamily: _mono,
-    fontSize: 11,
-    color: color ?? SColors.low,
-    letterSpacing: 0.14 * 11,
-  );
+  TextStyle label({Color? color}) =>
+      TextStyle(fontFamily: _mono, fontSize: 11, color: color ?? _c.low, letterSpacing: 0.14 * 11);
+}
+
+extension SColorsText on SColors {
+  SText get text => SText(this);
 }
