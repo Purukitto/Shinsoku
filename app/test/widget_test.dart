@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shinsoku/src/models/download_item.dart';
@@ -58,10 +59,14 @@ class _FakeDownloads extends DownloadsNotifier {
   rust.LinkWait? linkWait() => wait;
 }
 
-/// Default settings, never pushed to the engine or written to disk.
+/// Settings in memory, never pushed to the engine or written to disk.
 class _FakeSettings extends SettingsNotifier {
+  _FakeSettings([this.initial = const AppSettings()]);
+
+  final AppSettings initial;
+
   @override
-  AppSettings build() => const AppSettings();
+  AppSettings build() => initial;
 }
 
 /// Startup entry in memory; records what Settings asked for.
@@ -515,4 +520,110 @@ void main() {
     expect(find.bySemanticsLabel('Update available, version 0.2.0'), findsOneWidget);
     expect(find.text('v0.2.0'), findsOneWidget);
   });
+
+  testWidgets('a link shared from another app opens the Add dialog with it', (tester) async {
+    _phone(tester);
+    final shared = ['Ubuntu 24.04 — https://releases.ubuntu.com/24.04/ubuntu.iso'];
+    _mockLinks(tester, take: () => shared.isEmpty ? null : shared.removeAt(0));
+    await tester.pumpWidget(_phoneShell(_FakeDownloads([_running])));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('New download'), findsOneWidget);
+    expect(find.text('https://releases.ubuntu.com/24.04/ubuntu.iso'), findsOneWidget);
+    expect(find.text('Link detected on your clipboard'), findsNothing);
+    await tester.pump(const Duration(seconds: 1)); // lets the link probe run
+  });
+
+  testWidgets('a copied link is offered once, when Shinsoku comes back', (tester) async {
+    _phone(tester);
+    var stamp = 1;
+    _mockLinks(tester, clip: () => {'stamp': stamp, 'text': true, 'noLink': false});
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (
+      call,
+    ) async {
+      if (call.method == 'Clipboard.getData') return {'text': 'https://example.com/a.zip'};
+      return null;
+    });
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await tester.pumpWidget(_phoneShell(_FakeDownloads([_running])));
+    await tester.pump();
+
+    expect(find.text('Link copied — download?'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Dismiss'));
+    await tester.pump();
+    expect(find.text('Link copied — download?'), findsNothing);
+
+    // the same clip isn't offered again
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(find.text('Link copied — download?'), findsNothing);
+
+    // a new one is, and opens the Add dialog with it
+    stamp = 2;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.tap(find.text('Link copied — download?'));
+    await tester.pump();
+    expect(find.text('Link detected on your clipboard'), findsOneWidget);
+    expect(find.text('https://example.com/a.zip'), findsWidgets);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('a copied link waits while the clipboard monitor is off', (tester) async {
+    _phone(tester);
+    var asked = false;
+    _mockLinks(
+      tester,
+      clip: () {
+        asked = true;
+        return {'stamp': 1, 'text': true, 'noLink': false};
+      },
+    );
+    await tester.pumpWidget(
+      _phoneShell(_FakeDownloads([_running]), settings: const AppSettings(clipboardMonitor: false)),
+    );
+    await tester.pump();
+
+    expect(asked, isFalse);
+    expect(find.text('Link copied — download?'), findsNothing);
+  });
+}
+
+/// The phone shell over fakes, as on a phone.
+Widget _phoneShell(_FakeDownloads downloads, {AppSettings settings = const AppSettings()}) =>
+    ProviderScope(
+      overrides: [
+        downloadsProvider.overrideWith(() => downloads),
+        settingsProvider.overrideWith(() => _FakeSettings(settings)),
+        captureProvider.overrideWith(() => _FakeCapture(running: false)),
+        autostartServiceProvider.overrideWithValue(_FakeAutostart()),
+        downloadDirProvider.overrideWith((ref) async => '/downloads'),
+        updateProvider.overrideWith((ref) async => null),
+      ],
+      child: const MaterialApp(home: MobileShell()),
+    );
+
+/// Answers `MainActivity`'s side of the links channel.
+void _mockLinks(
+  WidgetTester tester, {
+  String? Function()? take,
+  Map<String, Object>? Function()? clip,
+}) {
+  const channel = MethodChannel('shinsoku/links');
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+    return switch (call.method) {
+      'take' => take?.call(),
+      'clip' => clip?.call(),
+      _ => null,
+    };
+  });
+  addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
 }

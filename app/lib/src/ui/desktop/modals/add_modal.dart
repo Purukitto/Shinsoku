@@ -46,6 +46,7 @@ class AddDownloadModal extends ConsumerStatefulWidget {
     required this.onStart,
     required this.onStartStream,
     this.fromClipboard = false,
+    this.initialUrl,
   });
 
   final void Function({
@@ -66,6 +67,10 @@ class AddDownloadModal extends ConsumerStatefulWidget {
   })
   onStartStream;
   final bool fromClipboard;
+
+  /// A link to start with, such as one another app shared. With [fromClipboard],
+  /// it is the link already read from the clipboard, which isn't read again.
+  final String? initialUrl;
 
   @override
   ConsumerState<AddDownloadModal> createState() => _AddDownloadModalState();
@@ -90,8 +95,13 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialUrl case final url?) {
+      _ctrl.text = url;
+      _scheduleProbe();
+    } else if (widget.fromClipboard) {
+      _prefillFromClipboard();
+    }
     _ctrl.addListener(_onChanged);
-    if (widget.fromClipboard) _prefillFromClipboard();
   }
 
   Future<void> _prefillFromClipboard() async {
@@ -382,7 +392,12 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                           children: [
                             Icon(Icons.content_paste_rounded, size: 15, color: c.accent),
                             const SizedBox(width: 10),
-                            Text('Link detected on your clipboard', style: c.text.uiBase()),
+                            Expanded(
+                              child: Text(
+                                'Link detected on your clipboard',
+                                style: c.text.uiBase(),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -514,9 +529,11 @@ class _AddDownloadModalState extends ConsumerState<AddDownloadModal> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Schedule for off-peak',
-                          style: c.text.uiBase(color: c.mid).copyWith(fontSize: 13),
+                        Flexible(
+                          child: Text(
+                            'Schedule for off-peak',
+                            style: c.text.uiBase(color: c.mid).copyWith(fontSize: 13),
+                          ),
                         ),
                         SToggle(
                           value: _scheduled,

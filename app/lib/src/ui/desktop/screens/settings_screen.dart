@@ -161,17 +161,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ],
             ),
-          // the clipboard poll and the extension are desktop only for now
-          if (isDesktop)
-            _card(
-              icon: Icons.content_paste_rounded,
-              title: 'Capture',
-              children: [
-                _row(
-                  'Monitor clipboard',
-                  desc: 'Catch links the moment you copy them and offer to download.',
-                  child: SToggle(value: s.clipboardMonitor, onChanged: set.setClipboardMonitor),
-                ),
+          _card(
+            icon: Icons.content_paste_rounded,
+            title: 'Capture',
+            children: [
+              _row(
+                'Monitor clipboard',
+                // a phone only lets the app in front read the clipboard
+                desc: isDesktop
+                    ? 'Catch links the moment you copy them and offer to download.'
+                    : 'Offer to download a link you copied when you come back to Shinsoku.',
+                last: !isDesktop,
+                child: SToggle(value: s.clipboardMonitor, onChanged: set.setClipboardMonitor),
+              ),
+              // the extension is desktop only
+              if (isDesktop) ...[
                 _row(
                   'Browser integration',
                   desc:
@@ -185,7 +189,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (cap.enabled) _captureDetails(cap, capStatus),
               ],
-            ),
+            ],
+          ),
           _card(
             icon: Icons.palette_outlined,
             title: 'Appearance',

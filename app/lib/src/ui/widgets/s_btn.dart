@@ -41,16 +41,20 @@ class _SBtnState extends State<SBtn> {
         ? const EdgeInsets.symmetric(horizontal: 11)
         : const EdgeInsets.symmetric(horizontal: 15);
 
-    Widget content = Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (widget.icon != null) ...[Icon(widget.icon, size: iconSize), const SizedBox(width: 7)],
-        DefaultTextStyle(
-          style: c.text.uiBase().copyWith(fontSize: fontSize),
-          child: widget.child,
-        ),
-      ],
+    // shrinks rather than overflows a narrow phone, or with large text
+    Widget content = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (widget.icon != null) ...[Icon(widget.icon, size: iconSize), const SizedBox(width: 7)],
+          DefaultTextStyle(
+            style: c.text.uiBase().copyWith(fontSize: fontSize),
+            child: widget.child,
+          ),
+        ],
+      ),
     );
 
     if (widget.kind == BtnKind.primary) {
