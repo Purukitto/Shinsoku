@@ -15,7 +15,7 @@ beyond that.
 | --- | --- | --- |
 | Windows app | Done | Portable zip, no installer yet |
 | Android app | Partial | Android 11 and later, in a phone layout, saving to `Download/Shinsoku`. No release build yet |
-| Linux app | Not started | Flutter target exists; the native engine build does not |
+| Linux app | Partial | Builds with the engine bundled, and CI launches it on every pull request; no package or release job yet |
 
 ## Downloading
 
