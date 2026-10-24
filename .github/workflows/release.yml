@@ -1,8 +1,9 @@
 name: Release
 
 # A vX.Y.Z tag (made by tool/bump-version.ps1) builds the Windows app and both
-# extensions and opens a draft GitHub Release. Publishing the draft is what makes
-# the in-app update check see it.
+# extensions and opens a draft GitHub Release, then adds the Android APKs to it and
+# keeps the Google Play bundle as a workflow artifact. Publishing the draft is what
+# makes the in-app update check see it.
 on:
   push:
     tags: ['v*']
@@ -23,6 +24,9 @@ jobs:
   windows:
     name: Windows x64
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -114,6 +118,9 @@ jobs:
           | File | What it is |
           | --- | --- |
           | ``Shinsoku-$v-windows-x64.zip`` | The app. Unzip anywhere and run ``shinsoku.exe``. |
+          | ``Shinsoku-$v-android-arm64-v8a.apk`` | The Android app, for almost every phone. |
+          | ``Shinsoku-$v-android-armeabi-v7a.apk`` | The Android app, for older 32-bit phones. |
+          | ``Shinsoku-$v-android-x86_64.apk`` | The Android app, for emulators and Chromebooks. |
           | ``Shinsoku-Capture-$v-chromium.zip`` | Browser extension for Chrome, Edge and Brave. |
           | ``Shinsoku-Capture-$v-firefox.zip`` | Browser extension for Firefox. |
           | ``SHA256SUMS.txt`` | Checksums for the files above. |
@@ -121,6 +128,8 @@ jobs:
           Windows 10 or 11, x64. The binaries are unsigned, so SmartScreen warns on first
           launch. Updating from an earlier version: quit Shinsoku and replace its folder;
           downloads and settings live in ``%APPDATA%`` and carry over.
+
+          Android 11 or later. Open the APK to install it, or to update an earlier one.
 
           Full history: [CHANGELOG.md](https://github.com/Purukitto/Shinsoku/blob/$tag/CHANGELOG.md)
           "@
@@ -147,3 +156,110 @@ jobs:
           files: |
             artifacts/*.zip
             artifacts/SHA256SUMS.txt
+
+  # After Windows, because it adds to the draft that job opens.
+  android:
+    name: Android
+    needs: windows
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.windows.outputs.version }}
+      TAG: ${{ needs.windows.outputs.tag }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      # An APK signed with the debug key can't be updated by one signed with the real
+      # key, so there is no release without it.
+      - name: Signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::The ANDROID_KEYSTORE_BASE64 secret is not set. CONTRIBUTING.md, Releasing, has how."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "SHINSOKU_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+          key: release
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # foss for GitHub, one APK per ABI; play as the bundle Google Play takes.
+      - name: Build
+        env:
+          SHINSOKU_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          SHINSOKU_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          SHINSOKU_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release --flavor foss --split-per-abi
+          flutter build appbundle --release --flavor play
+
+      - name: Verify signatures
+        run: |
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          for apk in build/app/outputs/flutter-apk/app-*-foss-release.apk; do
+            "$apksigner" verify "$apk"
+            if "$apksigner" verify --print-certs "$apk" | grep -q 'CN=Android Debug'; then
+              echo "::error::$apk is signed with the debug key"
+              exit 1
+            fi
+          done
+
+      - name: Package
+        run: |
+          mkdir -p ../artifacts
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            cp "build/app/outputs/flutter-apk/app-$abi-foss-release.apk" \
+              "../artifacts/Shinsoku-$VERSION-android-$abi.apk"
+          done
+          cp build/app/outputs/bundle/playRelease/app-play-release.aab "../artifacts/Shinsoku-$VERSION-play.aab"
+          ls -l ../artifacts
+
+      # The bundle is for uploading to Google Play by hand, not for people to install.
+      - name: Upload the Play bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: shinsoku-play-bundle
+          path: artifacts/*.aab
+          if-no-files-found: error
+
+      # Checksums go into the draft's SHA256SUMS.txt beside the Windows ones, with the
+      # same CRLF line endings.
+      - name: Add to the draft release
+        working-directory: artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" Shinsoku-*-android-*.apk --clobber --repo "$GITHUB_REPOSITORY"
+          gh release download "$TAG" --pattern SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          sha256sum Shinsoku-*-android-*.apk | sed 's/$/\r/' >> SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "$TAG" SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"

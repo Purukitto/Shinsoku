@@ -233,10 +233,42 @@ to build when it disagrees with the manifests or the changelog.
    The `v0.2.0` tag starts [`release.yml`](.github/workflows/release.yml): verify,
    build, check the outputs exist, package the app and both extensions, write
    `SHA256SUMS.txt`, and open a **draft** release whose notes are the changelog
-   section.
+   section. The Android job then adds the signed foss APKs and their checksums to the
+   draft, and keeps the Google Play bundle as the run's `shinsoku-play-bundle`
+   artifact.
 4. **Publish the draft** from the Releases tab after reading it over. Until then the
    in-app update check cannot see it; from then on every running copy shows **Update
    available** at its next launch.
+5. **Upload the Play bundle** (`Shinsoku-0.2.0-play.aab`, from the run's artifacts) in
+   the Play Console when the release should reach Google Play too.
+
+### The Android signing key
+
+The Android job refuses to build without the release key: an APK signed with the debug
+key can never be updated by one signed with the real key. It reads four repository
+secrets (**Settings → Secrets and variables → Actions**):
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | The keystore file, base64-encoded |
+| `ANDROID_KEYSTORE_PASSWORD` | The keystore's password |
+| `ANDROID_KEY_ALIAS` | The key's alias in it |
+| `ANDROID_KEY_PASSWORD` | The key's password |
+
+The same key signs the GitHub APKs and, as the upload key, the Play bundle; Google
+Play re-signs with its own app signing key. Make one once, and back it up outside the
+repository, since losing it means GitHub installs can't be updated:
+
+```bash
+keytool -genkeypair -v -keystore shinsoku-release.jks -alias shinsoku -keyalg RSA -keysize 4096 -validity 10000
+```
+
+```bash
+base64 -w0 shinsoku-release.jks
+```
+
+To sign a local release build with it, point `app/android/key.properties` at it.
+That file and any `*.jks` are gitignored.
 
 If the build fails for a reason outside the code, fix the workflow and rerun it from
 **Actions → Release → Run workflow** with the same tag. If the code was wrong, ship a

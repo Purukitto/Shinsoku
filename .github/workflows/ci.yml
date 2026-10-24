@@ -177,5 +177,18 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Build APK
-        run: flutter build apk --debug
+      - name: Build APKs
+        run: |
+          flutter build apk --debug --flavor foss
+          flutter build apk --debug --flavor play
+
+      # GitHub releases and F-Droid ship the foss build, which must carry no Google
+      # code. A dependency that pulls some in fails here rather than at review.
+      - name: No Google code in the foss build
+        run: |
+          apk=build/app/outputs/flutter-apk/app-foss-debug.apk
+          if unzip -p "$apk" 'classes*.dex' |
+            grep -a -q -E 'Lcom/android/billingclient/|Lcom/google/android/gms/|Lcom/google/firebase/'; then
+            echo "::error::$apk contains Play Billing, Play services or Firebase classes"
+            exit 1
+          fi
