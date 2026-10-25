@@ -20,10 +20,10 @@ foreach ($browser in 'chromium', 'firefox') {
   Copy-Item (Join-Path $root "$browser/manifest.json") $out -Force
 
   if ($Zip) {
-    $zip = Join-Path $dist "$browser.zip"
-    if (Test-Path $zip) { Remove-Item $zip -Force }
-    Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zip
-    Write-Host "Built $out  (+ $zip)"
+    $archive = Join-Path $dist "$browser.zip"
+    if (Test-Path $archive) { Remove-Item $archive -Force }
+    Compress-Archive -Path (Join-Path $out '*') -DestinationPath $archive
+    Write-Host "Built $out  (+ $archive)"
   } else {
     Write-Host "Built $out"
   }
