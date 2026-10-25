@@ -11,6 +11,8 @@ the entry is marked **Breaking** under **Changed**.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-25
+
 ### Added
 
 - **Multi-segment download engine** in Rust. Each HTTP/HTTPS download is split into up
@@ -91,6 +93,10 @@ the entry is marked **Breaking** under **Changed**.
 - Portable zip only on Windows, no installer. The binaries are unsigned, so
   SmartScreen warns on first launch.
 - A tarball only on Linux, no distribution package.
+- On Android, links go in through the Add dialog only: there is no share menu or
+  copied-link offer yet. A scheduled download whose off-peak hours begin while
+  Shinsoku is in the background waits until you open it, and Android 15 and later
+  stop background downloading after six hours a day.
 - No queue priorities and no per-download speed limit.
 - HLS is video on demand only: live streams, DASH and `SAMPLE-AES` are refused, and
   nothing is remuxed.
@@ -102,4 +108,5 @@ the entry is marked **Breaking** under **Changed**.
 - Request headers attached to a download, including forwarded cookies, are stored in
   plain text in the app's data folder.
 
-[Unreleased]: https://github.com/Purukitto/Shinsoku/commits/main
+[Unreleased]: https://github.com/Purukitto/Shinsoku/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Purukitto/Shinsoku/releases/tag/v0.1.0
