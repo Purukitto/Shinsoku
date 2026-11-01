@@ -11,6 +11,10 @@ the entry is marked **Breaking** under **Changed**.
 
 ## [Unreleased]
 
+### Fixed
+
+- The Android app closed itself when a download finished moments after it started.
+
 ## [0.1.0] - 2026-10-25
 
 ### Added

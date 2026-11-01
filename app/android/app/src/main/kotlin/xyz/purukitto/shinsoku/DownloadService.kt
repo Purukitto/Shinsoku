@@ -30,6 +30,13 @@ class DownloadService : Service() {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
         running = true
+        starting = false
+        if (stopWhenStarted) {
+            // the downloads finished before the service got going
+            stopWhenStarted = false
+            running = false
+            stopSelf()
+        }
         // after the system kills the process, the engine restores interrupted
         // downloads as paused, so there would be nothing to run
         return START_NOT_STICKY
@@ -53,12 +60,24 @@ class DownloadService : Service() {
         @Volatile
         private var running = false
 
+        // Started, but onStartCommand hasn't run yet. Stopping the service then
+        // crashes the app: Android requires startForeground first.
+        @Volatile
+        private var starting = false
+
+        @Volatile
+        private var stopWhenStarted = false
+
         fun handle(context: Context, call: MethodCall, result: MethodChannel.Result) {
             when (call.method) {
                 "show" -> result.success(show(context, call.arguments as Map<*, *>))
                 "stop" -> {
                     running = false
-                    context.stopService(Intent(context, DownloadService::class.java))
+                    if (starting) {
+                        stopWhenStarted = true
+                    } else {
+                        context.stopService(Intent(context, DownloadService::class.java))
+                    }
                     result.success(null)
                 }
                 else -> result.notImplemented()
@@ -72,6 +91,7 @@ class DownloadService : Service() {
                 putString("text", args["text"] as String?)
                 putInt("progress", (args["progress"] as Number?)?.toInt() ?: -1)
             }
+            stopWhenStarted = false
             if (running) {
                 context.getSystemService(NotificationManager::class.java)
                     .notify(NOTIFICATION_ID, build(context, extras))
@@ -79,6 +99,7 @@ class DownloadService : Service() {
             }
             return try {
                 context.startForegroundService(Intent(context, DownloadService::class.java).putExtras(extras))
+                starting = true
                 true
             } catch (e: IllegalStateException) {
                 // ForegroundServiceStartNotAllowedException: the app is in the background
