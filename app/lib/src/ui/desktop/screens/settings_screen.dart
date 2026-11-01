@@ -132,6 +132,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
           ),
+          _card(
+            icon: Icons.notifications_none_rounded,
+            title: 'Notifications',
+            children: [
+              _row(
+                'When a download finishes',
+                desc: 'Say when a download finishes or fails, with a way to open the file.',
+                last: true,
+                child: SToggle(value: s.notifyWhenDone, onChanged: set.setNotifyWhenDone),
+              ),
+            ],
+          ),
           if (autostart)
             _card(
               icon: Icons.power_settings_new_rounded,

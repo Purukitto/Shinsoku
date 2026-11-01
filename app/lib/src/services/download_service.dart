@@ -1,12 +1,15 @@
 import 'package:flutter/services.dart';
 
+import '../models/finish_notice.dart';
 import '../models/progress_summary.dart';
+import '../providers/finish_provider.dart';
 import '../providers/progress_provider.dart';
 
 /// Android's foreground service (`DownloadService.kt`): while downloads run it
 /// keeps the process from being frozen in the background, and its notification
-/// shows their progress silently in the shade.
-class DownloadService implements ProgressSink {
+/// shows their progress silently in the shade. Finished downloads get a
+/// notification of their own (`FinishedNotice.kt`).
+class DownloadService implements ProgressSink, FinishSink {
   DownloadService._();
   static final DownloadService instance = DownloadService._();
 
@@ -41,6 +44,18 @@ class DownloadService implements ProgressSink {
   void clear() {
     _refused = false;
     _call(_service, 'stop');
+  }
+
+  @override
+  void notify(FinishNotice notice) {
+    _call(_service, 'finished', {
+      'id': notice.key,
+      'title': notice.title,
+      'text': notice.body,
+      'failed': notice.failed,
+      // tapping the notice for a finished file opens it
+      if (!notice.failed && notice.single != null) 'path': notice.single!.path,
+    });
   }
 
   /// No window to ask from, or no service to talk to, is not an error here.

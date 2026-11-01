@@ -33,7 +33,7 @@ beyond that.
 | Wi-Fi only, pause on mobile data | Not started | *Android* |
 | Large files | Done | |
 | Keep downloading in the background | Done | The tray on desktop; a foreground service on Android, which Android 15 and later allow six hours a day |
-| Progress and completion notifications | Partial | Progress in a silent Android notification and in the tray (on hover on Windows, atop the menu on Linux). Nothing says when a download finishes yet |
+| Progress and completion notifications | Done | Progress in a silent Android notification and in the tray (on hover on Windows, atop the menu on Linux). A notification when a download finishes or fails, with **Open** and **Show in folder** on desktop; on Android, tapping it opens the file |
 | After-download actions (move file, turn off Wi-Fi, exit) | Not started | |
 | Name and folder per download before it starts | Not started | |
 | When a name is taken: rename, overwrite or skip | Partial | Rename only |

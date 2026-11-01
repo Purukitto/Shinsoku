@@ -160,6 +160,24 @@ scope unless added later.
   and downloads carry on only while the app is open; user-initiated data transfer jobs
   (Android 14 and later) have no such cap and are the way past it if that proves too
   tight. Asking for the notification permission waits for the first download.
+- **Finished-download notifications** — Dart spots a download that finishes or fails
+  by comparing each download list with the last (`finishReporterProvider`), then waits
+  a second and a half, so downloads that end together share one notification. Android
+  posts it from Kotlin (`FinishedNotice.kt`) on a channel of its own at default
+  importance, beside the silent progress one; tapping it for a finished file opens the
+  file through a `FileProvider`. On Windows the runner shows the toast with C++/WinRT
+  (`windows/runner/notices.cpp`) from XML Dart builds. Windows shows toasts only from
+  an app it knows, so the first notice registers an AppUserModelID under `HKCU`, with
+  no Start menu shortcut needed, and a COM callback the process registers takes the
+  clicks, which therefore work only while Shinsoku runs; in the tray it does. The
+  `flutter_local_notifications_windows` package does the same but includes ATL, an
+  optional Visual Studio component this build doesn't otherwise need. Linux uses the
+  `flutter_local_notifications_linux` package on its own: pure Dart over D-Bus,
+  without the app-facing plugin, whose Android half would duplicate the Kotlin and
+  need core library desugaring. On desktop, clicking the notification brings the
+  window back and opening the file is a button of its own, so a stray click never runs
+  a downloaded program; on Android, nothing a tap opens runs without the system asking
+  first.
 - **CI/CD** — GitHub Actions. `ci.yml`: version check (Ubuntu), Rust fmt, clippy and
   tests (Ubuntu), Flutter format check, analyze and tests (Windows), a Linux build
   that launches under Xvfb (Ubuntu), and debug APKs of both Android flavors, checking

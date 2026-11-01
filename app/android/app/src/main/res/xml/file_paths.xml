@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- downloads are saved in the shared storage, under Download -->
+    <external-path name="storage" path="." />
+</paths>

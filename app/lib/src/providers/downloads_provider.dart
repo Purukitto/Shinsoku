@@ -78,6 +78,7 @@ DownloadItem _map(rd.DownloadItem r) => DownloadItem(
   id: r.id,
   name: r.filename,
   url: r.url,
+  path: r.destPath,
   referrer: _header(r.headers, 'referer'),
   host: r.host,
   fileType: _fileType(r.fileType),
@@ -172,6 +173,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
         0,
         CompletedDownload(
           name: it.name,
+          path: it.path,
           host: it.host,
           fileType: it.fileType,
           totalBytes: it.totalBytes,

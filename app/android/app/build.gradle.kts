@@ -77,6 +77,11 @@ kotlin {
     }
 }
 
+dependencies {
+    // FileProvider, for opening finished downloads
+    implementation("androidx.core:core:1.13.1")
+}
+
 flutter {
     source = "../.."
 }

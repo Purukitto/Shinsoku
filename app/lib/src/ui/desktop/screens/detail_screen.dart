@@ -7,6 +7,7 @@ import '../../../models/off_peak.dart';
 import '../../../platform.dart';
 import '../../../providers/downloads_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../services/file_actions.dart';
 import '../../../theme/colors.dart';
 import '../../../theme/text_styles.dart';
 import '../../widgets/volt_bar.dart';
@@ -104,7 +105,7 @@ class DetailScreen extends ConsumerWidget {
           kind: BtnKind.solid,
           icon: Icons.folder_open_rounded,
           child: const Text('Show in folder'),
-          onPressed: () {},
+          onPressed: () => FileActions.showInFolder(it.path),
         ),
       SIconBtn(
         icon: Icons.delete_outline_rounded,

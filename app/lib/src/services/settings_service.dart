@@ -9,7 +9,7 @@ import '../models/off_peak.dart';
 /// User-tunable engine + app settings. Engine-applied values (connections,
 /// simultaneous, download limit, categorize, off-peak hours) are pushed into the Rust
 /// core on load and on change; the rest gate app-side behaviour (clipboard
-/// monitor, appearance) or are stored for a feature not yet active (upload cap —
+/// monitor, notifications, appearance) or are stored for a feature not yet active (upload cap —
 /// there is no seeding/upload path in the engine yet).
 class AppSettings {
   const AppSettings({
@@ -18,6 +18,7 @@ class AppSettings {
     this.downloadLimitMbps = 0,
     this.categorize = true,
     this.clipboardMonitor = true,
+    this.notifyWhenDone = true,
     this.uploadCap = true,
     this.uploadLimitMbps = 20,
     this.offPeakFullSpeed = true,
@@ -34,6 +35,9 @@ class AppSettings {
   final int downloadLimitMbps; // 0 = unlimited
   final bool categorize;
   final bool clipboardMonitor;
+
+  /// A notification when a download finishes or fails.
+  final bool notifyWhenDone;
   final bool uploadCap;
   final int uploadLimitMbps;
 
@@ -61,6 +65,7 @@ class AppSettings {
     int? downloadLimitMbps,
     bool? categorize,
     bool? clipboardMonitor,
+    bool? notifyWhenDone,
     bool? uploadCap,
     int? uploadLimitMbps,
     bool? offPeakFullSpeed,
@@ -76,6 +81,7 @@ class AppSettings {
     downloadLimitMbps: downloadLimitMbps ?? this.downloadLimitMbps,
     categorize: categorize ?? this.categorize,
     clipboardMonitor: clipboardMonitor ?? this.clipboardMonitor,
+    notifyWhenDone: notifyWhenDone ?? this.notifyWhenDone,
     uploadCap: uploadCap ?? this.uploadCap,
     uploadLimitMbps: uploadLimitMbps ?? this.uploadLimitMbps,
     offPeakFullSpeed: offPeakFullSpeed ?? this.offPeakFullSpeed,
@@ -93,6 +99,7 @@ class AppSettings {
     'downloadLimitMbps': downloadLimitMbps,
     'categorize': categorize,
     'clipboardMonitor': clipboardMonitor,
+    'notifyWhenDone': notifyWhenDone,
     'uploadCap': uploadCap,
     'uploadLimitMbps': uploadLimitMbps,
     // named before the hours also scheduled downloads
@@ -113,6 +120,7 @@ class AppSettings {
       downloadLimitMbps: m['downloadLimitMbps'] as int? ?? d.downloadLimitMbps,
       categorize: m['categorize'] as bool? ?? d.categorize,
       clipboardMonitor: m['clipboardMonitor'] as bool? ?? d.clipboardMonitor,
+      notifyWhenDone: m['notifyWhenDone'] as bool? ?? d.notifyWhenDone,
       uploadCap: m['uploadCap'] as bool? ?? d.uploadCap,
       uploadLimitMbps: m['uploadLimitMbps'] as int? ?? d.uploadLimitMbps,
       offPeakFullSpeed: m['offPeak'] as bool? ?? d.offPeakFullSpeed,
