@@ -11,8 +11,17 @@ the entry is marked **Breaking** under **Changed**.
 
 ## [Unreleased]
 
+### Added
+
+- **Finished-download notifications.** When a download finishes or fails, a
+  notification says so. On Windows and Linux it has **Open** and **Show in folder**
+  buttons; on Android, tapping it opens the file. Downloads that end together share
+  one notification. Turn it off in **Settings → Notifications**.
+
 ### Fixed
 
+- **Open** and **Show in folder** on the Completed screen, and **Show in folder** on a
+  finished download's page, did nothing.
 - The Android app closed itself when a download finished moments after it started.
 
 ## [0.1.0] - 2026-10-25

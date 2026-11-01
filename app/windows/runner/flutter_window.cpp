@@ -5,6 +5,8 @@
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "notices.h"
+#include "utils.h"
 
 namespace {
 
@@ -63,6 +65,30 @@ bool FlutterWindow::OnCreate() {
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
           flutter_controller_->engine()->messenger(), "shinsoku/instance",
           &flutter::StandardMethodCodec::GetInstance());
+  notices_channel_ =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          flutter_controller_->engine()->messenger(), "shinsoku/notices",
+          &flutter::StandardMethodCodec::GetInstance());
+  notices_channel_->SetMethodCallHandler(
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                 result) {
+        const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+        if (call.method_name() != "show" || !args) {
+          result->NotImplemented();
+          return;
+        }
+        const auto text = [args](const char* key) {
+          const auto found = args->find(flutter::EncodableValue(key));
+          const auto* value = found == args->end()
+                                  ? nullptr
+                                  : std::get_if<std::string>(&found->second);
+          return value ? Utf16FromUtf8(*value) : std::wstring();
+        };
+        const bool shown = notices::Init(GetHandle(), kNoticeClickMessage) &&
+                           notices::Show(text("xml"), text("tag"));
+        result->Success(flutter::EncodableValue(shown));
+      });
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     // started at sign-in: the app stays in the tray until opened
@@ -81,6 +107,8 @@ bool FlutterWindow::OnCreate() {
 
 void FlutterWindow::OnDestroy() {
   ::RemovePropW(GetHandle(), kInstanceProp);
+  notices::Shutdown();
+  notices_channel_ = nullptr;
   instance_channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
@@ -95,6 +123,16 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               LPARAM const lparam) noexcept {
   if (message == ShowMessage() && instance_channel_) {
     instance_channel_->InvokeMethod("show", nullptr);
+    return 0;
+  }
+  if (message == kNoticeClickMessage) {
+    std::unique_ptr<std::wstring> arguments(
+        reinterpret_cast<std::wstring*>(lparam));
+    if (notices_channel_) {
+      notices_channel_->InvokeMethod(
+          "clicked", std::make_unique<flutter::EncodableValue>(
+                         Utf8FromUtf16(arguments->c_str())));
+    }
     return 0;
   }
 

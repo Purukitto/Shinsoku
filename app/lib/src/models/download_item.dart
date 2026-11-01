@@ -17,6 +17,9 @@ class DownloadItem {
   final String name;
   final String url;
 
+  /// Where the file is saved, once finished.
+  final String path;
+
   /// Page the download came from (its `Referer` header), when known.
   final String? referrer;
   final String host;
@@ -55,6 +58,7 @@ class DownloadItem {
     required this.id,
     required this.name,
     this.url = '',
+    this.path = '',
     this.referrer,
     required this.host,
     required this.fileType,
@@ -93,6 +97,7 @@ class DownloadItem {
     String? id,
     String? name,
     String? url,
+    String? path,
     String? referrer,
     String? host,
     FileType? fileType,
@@ -119,6 +124,7 @@ class DownloadItem {
     id: id ?? this.id,
     name: name ?? this.name,
     url: url ?? this.url,
+    path: path ?? this.path,
     referrer: referrer ?? this.referrer,
     host: host ?? this.host,
     fileType: fileType ?? this.fileType,
@@ -146,6 +152,7 @@ class DownloadItem {
 
 class CompletedDownload {
   final String name;
+  final String path;
   final String host;
   final FileType fileType;
   final int totalBytes;
@@ -154,6 +161,7 @@ class CompletedDownload {
 
   const CompletedDownload({
     required this.name,
+    this.path = '',
     required this.host,
     required this.fileType,
     required this.totalBytes,

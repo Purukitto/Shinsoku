@@ -5,6 +5,7 @@ import 'package:window_manager/window_manager.dart';
 import 'src/platform.dart';
 import 'src/providers/capture_provider.dart';
 import 'src/providers/downloads_provider.dart';
+import 'src/providers/finish_provider.dart';
 import 'src/providers/progress_provider.dart';
 import 'src/providers/settings_provider.dart';
 import 'src/rust/api.dart' as rust;
@@ -92,6 +93,8 @@ class _ShinsokuAppState extends ConsumerState<ShinsokuApp> with WidgetsBindingOb
     ref.read(settingsProvider);
     // Progress in the tray, or in the Android notification.
     ref.read(progressReporterProvider);
+    // A notification as each download finishes.
+    ref.read(finishReporterProvider);
   }
 
   @override

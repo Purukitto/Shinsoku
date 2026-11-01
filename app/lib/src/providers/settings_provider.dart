@@ -92,6 +92,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   void setClipboardMonitor(bool on) => _set(state.copyWith(clipboardMonitor: on));
 
+  void setNotifyWhenDone(bool on) => _set(state.copyWith(notifyWhenDone: on));
+
   void setUploadCap(bool on) => _set(state.copyWith(uploadCap: on));
 
   void setUploadLimitMbps(int mbps) => _set(state.copyWith(uploadLimitMbps: mbps));

@@ -80,6 +80,10 @@ class DownloadService : Service() {
                     }
                     result.success(null)
                 }
+                "finished" -> {
+                    FinishedNotice.post(context, call.arguments as Map<*, *>)
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }

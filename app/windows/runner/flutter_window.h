@@ -25,6 +25,9 @@ class FlutterWindow : public Win32Window {
   // Message another launch posts to the running copy to bring it forward.
   static UINT ShowMessage();
 
+  // Message a click on one of the app's toasts posts to the window.
+  static constexpr UINT kNoticeClickMessage = WM_APP + 1;
+
  protected:
   // Win32Window:
   bool OnCreate() override;
@@ -44,6 +47,10 @@ class FlutterWindow : public Win32Window {
   // Tells the Dart side to show the window when another launch asks.
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
       instance_channel_;
+
+  // Shows the toasts Dart asks for, and tells it which one was clicked.
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
+      notices_channel_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

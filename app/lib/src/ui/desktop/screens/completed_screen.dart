@@ -3,6 +3,7 @@ import '../../../models/download_item.dart';
 import '../../../models/format.dart';
 import '../../../platform.dart';
 import '../../../providers/downloads_provider.dart';
+import '../../../services/file_actions.dart';
 import '../../../theme/colors.dart';
 import '../../../theme/text_styles.dart';
 import '../../widgets/ext_chip.dart';
@@ -109,8 +110,18 @@ class _CompletedScreenState extends State<CompletedScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  SIconBtn(icon: Icons.open_in_new_rounded, size: 32, tooltip: 'Open'),
-                  SIconBtn(icon: Icons.folder_open_rounded, size: 32, tooltip: 'Show in folder'),
+                  SIconBtn(
+                    icon: Icons.open_in_new_rounded,
+                    size: 32,
+                    tooltip: 'Open',
+                    onPressed: () => FileActions.open(d.path),
+                  ),
+                  SIconBtn(
+                    icon: Icons.folder_open_rounded,
+                    size: 32,
+                    tooltip: 'Show in folder',
+                    onPressed: () => FileActions.showInFolder(d.path),
+                  ),
                   SIconBtn(icon: Icons.more_horiz_rounded, size: 32, tooltip: 'More'),
                 ],
               ],
