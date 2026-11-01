@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Shinsoku Capture",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Send browser downloads to the Shinsoku download manager.",
   "permissions": ["downloads", "cookies", "storage", "notifications", "webRequest", "tabs"],
   "host_permissions": ["<all_urls>"],
