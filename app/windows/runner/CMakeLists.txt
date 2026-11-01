@@ -9,7 +9,6 @@ project(runner LANGUAGES CXX)
 add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
   "main.cpp"
-  "notices.cpp"
   "utils.cpp"
   "win32_window.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
@@ -35,8 +34,16 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 # dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
-# C++/WinRT, for toasts (notices.cpp)
-target_link_libraries(${BINARY_NAME} PRIVATE "WindowsApp.lib")
+
+# Toasts (notices.cpp) use C++/WinRT, built as C++20 so it takes <coroutine>:
+# under C++17 it falls back on <experimental/coroutine>, which newer MSVC
+# refuses to compile.
+add_library(notices STATIC "notices.cpp")
+apply_standard_settings(notices)
+target_compile_features(notices PRIVATE cxx_std_20)
+target_compile_definitions(notices PRIVATE "NOMINMAX")
+target_link_libraries(notices PRIVATE "WindowsApp.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE notices)
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.
