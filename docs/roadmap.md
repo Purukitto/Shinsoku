@@ -49,8 +49,8 @@ beyond that.
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Offer to download a copied link | Partial | Desktop only. *Android* |
-| Take downloads from the browser | Partial | Desktop, through the extension. *Android*: the share menu and opening links |
+| Offer to download a copied link | Done | On Android, when you come back to the app, since only the app in front may read the clipboard |
+| Take downloads from the browser | Done | Desktop, through the extension. Android, through the share menu, and from apps that hand downloads to a download manager |
 | Import links from a text file or the clipboard | Not started | |
 | Batch download by pattern (`file[1-20].jpg`) | Not started | |
 | Grab every file on a page | Not started | |

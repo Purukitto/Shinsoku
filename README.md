@@ -139,12 +139,13 @@ are offline or rate-limited, the sidebar just shows the current version.
 
 ## Using it
 
-**Add** — or copy a link while **Clipboard monitor** is on and accept the banner —
-probes the URL for its name and size, then queues it. **Advanced** in the Add dialog
-takes extra request headers and an expected checksum. **Schedule for off-peak** holds
-the download until off-peak hours begin; it stops when they end and carries on the
-next time. A scheduled download's **Start now** runs it at once, and **Schedule** on
-the detail screen schedules one already in the list.
+**Add** — or copy a link while **Clipboard monitor** is on and accept the banner, or
+on Android share a link to Shinsoku from any app — probes the URL for its name and
+size, then queues it. **Advanced** in the Add dialog takes extra request headers and an
+expected checksum. **Schedule for off-peak** holds the download until off-peak hours
+begin; it stops when they end and carries on the next time. A scheduled download's
+**Start now** runs it at once, and **Schedule** on the detail screen schedules one
+already in the list.
 
 | Setting | Does |
 | --- | --- |
@@ -154,7 +155,7 @@ the detail screen schedules one already in the list.
 | Off-peak hours | When scheduled downloads run (default 23:00–07:00 every day, wraps past midnight). Pick the days they begin on. |
 | Full speed off-peak | Lifts the download limit during off-peak hours. |
 | Categorize | Sorts finished files into `Videos`, `Images`, `Documents`, `Music`, `Programs`, `Compressed` or `Other`. |
-| Clipboard monitor | Offers to download a copied `http(s)` link. |
+| Clipboard monitor | Offers to download a copied `http(s)` link; on Android, when you come back to Shinsoku. |
 | Browser integration | Starts the capture server the extension talks to. Off until you turn it on. |
 | Start with Windows | Opens Shinsoku in the tray when you sign in, so scheduled downloads run on their own. Off until you turn it on. |
 | Notifications | Says when a download finishes or fails. A finished file's notification has **Open** and **Show in folder**; downloads that end together share one. |
@@ -220,7 +221,9 @@ Five things are worth stating plainly:
   refuses any request without the pairing token. It sends no CORS headers, so web pages
   cannot call it; only the extension, through its host permission, can.
 - **The clipboard.** Read only while **Clipboard monitor** is on, and only checked for a
-  single `http(s)` URL. Nothing read leaves the machine.
+  single `http(s)` URL. Nothing read leaves the machine. On Android it is read only
+  when Shinsoku comes to the front and something new was copied, and not when Android
+  has already found no link in it.
 - **Starting with Windows.** Off until you turn it on. It writes one value, `Shinsoku`,
   under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`; turning it off removes
   it, and so does Task Manager's **Startup apps**.

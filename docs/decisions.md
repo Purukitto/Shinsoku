@@ -160,6 +160,20 @@ scope unless added later.
   and downloads carry on only while the app is open; user-initiated data transfer jobs
   (Android 14 and later) have no such cap and are the way past it if that proves too
   tight. Asking for the notification permission waits for the first download.
+- **Links from other apps on Android** — `MainActivity` takes `ACTION_SEND` text (the
+  share sheet) and `ACTION_VIEW` of an `http(s)` link with a MIME type (apps that hand
+  a download to a download manager), and Dart pulls the text over `shinsoku/links`
+  and finds the link in it. The view filter names a type and leaves out `BROWSABLE`:
+  a link to a web page carries no type, so Shinsoku never stands in for a browser, and
+  since Android 12 a generic web link opens in the default browser anyway unless the
+  app is verified for the domain. The activity is `singleTask`, because every window
+  shares the one cached Flutter engine and a second activity in the sharing app's task
+  would take it from the first. The clipboard has no change event Android lets a
+  background app see, so the copied-link offer looks when the app comes to the front.
+  Android 12 and later tell the user each time an app reads the clipboard, so the
+  activity first describes the clip without reading it (its timestamp, whether it is
+  text, and on Android 12 and later whether the system found a link in it) and Dart
+  reads the text only for a clip it hasn't seen that may hold a link.
 - **Finished-download notifications** — Dart spots a download that finishes or fails
   by comparing each download list with the last (`finishReporterProvider`), then waits
   a second and a half, so downloads that end together share one notification. Android

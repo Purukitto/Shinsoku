@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../models/download_item.dart';
+import '../../models/links.dart';
 import '../../providers/downloads_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/version_provider.dart';
@@ -62,9 +63,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     final t = data?.text?.trim() ?? '';
     if (t == _lastClip) return; // value unchanged since last seen / dismissal
     _lastClip = t;
-    final isUrl =
-        (t.startsWith('http://') || t.startsWith('https://')) && !t.contains(RegExp(r'\s'));
-    if (mounted) setState(() => _showClipBanner = isUrl);
+    if (mounted) setState(() => _showClipBanner = isLink(t));
   }
 
   void _navigate(_DesktopView view) {

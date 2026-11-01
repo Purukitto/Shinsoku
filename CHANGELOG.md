@@ -17,12 +17,20 @@ the entry is marked **Breaking** under **Changed**.
   notification says so. On Windows and Linux it has **Open** and **Show in folder**
   buttons; on Android, tapping it opens the file. Downloads that end together share
   one notification. Turn it off in **Settings → Notifications**.
+- **Share to Shinsoku** on Android. Share a link, or text with a link in it, from any
+  app and the Add dialog opens with it. Apps that hand downloads to a download manager
+  can pick Shinsoku too.
+- **Clipboard monitor on Android.** Coming back to Shinsoku offers a link you copied.
+  It reads the clipboard only when something new was copied, so Android's "pasted
+  from your clipboard" notice doesn't show each time.
 
 ### Fixed
 
 - **Open** and **Show in folder** on the Completed screen, and **Show in folder** on a
   finished download's page, did nothing.
 - The Android app closed itself when a download finished moments after it started.
+- On a phone, the Add dialog's labels and buttons shrink instead of overflowing with
+  large text.
 
 ## [0.1.0] - 2026-10-25
 
