@@ -11,7 +11,10 @@ the entry is marked **Breaking** under **Changed**.
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-11-01
+## [0.2.1] - 2026-11-03
+
+Version 0.2.0 was tagged but never released, because its Windows build failed. Its
+changes ship here.
 
 ### Added
 
@@ -131,6 +134,6 @@ the entry is marked **Breaking** under **Changed**.
 - Request headers attached to a download, including forwarded cookies, are stored in
   plain text in the app's data folder.
 
-[Unreleased]: https://github.com/Purukitto/Shinsoku/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/Purukitto/Shinsoku/compare/v0.1.0...v0.2.0
+[Unreleased]: https://github.com/Purukitto/Shinsoku/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Purukitto/Shinsoku/compare/v0.1.0...v0.2.1
 [0.1.0]: https://github.com/Purukitto/Shinsoku/releases/tag/v0.1.0
