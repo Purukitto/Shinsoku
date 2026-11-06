@@ -11,6 +11,10 @@ the entry is marked **Breaking** under **Changed**.
 
 ## [Unreleased]
 
+### Fixed
+
+- The Windows zip carried `notices.lib`, a build file the app doesn't use.
+
 ## [0.2.1] - 2026-11-03
 
 Version 0.2.0 was tagged but never released, because its Windows build failed. Its
