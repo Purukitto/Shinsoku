@@ -39,6 +39,9 @@ target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 # under C++17 it falls back on <experimental/coroutine>, which newer MSVC
 # refuses to compile.
 add_library(notices STATIC "notices.cpp")
+# Its .lib would otherwise land beside the exe, in the folder that ships.
+set_target_properties(notices PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/notices")
 apply_standard_settings(notices)
 target_compile_features(notices PRIVATE cxx_std_20)
 target_compile_definitions(notices PRIVATE "NOMINMAX")
